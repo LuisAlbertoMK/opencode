@@ -1,8 +1,8 @@
 # Métricas de mejora — opencode fork
 
-> Baseline: `dbbe67f06` (chore: generate) → HEAD: `2747916b9`  
+> Baseline: `dbbe67f06` (chore: generate) → HEAD: `fa7dec85b`  
 > Ronda 1: 6 commits, 47 archivos, +395/-233 líneas  
-> Ronda 2: 5 commits, 5 archivos, ~+90/-80 líneas
+> Ronda 2: 8 commits, 6 archivos, ~+127/-84 líneas
 
 ---
 
@@ -126,6 +126,20 @@
 
 **Benchmark**: `benchmark-edit-full.ts` (standalone, Bun 1.3.14, Windows x64, 500-5000 iteraciones por test con 200 warmup)
 
+### 6.6 watcher.ts — Debounce de Eventos
+
+| Métrica | Antes (sin debounce) | Después (con debounce) | Δ | Verificado |
+|---------|---------------------|----------------------|---|-----------|
+| Mismo archivo rápido (git stash pop, 50 callbacks) | 50 eventos | 1 evento | **98% menos** | `benchmark-watcher.ts` |
+| Carga mixta (20 files × 10 batches) | 200 eventos | 20 eventos | **90% menos** | `benchmark-watcher.ts` |
+| Git checkout (100 files × 10 batches) | 1000 eventos | ~100 eventos | **~90% menos** | `benchmark-watcher.ts` |
+| Evento único (save normal) | 1 evento | 1 evento (50ms delay) | 0% (imperceptible) | Diseño |
+| Latencia en ráfagas | 0ms | +50ms | **90-98% menos carga LSP** | Diseño |
+
+**Mecanismo**: 50ms debounce + 200ms max delay anti-starvation. Coalesce archivos duplicados al último event type. Flush garantizado en finalizer.
+
+**Benchmark**: `benchmark-watcher.ts` (standalone, Bun 1.3.14)
+
 ---
 
 ## 7. Pendiente (requiere runtime o diseño)
@@ -137,7 +151,5 @@
 | LSP client idle TTL | Diseño + tests | Baja |
 | auth.json OS keychain | Integración Windows Credential Manager / macOS Keychain / Linux secret-tool | Baja |
 | auth_token URL (browser) | Limitación inherente de browser WebSocket (no headers) | Baja |
-| **watcher.ts debounce** | Coalesce eventos rápidos (git checkout flood) | **Alta** |
 | **TUI index.tsx createMemo** | Eliminar `createMemo` dentro de `<For>` (Solid anti-pattern) | Media |
 | Benchmark runtime full-suite | Ejecutar benchmark-suite v2 contra HEAD | Media |
-| Verificar `removeIndentation` refactor | Test de regresión en `IndentationFlexibleReplacer` | Baja |
