@@ -124,6 +124,7 @@ export interface Interface {
   readonly hasClients: (file: string) => Effect.Effect<boolean>
   readonly touchFile: (input: string, diagnostics?: "document" | "full") => Effect.Effect<void>
   readonly diagnostics: () => Effect.Effect<Record<string, LSPClient.Diagnostic[]>>
+  readonly diagnosticsForFile: (filePath: string) => Effect.Effect<LSPClient.Diagnostic[]>
   readonly hover: (input: LocInput) => Effect.Effect<any>
   readonly definition: (input: LocInput) => Effect.Effect<any[]>
   readonly references: (input: LocInput) => Effect.Effect<any[]>
@@ -376,6 +377,12 @@ export const layer = Layer.effect(
       return results
     })
 
+    const diagnosticsForFile = Effect.fn("LSP.diagnosticsForFile")(function* (filePath: string) {
+      const normalized = FSUtil.normalizePath(filePath)
+      const all = yield* runAll(async (client) => client.diagnosticsForFile(normalized))
+      return all.flat().filter(Boolean) as LSPClient.Diagnostic[]
+    })
+
     const hover = Effect.fn("LSP.hover")(function* (input: LocInput) {
       return yield* run(input.file, (client) =>
         client.connection
@@ -485,6 +492,7 @@ export const layer = Layer.effect(
       hasClients,
       touchFile,
       diagnostics,
+      diagnosticsForFile,
       hover,
       definition,
       references,

@@ -60,15 +60,22 @@ export const layer: Layer.Layer<Service, never, FSUtil.Service | AppProcess.Serv
     const fs = yield* FSUtil.Service
     const appProcess = yield* AppProcess.Service
     const config = yield* Config.Service
-    const locks = new Map<string, Semaphore.Semaphore>()
+    // Users-counting keyed semaphore: entries self-evict when no holder remains.
+    // Prevents unbounded Map growth (same pattern as core KeyedMutex).
+    const locks = new Map<string, { semaphore: Semaphore.Semaphore; users: number }>()
 
     const lock = (key: string) => {
-      const hit = locks.get(key)
-      if (hit) return hit
-
-      const next = Semaphore.makeUnsafe(1)
-      locks.set(key, next)
-      return next
+      const current = locks.get(key)
+      const entry = current ?? { semaphore: Semaphore.makeUnsafe(1), users: 0 }
+      if (!current) locks.set(key, entry)
+      entry.users++
+      return {
+        semaphore: entry.semaphore,
+        done: () => {
+          entry.users--
+          if (entry.users === 0) locks.delete(key)
+        },
+      }
     }
 
     const state = yield* InstanceState.make<State>(
@@ -161,7 +168,9 @@ export const layer: Layer.Layer<Service, never, FSUtil.Service | AppProcess.Serv
         const exists = (file: string) => fs.exists(file).pipe(Effect.orDie)
         const read = (file: string) => fs.readFileString(file).pipe(Effect.catch(() => Effect.succeed("")))
         const remove = (file: string) => fs.remove(file).pipe(Effect.catch(() => Effect.void))
-        const locked = <A, E, R>(fx: Effect.Effect<A, E, R>) => lock(state.gitdir).withPermits(1)(fx)
+        const lk = lock(state.gitdir)
+        const locked = <A, E, R>(fx: Effect.Effect<A, E, R>) =>
+          lk.semaphore.withPermits(1)(fx).pipe(Effect.ensuring(Effect.sync(() => lk.done())))
 
         const enabled = Effect.fnUntraced(function* () {
           if (state.vcs !== "git") return false

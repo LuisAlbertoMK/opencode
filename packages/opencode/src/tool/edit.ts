@@ -32,16 +32,23 @@ function convertToLineEnding(text: string, ending: "\n" | "\r\n"): string {
   return text.replaceAll("\n", "\r\n")
 }
 
-const locks = new Map<string, Semaphore.Semaphore>()
+// Users-counting keyed semaphore: entries self-evict when no holder or waiter remains.
+// Prevents unbounded Map growth in long sessions (same pattern as core KeyedMutex).
+const locks = new Map<string, { semaphore: Semaphore.Semaphore; users: number }>()
 
-function lock(filePath: string) {
+function withFileLock(filePath: string) {
   const resolvedFilePath = FSUtil.resolve(filePath)
-  const hit = locks.get(resolvedFilePath)
-  if (hit) return hit
-
-  const next = Semaphore.makeUnsafe(1)
-  locks.set(resolvedFilePath, next)
-  return next
+  const current = locks.get(resolvedFilePath)
+  const entry = current ?? { semaphore: Semaphore.makeUnsafe(1), users: 0 }
+  if (!current) locks.set(resolvedFilePath, entry)
+  entry.users++
+  return {
+    semaphore: entry.semaphore,
+    done: () => {
+      entry.users--
+      if (entry.users === 0) locks.delete(resolvedFilePath)
+    },
+  }
 }
 
 export const Parameters = Schema.Struct({
@@ -85,7 +92,8 @@ export const EditTool = Tool.define(
           let diff = ""
           let contentOld = ""
           let contentNew = ""
-          yield* lock(filePath).withPermits(1)(
+          const editLock = withFileLock(filePath)
+          yield* editLock.semaphore.withPermits(1)(
             Effect.gen(function* () {
               if (params.oldString === "") {
                 const existed = yield* afs.existsSafe(filePath)
@@ -170,7 +178,7 @@ export const EditTool = Tool.define(
                 ),
               )
             }).pipe(Effect.orDie),
-          )
+          ).pipe(Effect.ensuring(Effect.sync(() => editLock.done())))
 
           let additions = 0
           let deletions = 0
@@ -195,14 +203,13 @@ export const EditTool = Tool.define(
 
           let output = "Edit applied successfully."
           yield* lsp.touchFile(filePath, "document")
-          const diagnostics = yield* lsp.diagnostics()
-          const normalizedFilePath = FSUtil.normalizePath(filePath)
-          const block = LSP.Diagnostic.report(filePath, diagnostics[normalizedFilePath] ?? [])
+          const fileDiagnostics = yield* lsp.diagnosticsForFile(filePath)
+          const block = LSP.Diagnostic.report(filePath, fileDiagnostics)
           if (block) output += `\n\nLSP errors detected in this file, please fix:\n${block}`
 
           return {
             metadata: {
-              diagnostics,
+              diagnostics: { [FSUtil.normalizePath(filePath)]: fileDiagnostics },
               diff,
               filediff,
             },

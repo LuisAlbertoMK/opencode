@@ -122,6 +122,22 @@ export const make = Effect.gen(function* () {
     scope: yield* Scope.Scope,
   }
 
+  const STALE_TTL = 5 * 60 * 1000
+
+  const evictStale = Effect.fn("BackgroundJob.evictStale")(function* () {
+    const now = yield* Clock.currentTimeMillis
+    yield* SynchronizedRef.modify(state.jobs, (jobs) => {
+      const next = new Map(jobs)
+      for (const [id, job] of next) {
+        if (job.info.status === "running") continue
+        if (job.info.completed_at && now - job.info.completed_at >= STALE_TTL) {
+          next.delete(id)
+        }
+      }
+      return [undefined, next] as const
+    })
+  })
+
   const settle = Effect.fn("BackgroundJob.settle")(function* (
     id: string,
     token: object,
@@ -187,12 +203,14 @@ export const make = Effect.gen(function* () {
   })
 
   const list: Interface["list"] = Effect.fn("BackgroundJob.list")(function* () {
+    yield* evictStale
     return Array.from((yield* SynchronizedRef.get(state.jobs)).values())
       .map(snapshot)
       .toSorted((a, b) => a.started_at - b.started_at)
   })
 
   const get: Interface["get"] = Effect.fn("BackgroundJob.get")(function* (id) {
+    yield* evictStale
     const job = (yield* SynchronizedRef.get(state.jobs)).get(id)
     if (!job) return
     return snapshot(job)
