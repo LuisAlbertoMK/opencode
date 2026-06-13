@@ -111,17 +111,20 @@
 
 ### 6.5 edit.ts — Levenshtein + Replacers
 
-| Métrica | Antes | Después | Δ |
-|---------|-------|---------|---|
-| Levenshtein (short, 5ch) | 173,825 ops/s | 1,040,042 ops/s | **6.0x** |
-| Levenshtein (medium, 80ch) | 3,731 ops/s | 9,667 ops/s | **2.6x** |
-| Levenshtein (long, 300ch) | 552 ops/s | 1,491 ops/s | **2.7x** |
-| Memoria Levenshtein | O(n×m) matrix | O(min(n,m)) 2 filas | **~99% menos RAM** |
-| `WhitespaceNormalizedReplacer` regex | Re-creado por cada línea match | Pre-computado 1 vez | **Elimina N regex allocs** |
-| `normalizeWhitespace(line)` | 2x por línea (if+else) | 1x por línea | **2x menos normalize** |
-| `removeIndentation` | Function expression por llamada | Function declaration módulo | **0 alloc por llamada** |
+| Métrica | Antes | Después | Δ | Verificado |
+|---------|-------|---------|---|-----------|
+| Levenshtein (short, 5ch) | 145,300 ops/s | 690,379 ops/s | **4.75x** | `benchmark-edit-full.ts` |
+| Levenshtein (medium, 80ch) | 3,202 ops/s | 9,323 ops/s | **2.91x** | `benchmark-edit-full.ts` |
+| Levenshtein (long, 300ch) | 535 ops/s | 1,419 ops/s | **2.65x** | `benchmark-edit-full.ts` |
+| Memoria Levenshtein | O(n×m) full matrix | O(min(n,m)) 2 filas | **~99% menos RAM** | Code review |
+| `WhitespaceNormalized` exact line | 1,781 ops/s | 2,975 ops/s | **1.67x** | `benchmark-edit-full.ts` |
+| `WhitespaceNormalized` substring | 1,960 ops/s | 3,282 ops/s | **1.67x** | `benchmark-edit-full.ts` |
+| `WhitespaceNormalized` multi-line | 297 ops/s | 323 ops/s | **1.09x** | `benchmark-edit-full.ts` |
+| `normalizeWhitespace(line)` | 2x por línea (if+else) | 1x por línea | **50% menos normalize** | Code review |
+| `removeIndentation` hoisting | Function expr por llamada | Module-level func | Noise (~0.91x, margen error) | `benchmark-edit-full.ts` |
+| Pipeline completo (simulado) | 1,713 ops/s | 2,812 ops/s | **1.64x** | `benchmark-edit-full.ts` |
 
-**Benchmark**: `benchmark-levenshtein.ts` (standalone, Bun 1.3.14)
+**Benchmark**: `benchmark-edit-full.ts` (standalone, Bun 1.3.14, Windows x64, 500-5000 iteraciones por test con 200 warmup)
 
 ---
 
