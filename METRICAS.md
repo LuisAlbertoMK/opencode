@@ -275,6 +275,26 @@
 | `1105819c1` | Remove unrecognized `references` key from `.opencode/opencode.jsonc` | ✅ opencode v1.15.3 arranca |
 | `9c8128c7a` | `abbreviateHome` usa `/` en vez de `path.sep` | ✅ 1 tui test menos (10→9 failures) |
 
+### Ronda 7 — Ollama local + frontmatter fix (2026-06-13)
+
+| Métrica | Antes | Después | Δ |
+|---------|-------|---------|---|
+| **Provider Ollama configurado** | ❌ No existía | ✅ 3 modelos (3b, 7b, deepseek-coder-v2) | 🆕 |
+| **opencode + Ollama local** | ❌ No probado | ✅ Pipeline completo funcional | 🆕 |
+| **Skills con frontmatter válido** | 6/47 (12.8%) | **47/47 (100%)** | ✅ **+87.2%** |
+| **Errores "failed to load skill" en log** | ~30 | **0** (con frontmatter válido) | ✅ **Eliminado** |
+| **Tiempo primer token (3B local)** | — | ~57s | Lento pero funcional |
+
+| Commit | Fix | Impacto |
+|--------|-----|---------|
+| `e810e0a5a` | Ollama provider config (qwen2.5-coder:3b) | ✅ |
+| `05f9949c3` | Add qwen2.5-coder:7b + deepseek-coder-v2 models | ✅ |
+
+| Commit | Fix | Impacto |
+|--------|-----|---------|
+| `1105819c1` | Remove unrecognized `references` key from `.opencode/opencode.jsonc` | ✅ opencode v1.15.3 arranca |
+| `9c8128c7a` | `abbreviateHome` usa `/` en vez de `path.sep` | ✅ 1 tui test menos (10→9 failures) |
+
 ### Lecciones aprendidas
 
 1. **tsgo + workspace deps**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace. Si un package usa `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback.

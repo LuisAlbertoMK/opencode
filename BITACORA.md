@@ -198,6 +198,31 @@ d376f31fe fix(opencode): add core src path fallback for cross-package @/ resolut
 **Nota 1**: Fixed `abbreviate paths within home boundaries` — ahora usa forward slash siempre en vez de `path.sep`.
 **Nota 2**: Ronda 5 no tuvo cambios de código — solo build y testeo cross-package.
 
+## Ronda 7 — Ollama local + reparación de skills
+
+**Objetivo**: Poner a punto opencode con Ollama local y reparar skills con frontmatter roto.
+
+**Fecha**: 2026-06-13
+
+### Logros
+
+1. **Configuración Ollama provider** ✅ — Agregado provider `ollama` con `@ai-sdk/openai-compatible` apuntando a `http://localhost:11434/v1`.
+2. **Test con modelo local qwen2.5-coder:3b** ✅ — Pipeline completo funcional: tool calls, streaming, loop exit. Primer token ~57s (modelo 3B procesando system prompt grande de opencode).
+3. **Modelos adicionales** ✅ — Agregados `qwen2.5-coder:7b` y `deepseek-coder-v2` al config (requieren `ollama pull`).
+4. **Reparación de 41 skills con frontmatter YAML roto** ✅ — Todas las skills en `~/.config/opencode/skills/` tenían líneas extra después de `triggers:` que rompían el parsing YAML. Movidas al body. Ahora cargan sin errores.
+
+### Commits
+
+| Sha | Commit |
+|-----|--------|
+| `e810e0a5a` | `feat(opencode): add Ollama local provider config` |
+| `05f9949c3` | `feat(opencode): add qwen2.5-coder:7b and deepseek-coder-v2 models` |
+
+### Pendiente
+
+- Probar con modelo 7B+ para mejor rendimiento (3B es lento ~1 min primer token)
+- Si se desea release, build multi-plataforma con `bun run build` (sin `--single`)
+
 ## Lecciones aprendidas
 
 1. **tsgo + workspace dependencies**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace (usa el tsconfig del package invocador). Si un package depende de `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback en su propio tsconfig.
