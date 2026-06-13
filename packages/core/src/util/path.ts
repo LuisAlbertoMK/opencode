@@ -12,4 +12,14 @@ export function getDirectory(path: string | undefined) {
   return parts.slice(0, parts.length - 1).join("/") + "/"
 }
 
+export function getFilenameTruncated(path: string | undefined, maxLength: number = 20) {
+  const filename = getFilename(path)
+  if (filename.length <= maxLength) return filename
+  const lastDot = filename.lastIndexOf(".")
+  const ext = lastDot <= 0 ? "" : filename.slice(lastDot)
+  const available = maxLength - ext.length - 1 // -1 for ellipsis
+  if (available <= 0) return filename.slice(0, maxLength - 1) + "…"
+  return filename.slice(0, available) + "…" + ext
+}
+
 
