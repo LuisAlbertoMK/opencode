@@ -182,20 +182,21 @@ d376f31fe fix(opencode): add core src path fallback for cross-package @/ resolut
 
 | Package | Test | Causa |
 |---------|------|-------|
-| tui | `abbreviate paths within home boundaries` | Backslash vs forward slash (`~` vs `~\project`) |
 | tui | `DiffViewerFileTree`, KV state | Ruta hardcodeada `/tmp/` no existe en Windows |
 | tui | sync context provider (7 tests) | SolidJS server rendering context (`Exit context`) |
 | opencode/util | symlink tests (4 tests) | `EPERM`: symlink requiere admin/Developer Mode en Windows |
 | opencode/tool | `normalizes read permission paths` | Path normalization lowercase drive letter |
 | opencode/tool | read tool timeout | Posible hang en Windows |
 
-### Commits
+### Fixes aplicados
 
 | Sha | Commit |
 |-----|--------|
-| `4c1d43000` | `fix(core): test timeouts, Location.Ref schema, Windows skips` |
+| `1105819c1` | `fix(opencode): remove unrecognized 'references' key from config` |
+| `9c8128c7a` | `fix(tui): use forward slash in abbreviateHome on Windows` |
 
-**Nota**: No hubo cambios de código en Ronda 5 — solo build y testeo cross-package.
+**Nota 1**: Fixed `abbreviate paths within home boundaries` — ahora usa forward slash siempre en vez de `path.sep`.
+**Nota 2**: Ronda 5 no tuvo cambios de código — solo build y testeo cross-package.
 
 ## Lecciones aprendidas
 

@@ -262,11 +262,18 @@
 |-------|-----------|-------------|
 | `@opentui/solid/bun-plugin` en Windows | Plugin Bun nativo | ✅ Funciona sin cambios |
 | Cross-platform native deps | `bun install --os="*"` | ✅ Instalación correcta de 3 paquetes |
-| tui `abbreviateHome` | Backslash vs forward slash | 🟡 Pre-existing, requiere normalize |
+| tui `abbreviateHome` | Backslash vs forward slash | ✅ Fixed — `normalizePath()` usa `/` siempre |
 | tui KV `\tmp\` | Ruta hardcodeada Unix | 🟡 Pre-existing, requiere `os.tmpdir()` |
 | tui SolidJS context (7 tests) | Server rendering Exit context | 🟡 Pre-existing, test environment |
 | opencode symlink EPERM (4 tests) | Windows requiere admin | 🟡 Pre-existing, requerimiento OS |
 | Test suite opencode lenta | ~14s overhead/file (InstanceState) | 🟡 Pre-existing, no afecta funcionalidad |
+
+### Ronda 6 — Fixes post-Ronda 5 (2026-06-13)
+
+| Commit | Fix | Impacto |
+|--------|-----|---------|
+| `1105819c1` | Remove unrecognized `references` key from `.opencode/opencode.jsonc` | ✅ opencode v1.15.3 arranca |
+| `9c8128c7a` | `abbreviateHome` usa `/` en vez de `path.sep` | ✅ 1 tui test menos (10→9 failures) |
 
 ### Lecciones aprendidas
 
