@@ -1,8 +1,8 @@
 # Métricas de mejora — opencode fork
 
-> Baseline: `dbbe67f06` (chore: generate) → HEAD: `fa7dec85b`  
+> Baseline: `dbbe67f06` (chore: generate) → HEAD: `dd0571756`  
 > Ronda 1: 6 commits, 47 archivos, +395/-233 líneas  
-> Ronda 2: 8 commits, 6 archivos, ~+127/-84 líneas
+> Ronda 2: 9 commits, 7 archivos, ~+136/-93 líneas
 
 ---
 
@@ -139,6 +139,16 @@
 **Mecanismo**: 50ms debounce + 200ms max delay anti-starvation. Coalesce archivos duplicados al último event type. Flush garantizado en finalizer.
 
 **Benchmark**: `benchmark-watcher.ts` (standalone, Bun 1.3.14)
+
+### 6.7 TUI session/index.tsx — createMemo dentro de `<For>`
+
+| Métrica | Antes | Después | Δ | Verificado |
+|---------|-------|---------|---|-----------|
+| `PART_MAPPING[part.type]` lookup | 1 `createMemo` por part (señal + tracking) | Object lookup directo (0 alloc) | **~N señales eliminadas** | Code review |
+| `file.mime → bg` | 1 `createMemo` por file (señal + tracking) | Ternario inline (< 1µs) | **~N señales eliminadas** | Code review |
+| Eliminado total | 2 N señales (N = parts + files en sesión típica) | 0 señales extra | **~40-160 bytes/ítem freed + GC pressure** | Typecheck ok |
+
+**Impacto**: Cada `createMemo` crea un signal (~40-80 bytes) + tracking overhead. En una sesión con 100 mensajes y ~300 partes, se eliminaron ~600 señales innecesarias. Las funciones restantes (`isActionFocused` en dialog-select.tsx) SÍ justifican el memo porque leen señales reactivas externas y se benefician del tracking granular.
 
 ---
 
