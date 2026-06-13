@@ -142,6 +142,24 @@ export async function create(input: {
   const diagnosticRegistrations = new Map<string, CapabilityRegistration>()
   const registrationListeners = new Set<() => void>()
   const diagnosticListeners = new Set<(input: { path: string; serverID: string }) => void>()
+  const MAX_FILES = 128
+
+  function pruneFiles(currentPath: string) {
+    const keys = Object.keys(files)
+    if (keys.length <= MAX_FILES) return
+    const toRemove = keys.length - MAX_FILES
+    let removed = 0
+    for (const key of keys) {
+      if (key === currentPath) continue
+      delete files[key]
+      pushDiagnostics.delete(key)
+      pullDiagnostics.delete(key)
+      published.delete(key)
+      removed++
+      if (removed >= toRemove) break
+    }
+  }
+
   const mergedDiagnostics = (filePath: string) =>
     dedupeDiagnostics([...(pushDiagnostics.get(filePath) ?? []), ...(pullDiagnostics.get(filePath) ?? [])])
   const updatePushDiagnostics = (filePath: string, next: Diagnostic[]) => {
@@ -594,6 +612,7 @@ export async function create(input: {
                   ]
                 : [{ text }],
           })
+          pruneFiles(request.path)
           return next
         }
 
@@ -617,6 +636,7 @@ export async function create(input: {
           },
         })
         files[request.path] = { version: 0, text }
+        pruneFiles(request.path)
         return 0
       },
     },
