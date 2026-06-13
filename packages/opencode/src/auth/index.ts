@@ -76,7 +76,7 @@ export const layer = Layer.effect(
         } catch (err) {}
       }
 
-      const raw = yield* readFileDecrypt
+      const raw = yield* readFileDecrypt()
       const data = JSON.parse(raw) as Record<string, unknown>
       return Record.filterMap(data, (value) => Result.fromOption(decode(value), () => undefined))
     })
@@ -108,7 +108,7 @@ export const layer = Layer.effect(
       yield* writeFileEncrypt(data)
     })
 
-    return Service.of({ get, all, set, remove })
+    return Service.of({ get, all, set, remove } as Interface)
   }),
 )
 

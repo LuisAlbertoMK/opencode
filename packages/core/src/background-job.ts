@@ -203,14 +203,14 @@ export const make = Effect.gen(function* () {
   })
 
   const list: Interface["list"] = Effect.fn("BackgroundJob.list")(function* () {
-    yield* evictStale
+    yield* evictStale() as Effect.Effect<void, never>
     return Array.from((yield* SynchronizedRef.get(state.jobs)).values())
       .map(snapshot)
       .toSorted((a, b) => a.started_at - b.started_at)
   })
 
   const get: Interface["get"] = Effect.fn("BackgroundJob.get")(function* (id) {
-    yield* evictStale
+    yield* evictStale() as Effect.Effect<void, never>
     const job = (yield* SynchronizedRef.get(state.jobs)).get(id)
     if (!job) return
     return snapshot(job)

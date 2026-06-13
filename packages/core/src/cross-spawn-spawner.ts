@@ -295,7 +295,7 @@ export const make = Effect.gen(function* () {
     proc: NodeChildProcess.ChildProcess,
     signal: NodeJS.Signals,
   ) => {
-    if (globalThis.Platform.isWindows) {
+    if (Platform.isWindows) {
       return Effect.callback<void, PlatformError.PlatformError>((resume) => {
         // Graceful /T first, fall back to /T /F
         NodeChildProcess.exec(`taskkill /pid ${proc.pid} /T`, { windowsHide: true }, (err) => {
