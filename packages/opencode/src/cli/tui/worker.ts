@@ -3,7 +3,7 @@ import { InstanceRuntime } from "@/project/instance-runtime"
 import { Rpc } from "@/util/rpc"
 import { upgrade } from "@/cli/upgrade"
 import { Config } from "@/config/config"
-import { GlobalBus } from "@/bus/global"
+import { GlobalBus, type GlobalEvent } from "@/bus/global"
 import { ServerAuth } from "@/server/auth"
 import { writeHeapSnapshot } from "node:v8"
 import { Heap } from "@/cli/heap"
@@ -14,9 +14,10 @@ import { disposeAllInstancesAndEmitGlobalDisposed } from "@/server/global-lifecy
 Heap.start()
 
 // Subscribe to global events and forward them via RPC
-GlobalBus.on("event", (event) => {
+const onGlobalEvent = (event: GlobalEvent) => {
   Rpc.emit("global.event", event)
-})
+}
+GlobalBus.on("event", onGlobalEvent)
 
 let server: Awaited<ReturnType<typeof Server.listen>> | undefined
 
@@ -63,6 +64,7 @@ export const rpc = {
     )
   },
   async shutdown() {
+    GlobalBus.off("event", onGlobalEvent)
     await InstanceRuntime.disposeAllInstances()
     if (server) await server.stop(true)
   },
