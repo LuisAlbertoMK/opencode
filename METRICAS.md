@@ -185,3 +185,43 @@
 | auth_token URL (browser) | Limitación inherente de browser WebSocket (no headers) | Baja |
 | **TUI index.tsx createMemo** | Eliminar `createMemo` dentro de `<For>` (Solid anti-pattern) | Media |
 | Benchmark runtime full-suite | Ejecutar benchmark-suite v2 contra HEAD | Media |
+
+---
+
+## Ronda 3 — Infra Repair (typecheck, lint, runtime, pre-push hook)
+
+> Context: El repo estaba roto — typecheck fallaba en todos los packages, oxlint no corría, runtime no iniciaba
+> Commits: `fae835779`..`d376f31fe` (9 commits, ~14 archivos)
+
+| Métrica | Antes | Después | Δ |
+|---------|-------|---------|---|
+| **Typecheck core** | ~25 errores | **0** | ✅ |
+| **Typecheck opencode** | ~45 errores | **0** | ✅ |
+| **Turbo typecheck (29 packages)** | ❌ roto | **23/23 tasks** | ✅ |
+| **oxlint** | ❌ roto (binario faltante) | **0 errores, 216 warnings** | ✅ |
+| **Runtime `--version`** | ❌ `@babel/helper-plugin-utils` missing | ✅ `local` | ✅ |
+| **Runtime `--help`** | ❌ | ✅ Todos los comandos | ✅ |
+| **`bun install --frozen-lockfile`** | ❌ lockfile desync | ✅ Lockfile sincronizado | ✅ |
+| **Custom elements (enterprise, app)** | ❌ symlinks rotos (git+Windows) | ✅ triple-slash references | ✅ |
+| **Cross-package tsgo artifacts** | 9 falsos positivos | **0** (path fallbacks en tsconfigs) | ✅ |
+
+### Problemas encontrados y fixes
+
+| Issue | Causa Raíz | Fix |
+|-------|------------|-----|
+| `@/` imports no resueltos | `tsconfig.json` sin `paths` | Agregar `"@/*"` paths a core + tui |
+| oxlint no corría | `typeAware: true` requiere binario nativo Windows + `.oxlintrc` duplicado | `typeAware: false`, deduplicar |
+| Runtime crash | `@babel/helper-plugin-utils` no descargado + lockfile desync | `bun install` fresh |
+| `SynchronizedRef.modify` error type `unknown` | Effect v4.0.0-beta.74 regresión | Cast explícito en `evictStale` |
+| `globalThis.Platform` | Referencia global incorrecta | Usar `Platform` ya importado |
+| `readFileDecrypt` no invocado | `Effect.fn()` devuelve función, no Effect | `yield* readFileDecrypt()` |
+| `sampledChecksum`, `getDirectory`, `getFilenameTruncated` inexistentes | Dead code cleanup eliminó exports usados por otros packages | Restaurar en `core/util/` |
+| custom-elements.d.ts rotos | git en Windows no resuelve symlinks | `/// <reference path="..." />` |
+| Cross-package tsgo artifacts | tsgo usa tsconfig del package invocador, no del dependency | Fallback `"../core/src/*"` en packages que dependen de core |
+
+### Lecciones aprendidas
+
+1. **tsgo + workspace deps**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace. Si un package usa `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback.
+2. **Symlinks en Windows+git**: No confiar en symlinks en `.d.ts`. Usar `/// <reference path="..." />`.
+3. **Dead code cleanup**: Verificar TODOS los consumers con `grep` antes de eliminar exports. Un refactor en core puede romper packages no obvios.
+4. **Effect v4 beta**: `SynchronizedRef.modify` infiere `unknown` como error type. `Effect.fn` devuelve función, no Effect directamente.

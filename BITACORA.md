@@ -66,28 +66,69 @@
 
 ---
 
+## Segunda ronda — Pre-push hook (bun turbo typecheck: 29 packages)
+
+Al hacer push, el hook `pre-push` ejecuta `bun turbo typecheck` en los **29 packages** del monorepo. Esto destapó errores adicionales que no aparecían al hacer typecheck desde cada package individual:
+
+### Fix #10 — enterprise: symlink roto custom-elements.d.ts (2 errores)
+✅ `packages/enterprise/src/custom-elements.d.ts` contenía `../../ui/src/custom-elements.d.ts` como texto plano (symlink no resuelto por git en Windows). Fix: `/// <reference path="..." />`.
+
+### Fix #11 — cross-package @/ fallback para tui, server, cli, opencode
+✅ tsgo, al typechequear workspace dependencies, usa el **tsconfig del package invocador** (no el de core). Esto causaba 9 errores `Cannot find module '@/util/platform'` en archivos de `../core/src/`. Fix: agregar `"../core/src/*"` como fallback en `paths` de cada package que dependa de core:
+- `packages/tui/tsconfig.json`
+- `packages/server/tsconfig.json`
+- `packages/cli/tsconfig.json`
+- `packages/opencode/tsconfig.json`
+
+### Fix #12 — app: symlink roto custom-elements.d.ts (2 errores)
+✅ Mismo fix que enterprise.
+
+### Fix #13 — Funciones huérfanas eliminadas en dead code cleanup (3 packages afectados)
+✅ El commit `refactor(core): evict stale BackgroundJob entries, dead code cleanup` eliminó funciones que **otros packages** todavía importaban:
+- `core/util/encode.ts`: restaurado `sampledChecksum()` (usado por `ui`)
+- `core/util/path.ts`: restaurado `getDirectory()` (usado por `ui`) y `getFilenameTruncated()` (usado por `app`)
+
+### Resultado final
+
+```
+bun turbo typecheck
+• Packages in scope: 29
+• Tasks: 23 successful, 23 total
+• Cached: 20 cached, 23 total
+• Failed: NONE ✅
+```
+
 ## Métricas post-fix (FINAL)
 
 | Métrica | Antes | Después | Diferencia |
 |---------|-------|---------|------------|
 | Errores typecheck **core** | ~25 | **0** | ✅ -25 |
-| Errores typecheck **opencode** (propios) | ~45 | **0** | ✅ -45 |
-| Errores typecheck **opencode** (cross-package tsgo) | — | 9* | ⚠️ Falsos positivos de tsgo |
+| Errores typecheck **opencode** | ~45 | **0** | ✅ -45 |
+| Errores typecheck **turbo 29 packages total** | ❌ roto | **23/23 tasks pass** | ✅ |
 | Errores lint (oxlint) | ❌ roto | ✅ 0E/216W | ✅ |
 | Runtime `--version` | ❌ | ✅ `local` | ✅ |
 | Runtime `--help` | ❌ | ✅ Todos los comandos | ✅ |
 | `bun install --frozen-lockfile` | ❌ | ✅ Lockfile sincronizado | ✅ |
+| Custom elements (app, enterprise) | ❌ symlinks rotos | ✅ triple-slash refs | ✅ |
+| Cross-package tsgo artifacts | — | **0** (path fallbacks) | ✅ |
 
-*\* Los 9 errores restantes en opencode typecheck son de `../core/src/` — tsgo no resuelve `@/` paths cuando typecheckea archivos de otro workspace package. NO son errores reales. Cada package corre limpio desde su propio directorio.*
+## Commits realizados (sesión completa)
 
-## Commits realizados
+```
+fae835779 fix: infra completa — tsconfig paths, oxlint, runtime, typecheck 0 errors
+052c7fe1a fix(enterprise): broken custom-elements.d.ts symlink -> triple-slash ref
+1d71ea55d fix(tui): add core src path fallback for cross-package @/ resolution
+ea5620571 fix(core): restore sampledChecksum and getDirectory removed in dead code cleanup
+efce3b3a0 fix(app): broken custom-elements.d.ts symlink -> triple-slash ref
+fa90339d9 fix(core): restore getFilenameTruncated removed in dead code cleanup
+809031e62 fix(server): add core src path fallback for cross-package @/ resolution
+ddf3a269f fix(cli): add core src path fallback for cross-package @/ resolution
+d376f31fe fix(opencode): add core src path fallback for cross-package @/ resolution
+```
 
-- `fix(core): add @/ path alias to tsconfig` — packages/core + packages/tui  
-- `fix: deduplicate .oxlintrc options, disable typeAware for Windows`  
-- `fix(mcp): add fallback for undefined process.env in env vars`  
-- `fix(core): constrain Effect type in evictStale for list/get`  
-- `fix(core): use imported Platform instead of globalThis.Platform`  
-- `fix(core): update EventV2 mock return types for beforeCommit/project`  
-- `fix(opencode): add diagnosticsForFile to LSP test mocks`  
-- `fix(opencode): call readFileDecrypt() function + cast Service.of types`
+## Lecciones aprendidas
+
+1. **tsgo + workspace dependencies**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace (usa el tsconfig del package invocador). Si un package depende de `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback en su propio tsconfig.
+2. **Symlinks en Windows/git**: git puede no resolver symlinks correctamente en Windows, dejando archivos `.d.ts` con contenido textual de ruta. Siempre usar `/// <reference path="..." />` en vez de confiar en symlinks.
+3. **Dead code cleanup**: antes de eliminar exports, verificar TODOS los consumers del monorepo con `grep`. Un refactor en core puede romper packages aparentemente no relacionados (ui, app, etc.).
 
