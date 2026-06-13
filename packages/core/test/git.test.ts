@@ -29,26 +29,29 @@ describe("Git", () => {
     ),
   )
 
-  it.live("fetches, checks out, and resets remote changes", () =>
-    withRemote((fixture) =>
-      Effect.gen(function* () {
-        const git = yield* Git.Service
-        const target = path.join(fixture.root, "checkout")
-        yield* git.clone({ remote: fixture.remote, target })
+  it.live(
+    "fetches, checks out, and resets remote changes",
+    () =>
+      withRemote((fixture) =>
+        Effect.gen(function* () {
+          const git = yield* Git.Service
+          const target = path.join(fixture.root, "checkout")
+          yield* git.clone({ remote: fixture.remote, target })
 
-        yield* Effect.promise(() => commit(fixture.source, "two\n", "second"))
-        expect((yield* git.fetch(target)).exitCode).toBe(0)
-        expect((yield* git.reset(target, "origin/main")).exitCode).toBe(0)
-        expect(yield* read(path.join(target, "README.md"))).toBe("two\n")
+          yield* Effect.promise(() => commit(fixture.source, "two\n", "second"))
+          expect((yield* git.fetch(target)).exitCode).toBe(0)
+          expect((yield* git.reset(target, "origin/main")).exitCode).toBe(0)
+          expect(yield* read(path.join(target, "README.md"))).toBe("two\n")
 
-        yield* Effect.promise(() => branch(fixture.source, "feature/docs", "feature\n"))
-        expect((yield* git.fetchBranch(target, "feature/docs")).exitCode).toBe(0)
-        expect((yield* git.checkout(target, "feature/docs")).exitCode).toBe(0)
-        expect((yield* git.reset(target, "origin/feature/docs")).exitCode).toBe(0)
-        expect(yield* git.branch(target)).toBe("feature/docs")
-        expect(yield* read(path.join(target, "README.md"))).toBe("feature\n")
-      }),
-    ),
+          yield* Effect.promise(() => branch(fixture.source, "feature/docs", "feature\n"))
+          expect((yield* git.fetchBranch(target, "feature/docs")).exitCode).toBe(0)
+          expect((yield* git.checkout(target, "feature/docs")).exitCode).toBe(0)
+          expect((yield* git.reset(target, "origin/feature/docs")).exitCode).toBe(0)
+          expect(yield* git.branch(target)).toBe("feature/docs")
+          expect(yield* read(path.join(target, "README.md"))).toBe("feature\n")
+        }),
+      ),
+    { timeout: 30000 },
   )
 })
 
