@@ -70,6 +70,9 @@ export function memory(state: MemoryState): Adapter {
     appendMessage(message) {
       return Effect.sync(() => {
         state.messages.push(message)
+        // Limit in-memory history to prevent unbounded growth.
+        // Source of truth is the database; this is a fast projection.
+        if (state.messages.length > 1000) state.messages.splice(0, state.messages.length - 1000)
       })
     },
   }
