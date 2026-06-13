@@ -159,7 +159,7 @@ export interface Interface {
   readonly sync: (handler: Sync) => Effect.Effect<Unsubscribe>
   readonly listen: (listener: Listener) => Effect.Effect<Unsubscribe>
   readonly beforeCommit: (guard: CommitGuard) => Effect.Effect<void>
-  readonly project: <D extends Definition>(definition: D, projector: Projector<D>) => Effect.Effect<void>
+  readonly project: <D extends Definition>(definition: D, projector: Projector<D>) => Effect.Effect<Unsubscribe>
   readonly replay: (
     event: SerializedEvent,
     options?: { readonly publish?: boolean; readonly ownerID?: string; readonly strictOwner?: boolean },
@@ -650,11 +650,16 @@ export const layerWith = (options?: LayerOptions) =>
           commitGuards.push(guard)
         })
 
-      const project = <D extends Definition>(definition: D, projector: Projector<D>): Effect.Effect<void> =>
+      const project = <D extends Definition>(definition: D, projector: Projector<D>): Effect.Effect<Unsubscribe> =>
         Effect.sync(() => {
           const list = projectors.get(definition.type) ?? []
-          list.push((event) => projector(event as Payload<D>))
+          const wrapped = (event: Payload) => projector(event as Payload<D>)
+          list.push(wrapped)
           projectors.set(definition.type, list)
+          return Effect.sync(() => {
+            const index = list.indexOf(wrapped)
+            if (index >= 0) list.splice(index, 1)
+          })
         })
 
       return Service.of({

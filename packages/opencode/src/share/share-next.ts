@@ -150,13 +150,19 @@ export const layer = Layer.effect(
       Effect.fn("ShareNext.state")(function* (_ctx) {
         const cache: State = { queue: new Map(), scope: yield* Scope.make(), shared: new Map() }
 
+        const unsubscribes: EventV2.Unsubscribe[] = []
+
         yield* Effect.addFinalizer(() =>
-          Scope.close(cache.scope, Exit.void).pipe(
+          Effect.forEach(unsubscribes, (u) => u, { discard: true }).pipe(
             Effect.andThen(
-              Effect.sync(() => {
-                cache.queue.clear()
-                cache.shared.clear()
-              }),
+              Scope.close(cache.scope, Exit.void).pipe(
+                Effect.andThen(
+                  Effect.sync(() => {
+                    cache.queue.clear()
+                    cache.shared.clear()
+                  }),
+                ),
+              ),
             ),
           ),
         )
@@ -174,7 +180,9 @@ export const layer = Layer.effect(
                 Effect.logError("share subscriber failed", { type: def.type, cause: cause }),
               ),
             )
-          })
+          }).pipe(
+            Effect.tap((unsub) => Effect.sync(() => void unsubscribes.push(unsub))),
+          )
 
         yield* watch(Session.Event.Updated, (data) =>
           Effect.gen(function* () {
