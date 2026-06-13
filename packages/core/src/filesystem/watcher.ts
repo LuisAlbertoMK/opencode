@@ -87,15 +87,48 @@ export const layer = Layer.effect(
     const runFork = Effect.runForkWith(context)
     const subscriptions: ParcelWatcher.AsyncSubscription[] = []
     yield* Effect.addFinalizer(() =>
-      Effect.promise(() => Promise.allSettled(subscriptions.map((subscription) => subscription.unsubscribe()))),
+      Effect.promise(() => {
+        // Flush any remaining pending updates before unsubscribe
+        if (debounceTimer !== null) clearTimeout(debounceTimer)
+        if (maxDelayTimer !== null) clearTimeout(maxDelayTimer)
+        if (pendingUpdates.size > 0) {
+          for (const [file, event] of pendingUpdates) {
+            runFork(events.publish(Event.Updated, { file, event }))
+          }
+          pendingUpdates.clear()
+        }
+        return Promise.allSettled(subscriptions.map((subscription) => subscription.unsubscribe()))
+      }),
     )
+
+    // Debounce: coalesce rapid file change events (e.g. git checkout)
+    // within a 50ms window, with a 200ms max delay to prevent starvation.
+    const DEBOUNCE_MS = 50
+    const MAX_DELAY_MS = 200
+    const pendingUpdates = new Map<string, "add" | "change" | "unlink">()
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    let maxDelayTimer: ReturnType<typeof setTimeout> | null = null
+
+    const flushUpdates = () => {
+      if (debounceTimer !== null) { clearTimeout(debounceTimer); debounceTimer = null }
+      if (maxDelayTimer !== null) { clearTimeout(maxDelayTimer); maxDelayTimer = null }
+      if (pendingUpdates.size === 0) return
+      for (const [file, event] of pendingUpdates) {
+        runFork(events.publish(Event.Updated, { file, event }))
+      }
+      pendingUpdates.clear()
+    }
 
     const callback: ParcelWatcher.SubscribeCallback = (_error, updates) => {
       for (const update of updates) {
-        if (update.type === "create") runFork(events.publish(Event.Updated, { file: update.path, event: "add" }))
-        if (update.type === "update") runFork(events.publish(Event.Updated, { file: update.path, event: "change" }))
-        if (update.type === "delete") runFork(events.publish(Event.Updated, { file: update.path, event: "unlink" }))
+        const eventType = update.type === "create" ? "add" : update.type === "update" ? "change" : "unlink"
+        pendingUpdates.set(update.path, eventType)
       }
+      // Debounce: reset timer on each event batch
+      if (debounceTimer !== null) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(flushUpdates, DEBOUNCE_MS)
+      // Max delay: ensure events don't get stuck if they keep arriving
+      if (maxDelayTimer === null) maxDelayTimer = setTimeout(flushUpdates, MAX_DELAY_MS)
     }
 
     const subscribe = (directory: string, ignore: string[]) => {
