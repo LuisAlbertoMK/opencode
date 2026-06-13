@@ -1,4 +1,5 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { path } from "@opencode-ai/core/effect/layer-node-platform"
 import { Global } from "@opencode-ai/core/global"
 import { InstanceLayer } from "@/project/instance-layer"
@@ -312,7 +313,7 @@ export const layer: Layer.Layer<
       const abs = pathSvc.resolve(input)
       const real = yield* fs.realPath(abs).pipe(Effect.catch(() => Effect.succeed(abs)))
       const normalized = pathSvc.normalize(real)
-      return process.platform === "win32" ? normalized.toLowerCase() : normalized
+      return Platform.isWindows ? normalized.toLowerCase() : normalized
     })
 
     function parseWorktreeList(text: string) {
@@ -385,7 +386,7 @@ export const layer: Layer.Layer<
       return Effect.tryPromise({
         try: async () => {
           const fsp = await import("fs/promises")
-          const attempts = process.platform === "win32" ? 50 : 5
+          const attempts = Platform.isWindows ? 50 : 5
           for (const attempt of Array.from({ length: attempts }, (_, i) => i)) {
             try {
               await fsp.rm(target, { recursive: true, force: true })
@@ -476,7 +477,7 @@ export const layer: Layer.Layer<
 
     const runStartCommand = Effect.fnUntraced(
       function* (directory: string, cmd: string) {
-        const [shell, args] = process.platform === "win32" ? ["cmd", ["/c", cmd]] : ["bash", ["-lc", cmd]]
+        const [shell, args] = Platform.isWindows ? ["cmd", ["/c", cmd]] : ["bash", ["-lc", cmd]]
         const result = yield* appProcess.run(
           ChildProcess.make(shell, args as string[], { cwd: directory, extendEnv: true, stdin: "ignore" }),
         )

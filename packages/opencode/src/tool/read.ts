@@ -1,4 +1,5 @@
 import { Effect, Option, Schema, Scope, Stream } from "effect"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { NonNegativeInt } from "@opencode-ai/core/schema"
 import * as path from "path"
 import * as Tool from "./tool"
@@ -235,7 +236,7 @@ export const ReadTool = Tool.define<
       if (!path.isAbsolute(filepath)) {
         filepath = path.resolve(instance.directory, filepath)
       }
-      if (process.platform === "win32") {
+      if (Platform.isWindows) {
         filepath = FSUtil.normalizePath(filepath)
       }
       const title = path.relative(instance.worktree, filepath)

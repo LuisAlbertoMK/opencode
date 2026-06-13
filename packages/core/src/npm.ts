@@ -1,6 +1,7 @@
 export * as Npm from "./npm"
 
 import path from "path"
+import { Platform } from "@/util/platform"
 import npa from "npm-package-arg"
 import { Effect, Schema, Context, Layer, Option, FileSystem } from "effect"
 import { NodeFileSystem } from "@effect/platform-node"
@@ -39,7 +40,7 @@ export interface Interface {
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Npm") {}
 
-const illegal = process.platform === "win32" ? new Set(["<", ">", ":", '"', "|", "?", "*"]) : undefined
+const illegal = Platform.isWindows ? new Set(["<", ">", ":", '"', "|", "?", "*"]) : undefined
 
 export function sanitize(pkg: string) {
   if (!illegal) return pkg

@@ -1,4 +1,5 @@
 import { Config } from "effect"
+import { Platform } from "@/util/platform"
 
 export function truthy(key: string) {
   const value = process.env[key]?.toLowerCase()
@@ -31,7 +32,7 @@ export const Flag = {
   OPENCODE_FAKE_VCS: process.env["OPENCODE_FAKE_VCS"],
   OPENCODE_SERVER_PASSWORD: process.env["OPENCODE_SERVER_PASSWORD"],
   OPENCODE_SERVER_USERNAME: process.env["OPENCODE_SERVER_USERNAME"],
-  OPENCODE_DISABLE_FFF: fff === undefined ? process.platform === "win32" : truthy("OPENCODE_DISABLE_FFF"),
+  OPENCODE_DISABLE_FFF: fff === undefined ? Platform.isWindows : truthy("OPENCODE_DISABLE_FFF"),
 
   // Experimental
   OPENCODE_EXPERIMENTAL_FILEWATCHER: Config.boolean("OPENCODE_EXPERIMENTAL_FILEWATCHER").pipe(
@@ -41,7 +42,7 @@ export const Flag = {
     Config.withDefault(false),
   ),
   OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT:
-    copy === undefined ? process.platform === "win32" : truthy("OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT"),
+    copy === undefined ? Platform.isWindows : truthy("OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT"),
   OPENCODE_MODELS_URL: process.env["OPENCODE_MODELS_URL"],
   OPENCODE_MODELS_PATH: process.env["OPENCODE_MODELS_PATH"],
   OPENCODE_DB: process.env["OPENCODE_DB"],

@@ -1,4 +1,5 @@
 import { chmod, mkdir, readFile, stat as statFile, writeFile } from "fs/promises"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { createWriteStream, existsSync, statSync } from "fs"
 import { realpathSync } from "fs"
 import { dirname, isAbsolute, join, resolve as pathResolve, win32 } from "path"
@@ -113,7 +114,7 @@ export async function mimeType(p: string): Promise<string> {
  * may return paths with different casing than what we send them.
  */
 export function normalizePath(p: string): string {
-  if (process.platform !== "win32") return p
+  if (!Platform.isWindows) return p
   const resolved = win32.normalize(win32.resolve(windowsPath(p)))
   try {
     return realpathSync.native(resolved)
@@ -123,7 +124,7 @@ export function normalizePath(p: string): string {
 }
 
 export function normalizePathPattern(p: string): string {
-  if (process.platform !== "win32") return p
+  if (!Platform.isWindows) return p
   if (p === "*") return p
   const match = p.match(/^(.*)[\\/]\*$/)
   if (!match) return normalizePath(p)
@@ -151,7 +152,7 @@ export function resolveFilePath(root: string, file: string): string {
 }
 
 export function windowsPath(p: string): string {
-  if (process.platform !== "win32") return p
+  if (!Platform.isWindows) return p
   return (
     p
       .replace(/^\/([a-zA-Z]):(?:[\\/]|$)/, (_, drive) => `${drive.toUpperCase()}:/`)

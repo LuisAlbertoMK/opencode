@@ -1,4 +1,5 @@
 import { Effect, Stream } from "effect"
+import { Platform } from "@opencode-ai/core/util/platform"
 import os from "os"
 import { createWriteStream } from "node:fs"
 import * as Tool from "./tool"
@@ -139,7 +140,7 @@ function home(text: string) {
 }
 
 function envValue(key: string) {
-  if (process.platform !== "win32") return process.env[key]
+  if (!Platform.isWindows) return process.env[key]
   const name = Object.keys(process.env).find((item) => item.toLowerCase() === key.toLowerCase())
   return name ? process.env[name] : undefined
 }
@@ -268,7 +269,7 @@ const ask = Effect.fn("ShellTool.ask")(function* (
   if (scan.dirs.size > 0) {
     const directories = Array.from(scan.dirs)
     const globs = directories.map((dir) => {
-      if (process.platform === "win32") return FSUtil.normalizePathPattern(path.join(dir, "*"))
+      if (Platform.isWindows) return FSUtil.normalizePathPattern(path.join(dir, "*"))
       return path.join(dir, "*")
     })
     yield* ctx.ask({
@@ -297,7 +298,7 @@ const ask = Effect.fn("ShellTool.ask")(function* (
 })
 
 function cmd(shell: string, command: string, cwd: string, env: NodeJS.ProcessEnv) {
-  if (process.platform === "win32" && Shell.ps(shell)) {
+  if (Platform.isWindows && Shell.ps(shell)) {
     return ChildProcess.make(shell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command], {
       cwd,
       env,
@@ -311,7 +312,7 @@ function cmd(shell: string, command: string, cwd: string, env: NodeJS.ProcessEnv
     cwd,
     env,
     stdin: "ignore",
-    detached: process.platform !== "win32",
+    detached: !Platform.isWindows,
   })
 }
 const parser = lazy(async () => {
@@ -362,7 +363,7 @@ export const ShellTool = Tool.define(
     })
 
     const resolvePath = Effect.fn("ShellTool.resolvePath")(function* (text: string, root: string, shell: string) {
-      if (process.platform === "win32") {
+      if (Platform.isWindows) {
         if (Shell.posix(shell) && text.startsWith("/") && FSUtil.windowsPath(text) === text) {
           const file = yield* cygpath(shell, text)
           if (file) return file

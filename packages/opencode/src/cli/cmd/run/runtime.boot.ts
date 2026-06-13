@@ -6,6 +6,7 @@
 // history ring. All are async because they read config or hit the SDK, but
 // none block each other.
 import { Context, Effect, Layer } from "effect"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { resolve } from "@opencode-ai/tui/config"
 import { TuiConfig } from "@/config/tui"
 import { makeRuntime } from "@/effect/run-service"
@@ -68,7 +69,7 @@ function emptySessionInfo(): SessionInfo {
 
 function defaultRunTuiConfig(): RunTuiConfig {
   return {
-    ...resolve({}, { terminalSuspend: process.platform !== "win32" }),
+    ...resolve({}, { terminalSuspend: !Platform.isWindows }),
     diff_style: "auto",
   }
 }

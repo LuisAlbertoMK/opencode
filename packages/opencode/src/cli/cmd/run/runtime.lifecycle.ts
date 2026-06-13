@@ -9,6 +9,7 @@
 // Also wires SIGINT so Ctrl-c clears a live prompt draft first, then falls
 // back to the usual two-press exit sequence through RunFooter.requestExit().
 import path from "path"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { CliRenderEvents, createCliRenderer, type CliRenderer, type ScrollbackWriter } from "@opentui/core"
 import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui"
 import { Global } from "@opencode-ai/core/global"
@@ -186,7 +187,7 @@ export async function createRuntimeLifecycle(input: LifecycleInput): Promise<Lif
       autoFocus: false,
       openConsoleOnError: false,
       exitOnCtrlC: false,
-      useKittyKeyboard: { events: process.platform === "win32" },
+      useKittyKeyboard: { events: Platform.isWindows },
       screenMode: "split-footer",
       footerHeight: FOOTER_HEIGHT,
       externalOutputMode: "capture-stdout",

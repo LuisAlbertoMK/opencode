@@ -1,4 +1,5 @@
 import path from "path"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { exec } from "child_process"
 import { Filesystem } from "@/util/filesystem"
 import * as prompts from "@clack/prompts"
@@ -286,9 +287,9 @@ export const githubInstall = Effect.fn("Cli.github.install")(function* () {
         // Open browser
         const url = "https://github.com/apps/opencode-agent"
         const command =
-          process.platform === "darwin"
+          Platform.isMac
             ? `open "${url}"`
-            : process.platform === "win32"
+            : Platform.isWindows
               ? `start "" "${url}"`
               : `xdg-open "${url}"`
 

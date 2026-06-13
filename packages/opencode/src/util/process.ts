@@ -1,4 +1,5 @@
 import { type ChildProcess } from "child_process"
+import { Platform } from "@opencode-ai/core/util/platform"
 import type { Stream } from "node:stream"
 import launch from "cross-spawn"
 import { buffer } from "node:stream/consumers"
@@ -65,7 +66,7 @@ export function spawn(cmd: string[], opts: Options = {}): Child {
     shell: opts.shell,
     env: opts.env === null ? {} : opts.env ? { ...process.env, ...opts.env } : undefined,
     stdio: [opts.stdin ?? "ignore", opts.stdout ?? "ignore", opts.stderr ?? "ignore"],
-    windowsHide: process.platform === "win32",
+    windowsHide: Platform.isWindows,
   })
 
   let closed = false
@@ -149,7 +150,7 @@ export async function run(cmd: string[], opts: RunOptions = {}): Promise<Result>
 export async function stop(proc: ChildProcess) {
   if (proc.exitCode !== null || proc.signalCode !== null) return
 
-  if (process.platform !== "win32" || !proc.pid) {
+  if (!Platform.isWindows || !proc.pid) {
     proc.kill()
     return
   }

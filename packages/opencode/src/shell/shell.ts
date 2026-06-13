@@ -1,4 +1,5 @@
 import { Flag } from "@opencode-ai/core/flag/flag"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { lazy } from "@/util/lazy"
 import { Filesystem } from "@/util/filesystem"
 import { which } from "@opencode-ai/core/util/which"
@@ -29,7 +30,7 @@ export async function killTree(proc: ChildProcess, opts?: { exited?: () => boole
   const pid = proc.pid
   if (!pid || opts?.exited?.()) return
 
-  if (process.platform === "win32") {
+  if (Platform.isWindows) {
     // Try graceful /T first (SIGTERM equivalent), fall back to /F
     const graceful = await new Promise<boolean>((resolve) => {
       const g = spawn("taskkill", ["/pid", String(pid), "/t"], {
@@ -68,7 +69,7 @@ export async function killTree(proc: ChildProcess, opts?: { exited?: () => boole
 }
 
 function full(file: string) {
-  if (process.platform !== "win32") return file
+  if (!Platform.isWindows) return file
   const shell = Filesystem.windowsPath(file)
   if (path.win32.dirname(shell) !== ".") {
     if (shell.startsWith("/") && name(shell) === "bash") return gitbash() || shell
@@ -120,12 +121,12 @@ function select(file: string | undefined, opts?: { acceptable?: boolean }) {
     const shell = resolve(file)
     if (shell) return shell
   }
-  if (process.platform === "win32") return win()[0]!
+  if (Platform.isWindows) return win()[0]!
   return fallback()
 }
 
 export function gitbash() {
-  if (process.platform !== "win32") return
+  if (!Platform.isWindows) return
   if (Flag.OPENCODE_GIT_BASH_PATH) return Flag.OPENCODE_GIT_BASH_PATH
   const git = which("git")
   if (!git) return
@@ -134,14 +135,14 @@ export function gitbash() {
 }
 
 function fallback() {
-  if (process.platform === "darwin") return "/bin/zsh"
+  if (Platform.isMac) return "/bin/zsh"
   const bash = which("bash")
   if (bash) return bash
   return "/bin/sh"
 }
 
 export function name(file: string) {
-  if (process.platform === "win32") return path.win32.parse(Filesystem.windowsPath(file)).name.toLowerCase()
+  if (Platform.isWindows) return path.win32.parse(Filesystem.windowsPath(file)).name.toLowerCase()
   return path.basename(file).toLowerCase()
 }
 
@@ -219,7 +220,7 @@ export function acceptable(configShell?: string) {
 acceptable.reset = () => defaultAcceptable.reset()
 
 export async function list(): Promise<Item[]> {
-  const shells = process.platform === "win32" ? win() : await unix()
+  const shells = Platform.isWindows ? win() : await unix()
   return shells.filter((s) => resolve(s)).map(info)
 }
 

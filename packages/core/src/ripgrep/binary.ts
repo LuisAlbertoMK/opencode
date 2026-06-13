@@ -1,4 +1,5 @@
 import path from "path"
+import { Platform } from "@/util/platform"
 import { Context, Effect, Layer, Stream } from "effect"
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/unstable/http"
 import { ChildProcess } from "effect/unstable/process"
@@ -80,21 +81,21 @@ export namespace RipgrepBinary {
         const extracted = path.join(
           dir,
           `ripgrep-${VERSION}-${config.platform}`,
-          process.platform === "win32" ? "rg.exe" : "rg",
+          Platform.isWindows ? "rg.exe" : "rg",
         )
         if (!(yield* fs.isFile(extracted))) throw new Error(`ripgrep archive did not contain executable: ${extracted}`)
 
         yield* fs.copyFile(extracted, target)
-        if (process.platform !== "win32") yield* fs.chmod(target, 0o755)
+        if (!Platform.isWindows) yield* fs.chmod(target, 0o755)
       }, Effect.scoped)
 
       return Service.of({
         filepath: yield* Effect.cached(
           Effect.gen(function* () {
-            const system = yield* Effect.sync(() => which(process.platform === "win32" ? "rg.exe" : "rg"))
+            const system = yield* Effect.sync(() => which(Platform.isWindows ? "rg.exe" : "rg"))
             if (system && (yield* fs.isFile(system).pipe(Effect.orDie))) return system
 
-            const target = path.join(Global.Path.bin, `rg${process.platform === "win32" ? ".exe" : ""}`)
+            const target = path.join(Global.Path.bin, `rg${Platform.isWindows ? ".exe" : ""}`)
             if (yield* fs.isFile(target).pipe(Effect.orDie)) return target
 
             const platformKey = `${process.arch}-${process.platform}` as keyof typeof PLATFORM

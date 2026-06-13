@@ -1,8 +1,9 @@
 import path from "path"
+import { Platform } from "@opencode-ai/core/util/platform"
 import * as Process from "./process"
 
 export async function extractZip(zipPath: string, destDir: string) {
-  if (process.platform === "win32") {
+  if (Platform.isWindows) {
     const winZipPath = path.resolve(zipPath)
     const winDestDir = path.resolve(destDir)
     // $global:ProgressPreference suppresses PowerShell's blue progress bar popup

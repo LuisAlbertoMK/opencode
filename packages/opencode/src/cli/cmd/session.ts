@@ -1,4 +1,5 @@
 import type { Argv } from "yargs"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { Effect } from "effect"
 import { cmd } from "./cmd"
 import { effectCmd, fail } from "../effect-cmd"
@@ -16,7 +17,7 @@ import { which } from "@opencode-ai/core/util/which"
 
 function pagerCmd(): string[] {
   const lessOptions = ["-R", "-S"]
-  if (process.platform !== "win32") {
+  if (!Platform.isWindows) {
     return ["less", ...lessOptions]
   }
 

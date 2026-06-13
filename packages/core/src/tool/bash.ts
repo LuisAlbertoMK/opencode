@@ -1,6 +1,7 @@
 export * as BashTool from "./bash"
 
 import path from "path"
+import { Platform } from "@/util/platform"
 import { ToolFailure } from "@opencode-ai/llm"
 import { Duration, Effect, Layer, Schema } from "effect"
 import { ChildProcess } from "effect/unstable/process"
@@ -48,7 +49,7 @@ const Output = Schema.Struct({
 
 type Output = typeof Output.Type
 
-const defaultShell = () => (process.platform === "win32" ? (process.env.COMSPEC ?? "cmd.exe") : "/bin/sh")
+const defaultShell = () => (Platform.isWindows ? (process.env.COMSPEC ?? "cmd.exe") : "/bin/sh")
 
 const compactOutput = (stdout: string, stderr: string) => {
   const output = stdout && stderr ? `${stdout}\n\nstderr:\n${stderr}` : stderr ? `stderr:\n${stderr}` : stdout
@@ -160,7 +161,7 @@ export const layer = Layer.effectDiscard(
                 cwd: target.canonical,
                 shell,
                 stdin: "ignore",
-                detached: process.platform !== "win32",
+                detached: !Platform.isWindows,
                 forceKillAfter: Duration.seconds(3),
               })
               const timeout = input.timeout ?? DEFAULT_TIMEOUT_MS

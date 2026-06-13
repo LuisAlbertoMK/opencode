@@ -1290,7 +1290,7 @@ export const KotlinLS: Info = {
   async spawn(root, _ctx, flags) {
     const distPath = path.join(Global.Path.bin, "kotlin-ls")
     const launcherScript =
-      process.platform === "win32" ? path.join(distPath, "kotlin-lsp.cmd") : path.join(distPath, "kotlin-lsp.sh")
+      Platform.isWindows ? path.join(distPath, "kotlin-lsp.cmd") : path.join(distPath, "kotlin-lsp.sh")
     const installed = await Filesystem.exists(launcherScript)
     if (!installed) {
       if (flags.disableLspDownload) return

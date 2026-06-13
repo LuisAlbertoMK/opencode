@@ -1,4 +1,5 @@
 import path from "node:path"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { type Tool } from "ai"
 import { ConfigV1 } from "@opencode-ai/core/v1/config/config"
@@ -315,7 +316,7 @@ export const layer = Layer.effect(
         env: {
           PATH: process.env.PATH,
           HOME: process.env.HOME,
-          ...(process.platform === "win32" ? { USERPROFILE: process.env.USERPROFILE } : {}),
+          ...(Platform.isWindows ? { USERPROFILE: process.env.USERPROFILE } : {}),
           ...(cmd === "opencode" ? { BUN_BE_BUN: "1" } : {}),
           ...mcp.environment,
         },
@@ -377,7 +378,7 @@ export const layer = Layer.effect(
 
     const descendants = Effect.fnUntraced(
       function* (pid: number) {
-        if (process.platform === "win32") return [] as number[]
+        if (Platform.isWindows) return [] as number[]
         const pids: number[] = []
         const queue = [pid]
         for (let index = 0; index < queue.length; index++) {

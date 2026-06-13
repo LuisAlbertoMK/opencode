@@ -1,4 +1,5 @@
 import { NodeFileSystem } from "@effect/platform-node"
+import { Platform } from "@/util/platform"
 import { dirname, isAbsolute, join, relative, resolve as pathResolve, sep } from "path"
 import { realpathSync } from "fs"
 import * as NFS from "fs/promises"
@@ -204,7 +205,7 @@ export namespace FSUtil {
   }
 
   export function normalizePath(p: string): string {
-    if (process.platform !== "win32") return p
+    if (!Platform.isWindows) return p
     const resolved = pathResolve(windowsPath(p))
     try {
       return realpathSync.native(resolved)
@@ -214,7 +215,7 @@ export namespace FSUtil {
   }
 
   export function normalizePathPattern(p: string): string {
-    if (process.platform !== "win32") return p
+    if (!Platform.isWindows) return p
     if (p === "*") return p
     const match = p.match(/^(.*)[\\/]\*$/)
     if (!match) return normalizePath(p)
@@ -233,7 +234,7 @@ export namespace FSUtil {
   }
 
   export function windowsPath(p: string): string {
-    if (process.platform !== "win32") return p
+    if (!Platform.isWindows) return p
     return p
       .replace(/^\/([a-zA-Z]):(?:[\\/]|$)/, (_, drive) => `${drive.toUpperCase()}:/`)
       .replace(/^\/([a-zA-Z])(?:\/|$)/, (_, drive) => `${drive.toUpperCase()}:/`)

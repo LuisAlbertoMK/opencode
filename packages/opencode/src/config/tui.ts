@@ -1,6 +1,7 @@
 export * as TuiConfig from "./tui"
 
 import path from "path"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { mergeDeep, unique } from "remeda"
 import { Cause, Context, Effect, Fiber, Layer } from "effect"
 import { ConfigParse } from "@/config/parse"
@@ -212,7 +213,7 @@ const loadState = Effect.fn("TuiConfig.loadState")(function* (ctx: { directory: 
       ...acc.result,
     },
     {
-      terminalSuspend: process.platform !== "win32",
+      terminalSuspend: !Platform.isWindows,
     },
   )
 

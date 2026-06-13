@@ -1,4 +1,5 @@
 import type * as Arr from "effect/Array"
+import { Platform } from "@/util/platform"
 import { NodeFileSystem, NodeSink, NodeStream } from "@effect/platform-node"
 import * as NodePath from "@effect/platform-node/NodePath"
 import * as Deferred from "effect/Deferred"
@@ -152,7 +153,7 @@ export const make = Effect.gen(function* () {
     extra: ReadonlyArray<{ fd: number; config: ChildProcess.AdditionalFdConfig }>,
   ): NodeChildProcess.StdioOptions => {
     const pipe = (x: NodeChildProcess.IOType | undefined) =>
-      process.platform === "win32" && x === "pipe" ? "overlapped" : x
+      Platform.isWindows && x === "pipe" ? "overlapped" : x
     const arr: Array<NodeChildProcess.IOType | undefined> = [
       pipe(input(sin.stream)),
       pipe(output(sout.stream)),
@@ -294,7 +295,7 @@ export const make = Effect.gen(function* () {
     proc: NodeChildProcess.ChildProcess,
     signal: NodeJS.Signals,
   ) => {
-    if (globalThis.process.platform === "win32") {
+    if (globalThis.Platform.isWindows) {
       return Effect.callback<void, PlatformError.PlatformError>((resume) => {
         // Graceful /T first, fall back to /T /F
         NodeChildProcess.exec(`taskkill /pid ${proc.pid} /T`, { windowsHide: true }, (err) => {
@@ -379,16 +380,16 @@ export const make = Effect.gen(function* () {
               cwd: dir,
               env: env(command.options),
               stdio: stdios(sin, sout, serr, extra),
-              detached: command.options.detached ?? process.platform !== "win32",
+              detached: command.options.detached ?? !Platform.isWindows,
               shell: command.options.shell,
-              windowsHide: process.platform === "win32",
+              windowsHide: Platform.isWindows,
             }),
             Effect.fnUntraced(function* ([proc, signal]) {
               const done = yield* Deferred.isDone(signal)
               const kill = timeout(proc, command, command.options)
               if (done) {
                 const [code] = yield* Deferred.await(signal)
-                if (process.platform === "win32") return yield* Effect.void
+                if (Platform.isWindows) return yield* Effect.void
                 if (code !== 0 && Predicate.isNotNull(code)) return yield* Effect.ignore(kill(killGroup))
                 return yield* Effect.void
               }

@@ -1,6 +1,7 @@
 export * as PtyPreparation from "./pty-preparation"
 
 import { Config } from "@/config/config"
+import { Platform } from "@opencode-ai/core/util/platform"
 import * as InstanceState from "@/effect/instance-state"
 import { Plugin } from "@/plugin"
 import { Shell } from "@/shell/shell"
@@ -21,7 +22,7 @@ export const prepareCreate = Effect.fn("PtyPreparation.prepareCreate")(function*
     TERM: "xterm-256color",
     OPENCODE_TERMINAL: "1",
   } as Record<string, string>
-  if (process.platform === "win32") {
+  if (Platform.isWindows) {
     env.LC_ALL = "C.UTF-8"
     env.LC_CTYPE = "C.UTF-8"
     env.LANG = "C.UTF-8"

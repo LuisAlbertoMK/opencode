@@ -1,4 +1,5 @@
 import { sortBy, pipe } from "remeda"
+import { Platform } from "@opencode-ai/core/util/platform"
 
 export function match(str: string, pattern: string) {
   if (str) str = str.replaceAll("\\", "/")
@@ -14,7 +15,7 @@ export function match(str: string, pattern: string) {
     escaped = escaped.slice(0, -3) + "( .*)?"
   }
 
-  const flags = process.platform === "win32" ? "si" : "s"
+  const flags = Platform.isWindows ? "si" : "s"
   return new RegExp("^" + escaped + "$", flags).test(str)
 }
 

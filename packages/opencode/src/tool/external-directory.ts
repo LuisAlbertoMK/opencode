@@ -1,4 +1,5 @@
 import path from "path"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { Effect } from "effect"
 import { InstanceState } from "@/effect/instance-state"
 import type * as Tool from "./tool"
@@ -22,13 +23,13 @@ export const assertExternalDirectoryEffect = Effect.fn("Tool.assertExternalDirec
   if (options?.bypass) return false
 
   const ins = yield* InstanceState.context
-  const full = process.platform === "win32" ? FSUtil.normalizePath(target) : target
+  const full = Platform.isWindows ? FSUtil.normalizePath(target) : target
   if (containsPath(full, ins)) return false
 
   const kind = options?.kind ?? "file"
   const dir = kind === "directory" ? full : path.dirname(full)
   const glob =
-    process.platform === "win32"
+    Platform.isWindows
       ? FSUtil.normalizePathPattern(path.join(dir, "*"))
       : path.join(dir, "*").replaceAll("\\", "/")
 

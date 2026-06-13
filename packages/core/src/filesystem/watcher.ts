@@ -2,6 +2,7 @@ export * as Watcher from "./watcher"
 
 // @ts-ignore
 import { createWrapper } from "@parcel/watcher/wrapper"
+import { Platform } from "@/util/platform"
 import type ParcelWatcher from "@parcel/watcher"
 import { Cause, Context, Effect, Layer, Schema } from "effect"
 import path from "path"
@@ -33,7 +34,7 @@ const watcher = lazy((): typeof import("@parcel/watcher") | undefined => {
   try {
     const libc = typeof OPENCODE_LIBC === "undefined" ? undefined : OPENCODE_LIBC
     const binding = require(
-      `@parcel/watcher-${process.platform}-${process.arch}${process.platform === "linux" ? `-${libc || "glibc"}` : ""}`,
+      `@parcel/watcher-${process.platform}-${process.arch}${Platform.isLinux ? `-${libc || "glibc"}` : ""}`,
     )
     return createWrapper(binding) as typeof import("@parcel/watcher")
   } catch {
@@ -42,9 +43,9 @@ const watcher = lazy((): typeof import("@parcel/watcher") | undefined => {
 })
 
 function getBackend() {
-  if (process.platform === "win32") return "windows"
-  if (process.platform === "darwin") return "fs-events"
-  if (process.platform === "linux") return "inotify"
+  if (Platform.isWindows) return "windows"
+  if (Platform.isMac) return "fs-events"
+  if (Platform.isLinux) return "inotify"
 }
 
 function protecteds(dir: string) {

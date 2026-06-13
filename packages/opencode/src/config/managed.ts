@@ -1,6 +1,7 @@
 export * as ConfigManaged from "./managed"
 
 import { existsSync } from "fs"
+import { Platform } from "@opencode-ai/core/util/platform"
 import os from "os"
 import path from "path"
 import { Process } from "@/util/process"
@@ -18,14 +19,9 @@ const PLIST_META = new Set([
 ])
 
 function systemManagedConfigDir(): string {
-  switch (process.platform) {
-    case "darwin":
-      return "/Library/Application Support/opencode"
-    case "win32":
-      return path.join(process.env.ProgramData || "C:\\ProgramData", "opencode")
-    default:
-      return "/etc/opencode"
-  }
+  if (Platform.isMac) return "/Library/Application Support/opencode"
+  if (Platform.isWindows) return path.join(process.env.ProgramData || "C:\\ProgramData", "opencode")
+  return "/etc/opencode"
 }
 
 export function managedConfigDir() {
@@ -41,7 +37,7 @@ export function parseManagedPlist(json: string): string {
 }
 
 export async function readManagedPreferences() {
-  if (process.platform !== "darwin") return
+  if (!Platform.isMac) return
 
   const user = (() => {
     try {
