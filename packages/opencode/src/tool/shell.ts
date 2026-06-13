@@ -419,16 +419,28 @@ export const ShellTool = Tool.define(
       return scan
     })
 
+    // Env vars managed by opencode that should NOT propagate to user shell commands.
+    // They are intentionally passed to workspace subprocesses via OPENCODE_AUTH_CONTENT,
+    // but arbitrary shell commands should not inherit credential material.
+    const SHELL_ENV_DENY = new Set([
+      "AWS_BEARER_TOKEN_BEDROCK",
+      "AICORE_SERVICE_KEY",
+      "OPENCODE_AUTH_CONTENT",
+      "OPENCODE_SERVER_PASSWORD",
+      "OPENCODE_SERVER_USERNAME",
+    ])
+
     const shellEnv = Effect.fn("ShellTool.shellEnv")(function* (ctx: Tool.Context, cwd: string) {
       const extra = yield* plugin.trigger(
         "shell.env",
         { cwd, sessionID: ctx.sessionID, callID: ctx.callID },
         { env: {} },
       )
-      return {
-        ...process.env,
-        ...extra.env,
+      const env: NodeJS.ProcessEnv = {}
+      for (const key of Object.keys(process.env)) {
+        if (!SHELL_ENV_DENY.has(key)) env[key] = process.env[key]
       }
+      return { ...env, ...extra.env }
     })
 
     const run = Effect.fn("ShellTool.run")(function* (

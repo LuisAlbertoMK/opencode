@@ -296,15 +296,13 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       const awsAccessKeyId = env["AWS_ACCESS_KEY_ID"]
       const configApiKey = providerConfig?.options?.apiKey
 
-      // TODO: Using process.env directly because Env.set only updates a process.env shallow copy,
-      // until the scope of the Env API is clarified (test only or runtime?)
+      // NOTE: We intentionally do NOT set process.env here. The SDK reads
+      // AWS_BEARER_TOKEN_BEDROCK during client construction in getModel(), so the
+      // env var is set just-in-time there and restored after client creation.
       const awsBearerToken = iife(() => {
         const envToken = process.env.AWS_BEARER_TOKEN_BEDROCK
         if (envToken) return envToken
-        if (auth?.type === "api") {
-          process.env.AWS_BEARER_TOKEN_BEDROCK = auth.key
-          return auth.key
-        }
+        if (auth?.type === "api") return auth.key
         return undefined
       })
 
@@ -436,7 +434,15 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
             }
           }
 
-          return sdk.languageModel(modelID)
+          // Set the bearer token just-in-time for SDK client construction,
+          // then restore to avoid leaking credentials to child processes.
+          const prevToken = process.env.AWS_BEARER_TOKEN_BEDROCK
+          if (awsBearerToken && !prevToken) process.env.AWS_BEARER_TOKEN_BEDROCK = awsBearerToken
+          try {
+            return sdk.languageModel(modelID)
+          } finally {
+            if (awsBearerToken && !prevToken) delete process.env.AWS_BEARER_TOKEN_BEDROCK
+          }
         },
       }
     }),
@@ -556,16 +562,12 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     }),
     "sap-ai-core": Effect.fnUntraced(function* () {
       const auth = yield* dep.auth("sap-ai-core")
-      // TODO: Using process.env directly because Env.set only updates a shallow copy (not process.env),
-      // until the scope of the Env API is clarified (test only or runtime?)
+      // NOTE: We do NOT set process.env globally here. The SDK reads AICORE_SERVICE_KEY
+      // during the model call in getModel(), so we scope it just-in-time there.
       const envServiceKey = iife(() => {
         const envAICoreServiceKey = process.env.AICORE_SERVICE_KEY
         if (envAICoreServiceKey) return envAICoreServiceKey
-        if (auth?.type === "api") {
-          process.env.AICORE_SERVICE_KEY = auth.key
-          return auth.key
-        }
-        return undefined
+        return auth?.type === "api" ? auth.key : undefined
       })
       const deploymentId = process.env.AICORE_DEPLOYMENT_ID
       const resourceGroup = process.env.AICORE_RESOURCE_GROUP
@@ -574,7 +576,14 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         autoload: !!envServiceKey,
         options: envServiceKey ? { deploymentId, resourceGroup } : {},
         async getModel(sdk: any, modelID: string) {
-          return sdk(modelID)
+          // Set just-in-time for SDK call, restore after
+          const prev = process.env.AICORE_SERVICE_KEY
+          if (envServiceKey && !prev) process.env.AICORE_SERVICE_KEY = envServiceKey
+          try {
+            return sdk(modelID)
+          } finally {
+            if (envServiceKey && !prev) delete process.env.AICORE_SERVICE_KEY
+          }
         },
       }
     }),
