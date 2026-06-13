@@ -163,11 +163,12 @@
 | `trimDiff` (cualquier tamaño) | ~16µs | ~16µs | **No es bottleneck** | `benchmark-edit-pipeline.ts` |
 | `normalizeLineEndings` (5000 lines, LF) | 17.5µs | Cacheado en variable | **0 llamadas redundantes** | `benchmark-edit-pipeline.ts` |
 
-**Mecanismo**:
+**Mecanismo** (implementado en `src/tool/edit.ts`):
 1. `normalizeLineEndings` cacheado en `normalizedOld`/`normalizedNew` antes del primer patch
 2. Post-formato: compara `afterFormat !== normalizedNew` → solo re-computa si cambió
 3. `diffLines(contentOld, contentNew)` reemplazado por `countFromPatch(diff)` que parsea el patch ya generado (5µs vs 3,601µs)
 4. New file case: diff actualizado post-formato (fix de consistencia pre-existente)
+5. Import de `diffLines` eliminado (solo queda `createTwoFilesPatch`)
 
 **Benchmarks**: `benchmark-edit-pipeline.ts` + `benchmark-edit-optimized.ts` (standalone, Bun 1.3.14, Windows x64)
 
