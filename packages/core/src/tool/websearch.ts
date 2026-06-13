@@ -136,13 +136,6 @@ const McpRequest = <F extends Schema.Struct.Fields>(args: Schema.Struct<F>) =>
     params: Schema.Struct({ name: Schema.String, arguments: args }),
   })
 
-const exaUrl = (apiKey: string | undefined) => {
-  if (!apiKey) return EXA_URL
-  const url = new URL(EXA_URL)
-  url.searchParams.set("exaApiKey", apiKey)
-  return url.toString()
-}
-
 const callMcp = <F extends Schema.Struct.Fields>(
   http: HttpClient.HttpClient,
   url: string,
@@ -210,13 +203,14 @@ export const layer = Layer.effectDiscard(
 
               const text =
                 provider === "exa"
-                  ? yield* callMcp(http, exaUrl(config.exaApiKey), "web_search_exa", ExaArgs, {
+                  ? yield* callMcp(http, EXA_URL, "web_search_exa", ExaArgs, {
                       query: input.query,
                       type: input.type || "auto",
                       numResults: input.numResults || 8,
                       livecrawl: input.livecrawl || "fallback",
                       contextMaxCharacters: input.contextMaxCharacters,
-                    })
+                    },
+                    config.exaApiKey ? { "x-api-key": config.exaApiKey } : {})
                   : yield* callMcp(
                       http,
                       PARALLEL_URL,

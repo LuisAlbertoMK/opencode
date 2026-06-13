@@ -313,7 +313,9 @@ export const layer = Layer.effect(
         args,
         cwd,
         env: {
-          ...process.env,
+          PATH: process.env.PATH,
+          HOME: process.env.HOME,
+          ...(process.platform === "win32" ? { USERPROFILE: process.env.USERPROFILE } : {}),
           ...(cmd === "opencode" ? { BUN_BE_BUN: "1" } : {}),
           ...mcp.environment,
         },

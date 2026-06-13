@@ -30,6 +30,17 @@ export async function killTree(proc: ChildProcess, opts?: { exited?: () => boole
   if (!pid || opts?.exited?.()) return
 
   if (process.platform === "win32") {
+    // Try graceful /T first (SIGTERM equivalent), fall back to /F
+    const graceful = await new Promise<boolean>((resolve) => {
+      const g = spawn("taskkill", ["/pid", String(pid), "/t"], {
+        stdio: "ignore",
+        windowsHide: true,
+      })
+      g.once("exit", (code) => resolve(code === 0))
+      g.once("error", () => resolve(false))
+    })
+    if (graceful) return
+
     await new Promise<void>((resolve) => {
       const killer = spawn("taskkill", ["/pid", String(pid), "/f", "/t"], {
         stdio: "ignore",

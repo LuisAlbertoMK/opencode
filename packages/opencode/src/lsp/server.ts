@@ -5,6 +5,7 @@ import { Global } from "@opencode-ai/core/global"
 import { text } from "node:stream/consumers"
 import fs from "fs/promises"
 import { Filesystem } from "@/util/filesystem"
+import { Platform } from "@opencode-ai/core/util/platform"
 import type { InstanceContext } from "../project/instance-context"
 import { Archive } from "@/util/archive"
 import { Process } from "@/util/process"
@@ -203,7 +204,7 @@ export const ESLint: Info = {
       }
       await fs.rename(extractedPath, finalPath)
 
-      const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm"
+      const npmCmd = Platform.isWindows ? "npm.cmd" : "npm"
       await Process.run([npmCmd, "install"], { cwd: finalPath })
       await Process.run([npmCmd, "run", "compile"], { cwd: finalPath })
     }
@@ -234,7 +235,7 @@ export const Oxlint: Info = {
   ]),
   extensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts", ".vue", ".astro", ".svelte"],
   async spawn(root, ctx) {
-    const ext = process.platform === "win32" ? ".cmd" : ""
+    const ext = Platform.cmdExt
 
     const serverTarget = path.join("node_modules", ".bin", "oxc_language_server" + ext)
     const lintTarget = path.join("node_modules", ".bin", "oxlint" + ext)
@@ -379,7 +380,7 @@ export const Gopls: Info = {
       if (exit !== 0) {
         return
       }
-      bin = path.join(Global.Path.bin, "gopls" + (process.platform === "win32" ? ".exe" : ""))
+      bin = path.join(Global.Path.bin, "gopls" + (Platform.ext))
     }
     return {
       process: spawn(bin!, {
@@ -411,7 +412,7 @@ export const Rubocop: Info = {
       if (exit !== 0) {
         return
       }
-      bin = path.join(Global.Path.bin, "rubocop" + (process.platform === "win32" ? ".exe" : ""))
+      bin = path.join(Global.Path.bin, "rubocop" + (Platform.ext))
     }
     return {
       process: spawn(bin!, ["--lsp"], {
@@ -446,7 +447,7 @@ export const Ty: Info = {
       (p): p is string => p !== undefined,
     )
     for (const venvPath of potentialVenvPaths) {
-      const isWindows = process.platform === "win32"
+      const isWindows = Platform.isWindows
       const potentialPythonPath = isWindows
         ? path.join(venvPath, "Scripts", "python.exe")
         : path.join(venvPath, "bin", "python")
@@ -458,7 +459,7 @@ export const Ty: Info = {
 
     if (!binary) {
       for (const venvPath of potentialVenvPaths) {
-        const isWindows = process.platform === "win32"
+        const isWindows = Platform.isWindows
         const potentialTyPath = isWindows ? path.join(venvPath, "Scripts", "ty.exe") : path.join(venvPath, "bin", "ty")
         if (await Filesystem.exists(potentialTyPath)) {
           binary = potentialTyPath
@@ -503,7 +504,7 @@ export const Pyright: Info = {
       (p): p is string => p !== undefined,
     )
     for (const venvPath of potentialVenvPaths) {
-      const isWindows = process.platform === "win32"
+      const isWindows = Platform.isWindows
       const potentialPythonPath = isWindows
         ? path.join(venvPath, "Scripts", "python.exe")
         : path.join(venvPath, "bin", "python")
@@ -538,7 +539,7 @@ export const ElixirLS: Info = {
         Global.Path.bin,
         "elixir-ls-master",
         "release",
-        process.platform === "win32" ? "language_server.bat" : "language_server.sh",
+        "language_server" + Platform.scriptExt,
       )
 
       if (!(await Filesystem.exists(binary))) {
@@ -779,7 +780,7 @@ async function roslynLanguageServerGlobalPath() {
     process.env.DOTNET_CLI_HOME ?? os.homedir(),
     ".dotnet",
     "tools",
-    "roslyn-language-server" + (process.platform === "win32" ? ".cmd" : ""),
+    "roslyn-language-server" + (Platform.cmdExt),
   )
   return (await pathExists(bin)) ? bin : undefined
 }
@@ -842,7 +843,7 @@ export const FSharp: Info = {
         return
       }
 
-      bin = path.join(Global.Path.bin, "fsautocomplete" + (process.platform === "win32" ? ".exe" : ""))
+      bin = path.join(Global.Path.bin, "fsautocomplete" + (Platform.ext))
     }
 
     return {
@@ -947,7 +948,7 @@ export const Clangd: Info = {
       }
     }
 
-    const ext = process.platform === "win32" ? ".exe" : ""
+    const ext = Platform.ext
     const direct = path.join(Global.Path.bin, "clangd" + ext)
     if (await Filesystem.exists(direct)) {
       return {
@@ -1343,7 +1344,7 @@ export const KotlinLS: Info = {
         })
       if (!ok) return
       await fs.rm(archivePath, { force: true })
-      if (process.platform !== "win32") {
+      if (!Platform.isWindows) {
         await fs.chmod(launcherScript, 0o755).catch(() => {})
       }
     }
@@ -1820,7 +1821,7 @@ export const Clojure: Info = {
   root: NearestRoot(["deps.edn", "project.clj", "shadow-cljs.edn", "bb.edn", "build.boot"]),
   async spawn(root) {
     let bin = which("clojure-lsp")
-    if (!bin && process.platform === "win32") {
+    if (!bin && Platform.isWindows) {
       bin = which("clojure-lsp.exe")
     }
     if (!bin) {

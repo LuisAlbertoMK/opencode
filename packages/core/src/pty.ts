@@ -219,6 +219,9 @@ export const layer = Layer.effect(
               session.subscribers.delete(key)
             }
           }
+          // One slow subscriber can block the PTY process's onData callback
+          // (all sends are synchronous on the same tick). For multi-subscriber
+          // sessions, consider per-subscriber queuing or setImmediate dispatch.
           session.buffer += chunk
           if (session.buffer.length <= BUFFER_LIMIT) return
           const excess = session.buffer.length - BUFFER_LIMIT

@@ -243,7 +243,7 @@ describe("WebSearchTool registration", () => {
         call: { type: "tool-call", id: "call-exa-key", name: "websearch", input: { query: "effect schema" } },
       })
 
-      expect(requests[0]?.url).toBe(`${WebSearchTool.EXA_URL}?exaApiKey=exa+secret`)
+      expect(requests[0]?.headers["x-api-key"]).toBe("exa secret")
       expect(JSON.stringify(settled)).not.toContain("exa secret")
     }),
   )

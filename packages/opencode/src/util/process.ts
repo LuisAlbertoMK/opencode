@@ -154,11 +154,14 @@ export async function stop(proc: ChildProcess) {
     return
   }
 
-  const out = await run(["taskkill", "/pid", String(proc.pid), "/T", "/F"], {
-    nothrow: true,
-  })
+  // Windows: try graceful /T first (SIGTERM equivalent for process trees),
+  // then /F (force) only as fallback — avoids abrupt termination when possible.
+  const graceful = await run(["taskkill", "/pid", String(proc.pid), "/T"], { nothrow: true })
+  if (graceful.code === 0) return
 
-  if (out.code === 0) return
+  const force = await run(["taskkill", "/pid", String(proc.pid), "/T", "/F"], { nothrow: true })
+  if (force.code === 0) return
+
   proc.kill()
 }
 
