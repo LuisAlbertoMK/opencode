@@ -1,8 +1,8 @@
 # Métricas de mejora — opencode fork
 
-> Baseline: `dbbe67f06` (chore: generate) → HEAD: `dd0571756`  
+> Baseline: `dbbe67f06` (chore: generate) → HEAD: `2747916b9`  
 > Ronda 1: 6 commits, 47 archivos, +395/-233 líneas  
-> Ronda 2: 9 commits, 7 archivos, ~+136/-93 líneas
+> Ronda 2: 10 commits, 8 archivos, ~+146/-101 líneas
 
 ---
 
@@ -149,6 +149,27 @@
 | Eliminado total | 2 N señales (N = parts + files en sesión típica) | 0 señales extra | **~40-160 bytes/ítem freed + GC pressure** | Typecheck ok |
 
 **Impacto**: Cada `createMemo` crea un signal (~40-80 bytes) + tracking overhead. En una sesión con 100 mensajes y ~300 partes, se eliminaron ~600 señales innecesarias. Las funciones restantes (`isActionFocused` en dialog-select.tsx) SÍ justifican el memo porque leen señales reactivas externas y se benefician del tracking granular.
+
+### 6.8 edit.ts — Diff Pipeline (createTwoFilesPatch + diffLines)
+
+| Métrica | Antes | Después | Δ | Verificado |
+|---------|-------|---------|---|-----------|
+| `createTwoFilesPatch` (5000 lines) | **2x** (1ra approval + 2da metadata) | **1x** condicional (solo si formateo cambió contenido) | **~50% menos llamadas** | `benchmark-edit-pipeline.ts` |
+| `diffLines` (5000 lines) | 3,601µs | **5µs** (`countFromPatch`) | **~707x** | `benchmark-edit-optimized.ts` |
+| Pipeline (5000 lines, sin formato) | 12,007µs avg (83 ops/s) | 4,385µs avg (228 ops/s) | **2.74x (63% mejora)** | `benchmark-edit-optimized.ts` |
+| Pipeline (500 lines, sin formato) | 1,132µs avg (883 ops/s) | 824µs avg (1,213 ops/s) | **1.37x (27% mejora)** | `benchmark-edit-pipeline.ts` |
+| Memoria heap (20× large ops) | +4,173KB | +1,062KB | **75% menos** | `benchmark-edit-optimized.ts` |
+| Cuello de botella `createTwoFilesPatch` | 7,148µs (5000 lines) | — (llamada única) | **Identificado como bottleneck** | `benchmark-edit-pipeline.ts` |
+| `trimDiff` (cualquier tamaño) | ~16µs | ~16µs | **No es bottleneck** | `benchmark-edit-pipeline.ts` |
+| `normalizeLineEndings` (5000 lines, LF) | 17.5µs | Cacheado en variable | **0 llamadas redundantes** | `benchmark-edit-pipeline.ts` |
+
+**Mecanismo**:
+1. `normalizeLineEndings` cacheado en `normalizedOld`/`normalizedNew` antes del primer patch
+2. Post-formato: compara `afterFormat !== normalizedNew` → solo re-computa si cambió
+3. `diffLines(contentOld, contentNew)` reemplazado por `countFromPatch(diff)` que parsea el patch ya generado (5µs vs 3,601µs)
+4. New file case: diff actualizado post-formato (fix de consistencia pre-existente)
+
+**Benchmarks**: `benchmark-edit-pipeline.ts` + `benchmark-edit-optimized.ts` (standalone, Bun 1.3.14, Windows x64)
 
 ---
 
