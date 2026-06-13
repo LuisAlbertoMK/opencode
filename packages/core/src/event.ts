@@ -158,7 +158,7 @@ export interface Interface {
   }) => Stream.Stream<CursorEvent>
   readonly sync: (handler: Sync) => Effect.Effect<Unsubscribe>
   readonly listen: (listener: Listener) => Effect.Effect<Unsubscribe>
-  readonly beforeCommit: (guard: CommitGuard) => Effect.Effect<void>
+  readonly beforeCommit: (guard: CommitGuard) => Effect.Effect<Unsubscribe>
   readonly project: <D extends Definition>(definition: D, projector: Projector<D>) => Effect.Effect<Unsubscribe>
   readonly replay: (
     event: SerializedEvent,
@@ -645,9 +645,13 @@ export const layerWith = (options?: LayerOptions) =>
           })
         })
 
-      const beforeCommit = (guard: CommitGuard): Effect.Effect<void> =>
+      const beforeCommit = (guard: CommitGuard): Effect.Effect<Unsubscribe> =>
         Effect.sync(() => {
           commitGuards.push(guard)
+          return Effect.sync(() => {
+            const idx = commitGuards.indexOf(guard)
+            if (idx !== -1) commitGuards.splice(idx, 1)
+          })
         })
 
       const project = <D extends Definition>(definition: D, projector: Projector<D>): Effect.Effect<Unsubscribe> =>

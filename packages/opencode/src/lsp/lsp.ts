@@ -15,6 +15,17 @@ import { containsPath } from "@/project/instance-context"
 import { NonNegativeInt } from "@opencode-ai/core/schema"
 import { RuntimeFlags } from "@/effect/runtime-flags"
 
+// Retry a broken LSP server after this many ms
+const BROKEN_RETRY_MS = 5 * 60_000 // 5 minutes
+
+function isBroken(broken: Map<string, number>, key: string): boolean {
+  const ts = broken.get(key)
+  if (ts === undefined) return false
+  if (Date.now() - ts < BROKEN_RETRY_MS) return true
+  broken.delete(key)
+  return false
+}
+
 export const Event = {
   Updated: EventV2.define({ type: "lsp.updated", schema: {} }),
 }
@@ -114,7 +125,7 @@ type LocInput = { file: string; line: number; character: number }
 interface State {
   clients: LSPClient.Info[]
   servers: Record<string, LSPServer.Info>
-  broken: Set<string>
+  broken: Map<string, number>
   spawning: Map<string, Promise<LSPClient.Info | undefined>>
 }
 
@@ -194,7 +205,7 @@ export const layer = Layer.effect(
         const s: State = {
           clients: [],
           servers,
-          broken: new Set(),
+          broken: new Map(),
           spawning: new Map(),
         }
 
@@ -221,11 +232,11 @@ export const layer = Layer.effect(
           const handle = await server
             .spawn(root, ctx, flags)
             .then((value) => {
-              if (!value) s.broken.add(key)
+              if (!value) s.broken.set(key, Date.now())
               return value
             })
             .catch(() => {
-              s.broken.add(key)
+              s.broken.set(key, Date.now())
               return undefined
             })
 
@@ -237,7 +248,7 @@ export const layer = Layer.effect(
             directory: ctx.directory,
             instance: ctx,
           }).catch(async () => {
-            s.broken.add(key)
+            s.broken.set(key, Date.now())
             await Process.stop(handle.process)
             return undefined
           })
@@ -259,7 +270,7 @@ export const layer = Layer.effect(
 
           const root = await server.root(file, ctx)
           if (!root) continue
-          if (s.broken.has(root + server.id)) continue
+          if (isBroken(s.broken, root + server.id)) continue
 
           const match = s.clients.find((x) => x.root === root && x.serverID === server.id)
           if (match) {
@@ -337,7 +348,7 @@ export const layer = Layer.effect(
           if (server.extensions.length && !server.extensions.includes(extension)) continue
           const root = await server.root(file, ctx)
           if (!root) continue
-          if (s.broken.has(root + server.id)) continue
+          if (isBroken(s.broken, root + server.id)) continue
           return true
         }
         return false

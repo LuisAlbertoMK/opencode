@@ -4,6 +4,7 @@ import { Effect, Layer, Record, Result, Schema, Context } from "effect"
 import { NonNegativeInt } from "@opencode-ai/core/schema"
 import { Global } from "@opencode-ai/core/global"
 import { FSUtil } from "@opencode-ai/core/fs-util"
+import { decrypt, encrypt } from "./crypto"
 
 export const OAUTH_DUMMY_KEY = "opencode-oauth-dummy-key"
 
@@ -55,6 +56,19 @@ export const layer = Layer.effect(
     const fsys = yield* FSUtil.Service
     const decode = Schema.decodeUnknownOption(Info)
 
+    const readFileDecrypt = Effect.fn("Auth.readFileDecrypt")(function* () {
+      const raw = yield* fsys.readFileString(file).pipe(Effect.orElseSucceed(() => ""))
+      if (!raw) return "{}"
+
+      // Try AES-GCM decryption first (new encrypted format)
+      try {
+        return decrypt(raw)
+      } catch {
+        // Fall back to plaintext JSON (legacy format — migration path)
+        return raw
+      }
+    })
+
     const all = Effect.fn("Auth.all")(function* () {
       if (process.env.OPENCODE_AUTH_CONTENT) {
         try {
@@ -62,7 +76,8 @@ export const layer = Layer.effect(
         } catch (err) {}
       }
 
-      const data = (yield* fsys.readJson(file).pipe(Effect.orElseSucceed(() => ({})))) as Record<string, unknown>
+      const raw = yield* readFileDecrypt
+      const data = JSON.parse(raw) as Record<string, unknown>
       return Record.filterMap(data, (value) => Result.fromOption(decode(value), () => undefined))
     })
 
@@ -70,14 +85,19 @@ export const layer = Layer.effect(
       return (yield* all())[providerID]
     })
 
+    const writeFileEncrypt = Effect.fn("Auth.writeFileEncrypt")(function* (data: Record<string, unknown>) {
+      const json = JSON.stringify(data, null, 2)
+      const enc = encrypt(json)
+      yield* fsys.writeFileString(file, enc).pipe(Effect.mapError(fail("Failed to write auth data")))
+      yield* fsys.chmod(file, 0o600).pipe(Effect.mapError(fail("Failed to write auth data")))
+    })
+
     const set = Effect.fn("Auth.set")(function* (key: string, info: Info) {
       const norm = key.replace(/\/+$/, "")
       const data = yield* all()
       if (norm !== key) delete data[key]
       delete data[norm + "/"]
-      yield* fsys
-        .writeJson(file, { ...data, [norm]: info }, 0o600)
-        .pipe(Effect.mapError(fail("Failed to write auth data")))
+      yield* writeFileEncrypt({ ...data, [norm]: info })
     })
 
     const remove = Effect.fn("Auth.remove")(function* (key: string) {
@@ -85,7 +105,7 @@ export const layer = Layer.effect(
       const data = yield* all()
       delete data[key]
       delete data[norm]
-      yield* fsys.writeJson(file, data, 0o600).pipe(Effect.mapError(fail("Failed to write auth data")))
+      yield* writeFileEncrypt(data)
     })
 
     return Service.of({ get, all, set, remove })
