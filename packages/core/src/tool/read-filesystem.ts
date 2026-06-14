@@ -10,7 +10,7 @@ import { LruCache } from "../lru-cache"
 
 // Cache keyed by canonical path for full (non-paged) file reads.
 // 50 entries, 5s TTL — AI often re-reads recently viewed files.
-const fullReadCache = new LruCache<string, { content: FileSystem.Content; mtimeMs: number }>(50, 5_000)
+const fullReadCache = new LruCache<string, { content: FileSystem.Content; mtimeMs: number }>(50, 3_000)
 
 export const MAX_READ_LINES = 2_000
 export const MAX_READ_BYTES = 50 * 1024
