@@ -190,7 +190,7 @@ export const layer = Layer.effect(
       ).pipe(retryAgentMismatch(promotion))
       const toolFibers = yield* FiberSet.make<void, ToolOutputStore.Error>()
       // Limit concurrent tool executions to prevent CPU thrash
-      const toolConcurrency = Semaphore.makeUnsafe(4)
+      const toolConcurrency = Semaphore.makeUnsafe(2)
       let needsContinuation = false
       if (promotion) {
         const cutoff = yield* SessionInput.latestSeq(db, session.id)
