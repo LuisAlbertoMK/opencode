@@ -189,6 +189,8 @@ export const layer = Layer.effect(
         agent.id,
       ).pipe(retryAgentMismatch(promotion))
       const toolFibers = yield* FiberSet.make<void, ToolOutputStore.Error>()
+      // Limit concurrent tool executions to prevent CPU thrash
+      const toolConcurrency = Semaphore.makeUnsafe(4)
       let needsContinuation = false
       if (promotion) {
         const cutoff = yield* SessionInput.latestSeq(db, session.id)
@@ -257,23 +259,25 @@ export const layer = Layer.effect(
             needsContinuation = true
             const assistantMessageID = yield* publisher.assistantMessageID(event.id)
             yield* Effect.uninterruptibleMask((restore) =>
-              restore(
-                toolMaterialization.settle({
-                  sessionID: session.id,
-                  agent: agent.id,
-                  assistantMessageID,
-                  call: event,
-                }),
-              ).pipe(
-                Effect.flatMap((settlement) =>
-                  publish(
-                    LLMEvent.toolResult({
-                      id: event.id,
-                      name: event.name,
-                      result: settlement.result,
-                      output: settlement.output,
-                    }),
-                    settlement.outputPaths ?? [],
+              toolConcurrency.withPermit(
+                restore(
+                  toolMaterialization.settle({
+                    sessionID: session.id,
+                    agent: agent.id,
+                    assistantMessageID,
+                    call: event,
+                  }),
+                ).pipe(
+                  Effect.flatMap((settlement) =>
+                    publish(
+                      LLMEvent.toolResult({
+                        id: event.id,
+                        name: event.name,
+                        result: settlement.result,
+                        output: settlement.output,
+                      }),
+                      settlement.outputPaths ?? [],
+                    ),
                   ),
                 ),
               ),

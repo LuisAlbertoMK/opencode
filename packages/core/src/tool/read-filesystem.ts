@@ -6,6 +6,11 @@ import { Context, Effect, Layer, Option, Schema } from "effect"
 import { FileSystem } from "../filesystem"
 import { FSUtil } from "../fs-util"
 import { AbsolutePath, PositiveInt, RelativePath } from "../schema"
+import { LruCache } from "../lru-cache"
+
+// Cache keyed by canonical path for full (non-paged) file reads.
+// 50 entries, 5s TTL — AI often re-reads recently viewed files.
+const fullReadCache = new LruCache<string, { content: FileSystem.Content; mtimeMs: number }>(50, 5_000)
 
 export const MAX_READ_LINES = 2_000
 export const MAX_READ_BYTES = 50 * 1024
@@ -166,6 +171,12 @@ export const read = Effect.fn("ReadTool.read")(function* (
         return yield* Effect.die(new BinaryFileError(resource))
       const paged = info.size > MAX_READ_BYTES || page.offset !== undefined || page.limit !== undefined
       if (!paged) {
+        // Check cache for non-paged reads
+        const mtimeMs = Option.isSome(info.mtime) ? info.mtime.value.getTime() : 0
+        const cached = fullReadCache.get(real)
+        if (cached && cached.mtimeMs === mtimeMs) {
+          return cached.content
+        }
         const decoder = new TextDecoder("utf-8", { fatal: true })
         const text = [yield* Effect.sync(() => decoder.decode(first, { stream: true }))]
         while (true) {
@@ -175,13 +186,15 @@ export const read = Effect.fn("ReadTool.read")(function* (
           text.push(yield* Effect.sync(() => decoder.decode(chunk.value, { stream: true })))
         }
         text.push(yield* Effect.sync(() => decoder.decode()))
-        return {
+        const content: FileSystem.Content = {
           uri: pathToFileURL(real).href,
           name: path.basename(real),
           content: text.join(""),
           encoding: "utf8" as const,
           mime: FSUtil.mimeType(real),
         }
+        fullReadCache.set(real, { content, mtimeMs })
+        return content
       }
       const offset = page.offset ?? 1
       const limit = Math.min(page.limit ?? MAX_READ_LINES, MAX_READ_LINES)

@@ -1,0 +1,34 @@
+{
+  "date": "2026-06-14T04:10:00Z",
+  "project": "opencode",
+  "phase": "5",
+  "benchmarks": {
+    "lruCache": {
+      "getSetPerSec": 703500,
+      "evictionPerSec": 678000,
+      "ttlExpiry": "PASS",
+      "description": "LruCache with 500 entries, 5s TTL. ~700K ops/s for get/set, ~680K ops/s for eviction. TTL expiry works correctly."
+    },
+    "lineEndingNormalization": {
+      "lfToLfPerSec": 376300,
+      "crlfToLfPerSec": 19800,
+      "lfToCrlfPerSec": 21100,
+      "detectPerSec": 9400000,
+      "description": "CRLF→LF conversion is the bottleneck at ~20K ops/s on 500-line files. But per-write overhead is ~0.05ms — negligible for single file operations."
+    },
+    "deltaCoalescing": {
+      "directAppendMs": 0.27,
+      "bufferedAppendMs": 2.59,
+      "mapAccumulationMs": 0.48,
+      "deltaCount": 1000,
+      "description": "Map-based accumulation (Phase 3B) adds ~0.21ms overhead per 1000 deltas vs direct append. The real win is reducing Solid.js store updates from N to 1 per flush interval."
+    },
+    "writeNormalization": {
+      "bomOnlyMs": 6.45,
+      "bomWithNormMs": 985.55,
+      "iterations": 10000,
+      "description": "Line ending normalization adds ~0.1ms per write on a 500-line file. For typical dotfiles (<500 lines), overhead is negligible (<0.1ms). The high % overhead is misleading due to 10K iterations."
+    }
+  },
+  "conclusion": "All optimizations have negligible runtime overhead. The real gains are architectural: LRU cache reduces disk I/O for repeated reads, delta coalescing reduces Solid.js re-renders during streaming, line ending normalization prevents mixed-line-ending bugs in dotfiles on Windows."
+}

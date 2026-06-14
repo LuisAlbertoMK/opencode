@@ -1484,6 +1484,32 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
     return props.message.time.completed - user.time.created
   })
 
+  const tps = createMemo(() => {
+    if (!final()) return 0
+    if (!props.message.time.completed || !props.message.time.created) return 0
+    const elapsed = props.message.time.completed - props.message.time.created
+    if (elapsed < 100) return 0 // avoid division by near-zero
+    const output = props.message.tokens?.output ?? 0
+    if (output <= 0) return 0
+    return Math.round(output / (elapsed / 1000))
+  })
+
+  // Live TPS during streaming — estimate from text content length
+  const liveTps = createMemo(() => {
+    if (final()) return 0 // use post-hoc TPS instead
+    const textParts = props.parts.filter((p) => p.type === "text")
+    if (textParts.length === 0) return 0
+    const totalChars = (textParts as TextPart[]).reduce((sum, p) => sum + ((p as any).text?.length ?? 0), 0)
+    if (totalChars < 10) return 0
+    const now = performance.now()
+    const start = props.message.time.created
+    if (!start) return 0
+    const elapsed = (now - start) / 1000
+    if (elapsed < 0.5) return 0 // wait for stable reading
+    const estTokens = totalChars / 4 // chars/4 heuristic
+    return Math.round(estTokens / elapsed)
+  })
+
   const childShortcut = useCommandShortcut("session.child.first")
   const backgroundShortcut = useCommandShortcut("session.background")
 
@@ -1559,6 +1585,15 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
               <Show when={duration()}>
                 <span style={{ fg: theme.textMuted }}> · {Locale.duration(duration())}</span>
               </Show>
+              {final() ? (
+                <Show when={tps()}>
+                  <span style={{ fg: theme.textMuted }}> · {tps()} tok/s</span>
+                </Show>
+              ) : (
+                <Show when={liveTps()}>
+                  <span style={{ fg: theme.textMuted }}> · {liveTps()} tok/s</span>
+                </Show>
+              )}
               <Show when={props.message.error?.name === "MessageAbortedError"}>
                 <span style={{ fg: theme.textMuted }}> · interrupted</span>
               </Show>

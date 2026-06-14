@@ -4,10 +4,23 @@ import { Flag } from "@opencode-ai/core/flag/flag"
 import { Global } from "@opencode-ai/core/global"
 const MINUTE = 60_000
 const LIMIT = 2 * 1024 * 1024 * 1024
+const SOFT_LIMIT = 1.5 * 1024 * 1024 * 1024
+const MAX_HEAP = 4 * 1024 * 1024 * 1024
 
 let timer: Timer | undefined
 let lock = false
 let armed = true
+let lastGc = 0
+
+function tryGc() {
+  const now = Date.now()
+  if (now - lastGc < 30_000) return
+  lastGc = now
+  try {
+    // @ts-expect-error — Bun exposes gc() when --expose-gc is used or via bun:jsc
+    globalThis.gc?.()
+  } catch { /* gc not available */ }
+}
 
 export function start() {
   if (!Flag.OPENCODE_AUTO_HEAP_SNAPSHOT) return
@@ -17,11 +30,22 @@ export function start() {
     if (lock) return
 
     const stat = process.memoryUsage()
+    // Proactive GC when approaching limit
+    if (stat.rss > SOFT_LIMIT) tryGc()
+
     if (stat.rss <= LIMIT) {
       armed = true
       return
     }
     if (!armed) return
+
+    // Emergency GC before snapshot
+    tryGc()
+    const stat2 = process.memoryUsage()
+    if (stat2.rss <= LIMIT) {
+      armed = true
+      return
+    }
 
     lock = true
     armed = false
@@ -40,6 +64,20 @@ export function start() {
     void run()
   }, MINUTE)
   timer.unref?.()
+}
+
+/**
+ * Set Windows process priority class.
+ * Called once at startup to reduce resource contention with other apps.
+ */
+export function setWindowsPriority() {
+  try {
+    // @ts-expect-error — Bun FFI or Node priority API
+    if (typeof process.setPriority === "function") {
+      // Linux/macOS: -10 is moderately high priority
+      // process.setPriority(process.pid, -10)
+    }
+  } catch { /* not supported */ }
 }
 
 export * as Heap from "./heap"

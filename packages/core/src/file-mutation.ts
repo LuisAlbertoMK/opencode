@@ -4,6 +4,7 @@ import { Context, Effect, Layer, Schema } from "effect"
 import { dirname } from "path"
 import { KeyedMutex } from "./effect/keyed-mutex"
 import { FSUtil } from "./fs-util"
+import { Platform } from "@/util/platform"
 
 export interface Target {
   readonly canonical: string
@@ -22,6 +23,8 @@ export interface TextWriteInput {
 
 export interface ConditionalWriteInput extends WriteInput {
   readonly expected: Uint8Array
+  /** Current file bytes, if already known. Skips the stale-check re-read. */
+  readonly current?: Uint8Array
 }
 
 export interface RemoveInput {
@@ -111,9 +114,12 @@ export const layer = Layer.effect(
           const current = yield* fs
             .readFile(input.target.canonical)
             .pipe(Effect.catchReason("PlatformError", "NotFound", () => Effect.succeed(undefined)))
+          // Preserve existing line endings or use platform default for new files
+          const ending = current ? detectLineEnding(new TextDecoder().decode(current)) : platformEnding()
+          const text = convertToLineEnding(next.text, ending)
           yield* fs.writeWithDirs(
             input.target.canonical,
-            joinBom(next.text, Boolean(current && hasUtf8Bom(current)) || next.bom),
+            joinBom(text, Boolean(current && hasUtf8Bom(current)) || next.bom),
           )
           return writeResult(input.target, current !== undefined)
         }),
@@ -143,7 +149,7 @@ export const layer = Layer.effect(
     const writeIfUnchanged = Effect.fn("FileMutation.writeIfUnchanged")((input: ConditionalWriteInput) =>
       withTargetLock(input.target)(
         Effect.gen(function* () {
-          const current = yield* fs.readFile(input.target.canonical)
+          const current = input.current ?? (yield* fs.readFile(input.target.canonical))
           if (!sameBytes(current, input.expected)) {
             return yield* new StaleContentError({ path: input.target.canonical })
           }
@@ -189,6 +195,13 @@ function sameBytes(left: Uint8Array, right: Uint8Array) {
   if (left.length !== right.length) return false
   return left.every((byte, index) => byte === right[index])
 }
+
+// ---- Line ending helpers ----
+const normalizeLineEndings = (text: string) => text.replaceAll("\r\n", "\n")
+const detectLineEnding = (text: string): "\n" | "\r\n" => (text.includes("\r\n") ? "\r\n" : "\n")
+const platformEnding = (): "\n" | "\r\n" => (Platform.isWindows ? "\r\n" : "\n")
+const convertToLineEnding = (text: string, ending: "\n" | "\r\n") =>
+  ending === "\n" ? normalizeLineEndings(text) : normalizeLineEndings(text).replaceAll("\n", "\r\n")
 
 export const locationLayer = layer
 

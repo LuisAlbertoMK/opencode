@@ -24,6 +24,7 @@ import { createSimpleContext } from "./helper"
 import { useSDK } from "./sdk"
 import { createSignal, onMount } from "solid-js"
 
+
 type LocationData = {
   agent?: AgentV2Info[]
   command?: CommandV2Info[]
@@ -119,6 +120,55 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
           (item): item is SessionMessageAssistantReasoning => item.type === "reasoning" && item.id === reasoningID,
         )
       },
+    }
+
+    // ---- Delta coalescing for streaming text/reasoning ----
+    // Accumulates rapid text.delta events and flushes at a controlled interval
+    // to reduce Solid.js store updates during heavy streaming.
+    const COALESCE_MS = 50
+    const deltaBuf = new Map<string, string>() // key=`sid\x00mid\x00id\x00knd` (kind=text|reasoning)
+    let deltaTimer: ReturnType<typeof setTimeout> | null = null
+    type DeltaEntry = { assistantMessageID: string; partID: string; text: string; kind: "text" | "reasoning" }
+    const flushTextDeltas = () => {
+      deltaTimer = null
+      if (deltaBuf.size === 0) return
+      const bySession = new Map<string, DeltaEntry[]>()
+      for (const [key, acc] of deltaBuf) {
+        const parts = key.split("\x00")
+        if (parts.length !== 4) continue
+        const [sid, mid, pid, knd] = parts
+        if (knd !== "text" && knd !== "reasoning") continue
+        let g = bySession.get(sid)
+        if (!g) { g = []; bySession.set(sid, g) }
+        g.push({ assistantMessageID: mid, partID: pid, text: acc, kind: knd })
+      }
+      deltaBuf.clear()
+      for (const [sessionID, entries] of bySession) {
+        message.update(sessionID, (draft) => {
+          for (const { assistantMessageID, partID, text, kind } of entries) {
+            const asst = message.assistant(draft, assistantMessageID)
+            if (!asst) continue
+            const match = kind === "text"
+              ? message.latestText(asst, partID)
+              : message.latestReasoning(asst, partID)
+            if (match) match.text += text
+          }
+        })
+      }
+    }
+    const pushTextDelta = (sessionID: string, assistantMessageID: string, textID: string, delta: string) => {
+      const key = `${sessionID}\x00${assistantMessageID}\x00${textID}\x00text`
+      deltaBuf.set(key, (deltaBuf.get(key) ?? "") + delta)
+      if (!deltaTimer) deltaTimer = setTimeout(flushTextDeltas, COALESCE_MS)
+    }
+    const pushReasoningDelta = (sessionID: string, assistantMessageID: string, reasoningID: string, delta: string) => {
+      const key = `${sessionID}\x00${assistantMessageID}\x00${reasoningID}\x00reasoning`
+      deltaBuf.set(key, (deltaBuf.get(key) ?? "") + delta)
+      if (!deltaTimer) deltaTimer = setTimeout(flushTextDeltas, COALESCE_MS)
+    }
+    const flushDeltasImmediate = () => {
+      if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null }
+      flushTextDeltas()
     }
 
     event.subscribe((event, metadata) => {
@@ -228,6 +278,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
           })
           break
         case "session.next.step.ended":
+          flushDeltasImmediate()
           message.update(event.properties.sessionID, (draft) => {
             const currentAssistant = message.assistant(draft, event.properties.assistantMessageID)
             if (!currentAssistant) return
@@ -258,15 +309,15 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
           })
           break
         case "session.next.text.delta":
-          message.update(event.properties.sessionID, (draft) => {
-            const match = message.latestText(
-              message.assistant(draft, event.properties.assistantMessageID),
-              event.properties.textID,
-            )
-            if (match) match.text += event.properties.delta
-          })
+          pushTextDelta(
+            event.properties.sessionID,
+            event.properties.assistantMessageID,
+            event.properties.textID,
+            event.properties.delta,
+          )
           break
         case "session.next.text.ended":
+          flushDeltasImmediate()
           message.update(event.properties.sessionID, (draft) => {
             const match = message.latestText(
               message.assistant(draft, event.properties.assistantMessageID),
@@ -383,15 +434,15 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
           })
           break
         case "session.next.reasoning.delta":
-          message.update(event.properties.sessionID, (draft) => {
-            const match = message.latestReasoning(
-              message.assistant(draft, event.properties.assistantMessageID),
-              event.properties.reasoningID,
-            )
-            if (match) match.text += event.properties.delta
-          })
+          pushReasoningDelta(
+            event.properties.sessionID,
+            event.properties.assistantMessageID,
+            event.properties.reasoningID,
+            event.properties.delta,
+          )
           break
         case "session.next.reasoning.ended":
+          flushDeltasImmediate()
           message.update(event.properties.sessionID, (draft) => {
             const match = message.latestReasoning(
               message.assistant(draft, event.properties.assistantMessageID),
