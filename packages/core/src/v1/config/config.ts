@@ -182,6 +182,21 @@ export const Info = Schema.Struct({
       policies: Schema.optional(Schema.mutable(Schema.Array(ConfigExperimental.Policy))).annotate({
         description: "Policy statements applied to supported resources, such as provider access",
       }),
+      tui_fps: Schema.optional(PositiveInt).annotate({
+        description: "TUI rendering framerate target (default 30). Lower = less CPU/GPU.",
+      }),
+      tool_concurrency: Schema.optional(PositiveInt).annotate({
+        description: "Max concurrent tool executions (default 2). Lower = less CPU contention.",
+      }),
+      lru_cache_size: Schema.optional(PositiveInt).annotate({
+        description: "Max entries in file read cache (default 30). Lower = less memory.",
+      }),
+      lru_cache_ttl_ms: Schema.optional(PositiveInt).annotate({
+        description: "TTL for cached file reads in ms (default 3000). Shorter = less stale data.",
+      }),
+      delta_coalesce_ms: Schema.optional(PositiveInt).annotate({
+        description: "Delta coalescing interval in ms (default 100). Higher = fewer store updates.",
+      }),
     }),
   ),
 }).annotate({ identifier: "Config" })
