@@ -122,7 +122,7 @@ export function resolve(input: Info, options: ResolveOptions): Resolved {
     leader_timeout: input.leader_timeout ?? LeaderTimeoutDefault,
     mouse: input.mouse ?? true,
     tui_fps: input.tui_fps ?? 30,
-    delta_coalesce_ms: input.delta_coalesce_ms ?? 100,
+    delta_coalesce_ms: input.delta_coalesce_ms ?? 150,
   }
 }
 

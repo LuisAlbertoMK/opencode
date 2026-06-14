@@ -77,7 +77,7 @@ export function StatusBar() {
 
   onMount(() => {
     tick()
-    const timer = setInterval(tick, 2000)
+    const timer = setInterval(tick, 3000)
     onCleanup(() => clearInterval(timer))
   })
 
