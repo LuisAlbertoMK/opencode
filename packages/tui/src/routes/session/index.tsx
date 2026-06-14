@@ -1478,10 +1478,8 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
 
   const duration = createMemo(() => {
     if (!final()) return 0
-    if (!props.message.time.completed) return 0
-    const user = messages().find((x) => x.role === "user" && x.id === props.message.parentID)
-    if (!user || !user.time) return 0
-    return props.message.time.completed - user.time.created
+    if (!props.message.time.completed || !props.message.time.created) return 0
+    return props.message.time.completed - props.message.time.created
   })
 
   const tps = createMemo(() => {
@@ -1497,9 +1495,11 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
   // Live TPS during streaming — estimate from text content length
   const liveTps = createMemo(() => {
     if (final()) return 0 // use post-hoc TPS instead
-    const textParts = props.parts.filter((p) => p.type === "text")
-    if (textParts.length === 0) return 0
-    const totalChars = (textParts as TextPart[]).reduce((sum, p) => sum + ((p as any).text?.length ?? 0), 0)
+    let totalChars = 0
+    for (let i = 0; i < props.parts.length; i++) {
+      const p = props.parts[i]
+      if (p.type === "text") totalChars += (p as TextPart).text?.length ?? 0
+    }
     if (totalChars < 10) return 0
     const now = performance.now()
     const start = props.message.time.created
