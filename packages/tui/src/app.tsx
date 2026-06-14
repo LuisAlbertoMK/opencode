@@ -1,4 +1,5 @@
 import { render, TimeToFirstDraw, useRenderer, useTerminalDimensions } from "@opentui/solid"
+import { registerSpinner } from "opentui-spinner/solid"
 import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui"
 import { Deferred, Effect } from "effect"
 import { Global } from "@opencode-ai/core/global"
@@ -33,6 +34,7 @@ import { EditorContextProvider } from "./context/editor"
 import { useEvent } from "./context/event"
 import { SDKProvider, useSDK } from "./context/sdk"
 import { StartupLoading } from "./component/startup-loading"
+import { StatusBar } from "./component/status-bar"
 import { SyncProvider, useSync } from "./context/sync"
 import { DataProvider } from "./context/data"
 import { LocalProvider, useLocal } from "./context/local"
@@ -176,6 +178,7 @@ function isVersionGreater(left: string, right: string) {
 }
 
 export const run = Effect.fn("Tui.run")(function* (input: TuiInput) {
+  registerSpinner()
   const global = yield* Global.Service
   const exit = { epilogue: undefined as string | undefined, reason: undefined as unknown }
   const result = yield* Effect.scoped(
@@ -1088,6 +1091,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
           </Switch>
           {plugin()}
         </box>
+        <StatusBar />
         <box flexShrink={0}>
           <pluginRuntime.Slot name="app_bottom" />
         </box>
