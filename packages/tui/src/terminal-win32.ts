@@ -66,7 +66,7 @@ let unhook: (() => void) | undefined
  * - A `setRawMode(...)` hook to re-clear after known raw-mode toggles.
  * - A low-frequency poll as a backstop for native/external mode changes.
  */
-export function win32InstallCtrlCGuard() {
+function win32InstallCtrlCGuard() {
   if (process.platform !== "win32") return
   if (!process.stdin.isTTY) return
   if (!load()) return
