@@ -125,7 +125,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
     // ---- Delta coalescing for streaming text/reasoning ----
     // Accumulates rapid text.delta events and flushes at a controlled interval
     // to reduce Solid.js store updates during heavy streaming.
-    const COALESCE_MS = 50
+    const COALESCE_MS = 100
     const deltaBuf = new Map<string, string>() // key=`sid\x00mid\x00id\x00knd` (kind=text|reasoning)
     let deltaTimer: ReturnType<typeof setTimeout> | null = null
     type DeltaEntry = { assistantMessageID: string; partID: string; text: string; kind: "text" | "reasoning" }
