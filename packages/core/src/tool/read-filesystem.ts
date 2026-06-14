@@ -7,10 +7,11 @@ import { FileSystem } from "../filesystem"
 import { FSUtil } from "../fs-util"
 import { AbsolutePath, PositiveInt, RelativePath } from "../schema"
 import { LruCache } from "../lru-cache"
+import { Config } from "../config"
 
 // Cache keyed by canonical path for full (non-paged) file reads.
-// 50 entries, 5s TTL — AI often re-reads recently viewed files.
-const fullReadCache = new LruCache<string, { content: FileSystem.Content; mtimeMs: number }>(30, 3_000)
+// Size and TTL are configured via the experimental config (lru_cache_size, lru_cache_ttl_ms).
+let fullReadCache: LruCache<string, { content: FileSystem.Content; mtimeMs: number }> | undefined
 
 export const MAX_READ_LINES = 2_000
 export const MAX_READ_BYTES = 50 * 1024
@@ -173,7 +174,8 @@ export const read = Effect.fn("ReadTool.read")(function* (
       if (!paged) {
         // Check cache for non-paged reads
         const mtimeMs = Option.isSome(info.mtime) ? info.mtime.value.getTime() : 0
-        const cached = fullReadCache.get(real)
+        // fullReadCache is initialized in the layer before read() is exposed
+        const cached = fullReadCache!.get(real)
         if (cached && cached.mtimeMs === mtimeMs) {
           return cached.content
         }
@@ -193,7 +195,7 @@ export const read = Effect.fn("ReadTool.read")(function* (
           encoding: "utf8" as const,
           mime: FSUtil.mimeType(real),
         }
-        fullReadCache.set(real, { content, mtimeMs })
+        fullReadCache!.set(real, { content, mtimeMs })
         return content
       }
       const offset = page.offset ?? 1
@@ -308,6 +310,12 @@ export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const fs = yield* FSUtil.Service
+    const config = yield* Config.Service
+    const experimental = Config.latest(yield* config.entries(), "experimental")
+    fullReadCache = new LruCache<string, { content: FileSystem.Content; mtimeMs: number }>(
+      experimental?.lru_cache_size ?? 30,
+      experimental?.lru_cache_ttl_ms ?? 3_000,
+    )
     return Service.of({
       inspect: (path) => inspect(fs, path),
       read: (path, resource, page) => read(fs, path, resource, page),

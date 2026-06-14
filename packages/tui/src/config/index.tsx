@@ -63,6 +63,12 @@ export const Info = Schema.Struct({
   scroll_acceleration: Schema.optional(ScrollAcceleration),
   diff_style: Schema.optional(DiffStyle),
   mouse: Schema.optional(Schema.Boolean).annotate({ description: "Enable or disable mouse capture (default: true)" }),
+  tui_fps: Schema.optional(Schema.Int.check(Schema.isGreaterThan(0))).annotate({
+    description: "Rendering framerate target (default 30). Lower = less CPU/GPU.",
+  }),
+  delta_coalesce_ms: Schema.optional(Schema.Int.check(Schema.isGreaterThan(0))).annotate({
+    description: "Delta coalescing interval in ms (default 100). Higher = fewer store updates.",
+  }),
 })
 export type Info = Schema.Schema.Type<typeof Info>
 
@@ -78,6 +84,8 @@ export type Resolved = Omit<Info, "attention" | "keybinds" | "leader_timeout" | 
   keybinds: TuiKeybind.BindingLookupView
   leader_timeout: number
   mouse: boolean
+  tui_fps: number
+  delta_coalesce_ms: number
 }
 
 export const ResolveOptions = Schema.Struct({
@@ -113,6 +121,8 @@ export function resolve(input: Info, options: ResolveOptions): Resolved {
     }),
     leader_timeout: input.leader_timeout ?? LeaderTimeoutDefault,
     mouse: input.mouse ?? true,
+    tui_fps: input.tui_fps ?? 30,
+    delta_coalesce_ms: input.delta_coalesce_ms ?? 100,
   }
 }
 
