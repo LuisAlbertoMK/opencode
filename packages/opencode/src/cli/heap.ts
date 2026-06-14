@@ -17,7 +17,6 @@ function tryGc() {
   if (now - lastGc < 30_000) return
   lastGc = now
   try {
-    // @ts-expect-error — Bun exposes gc() when --expose-gc is used or via bun:jsc
     globalThis.gc?.()
   } catch { /* gc not available */ }
 }
