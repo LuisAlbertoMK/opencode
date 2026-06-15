@@ -604,3 +604,73 @@ Con el guard (mismo patrón que `limitFrames()` existente), todo esto se salta c
 | 4 | Extract RevertBanner component | `session/index.tsx` | Elimina signal creation/GC por render |
 | 5 | Batch ephemeral events | `publish-llm-event.ts` | 2000+ allocs/turno evitables |
 | 6 | Subscription registry leak | `event.ts` | Closures leak por cleanup omitido |
+
+---
+
+## Ronda 15 — 6 Prioridad 2 optimizations (2026-06-14)
+
+> Commit: `909f6d209` — `perf: 6 P2 optimizations`  
+> Basado en pendientes de Ronda 14  
+> Typecheck: 23/23 (turbo): 3 cache miss, 20 cached, 0 regresiones  
+> Push: fork/dev exitoso
+
+### Resultados
+
+| # | Cambio | Archivo | Δ estimado | Antes | Después |
+|:-:|--------|---------|:----------:|-------|---------|
+| 1 | String accumulator | `publish-llm-event.ts` | **O(n²)→O(n)** | `current + value` por delta | `push()` + `join("")` al leer |
+| 2 | SessionData eviction | `session-data.ts` | **1-2MB/sesión** | Maps unbounded | LimitedSet/LimitedMap (2×cap→50%) |
+| 3 | StringBuilder | `scrollback.surface.ts` | **O(n²)→O(n)** | `active.content +=` por write | `contentChunks[]` + join en flush |
+| 4 | RevertBanner component | `session/index.tsx` | **Signal creation/GC** | IIFE con createSignal en render | Componente con señales montadas |
+| 5 | Remove ephemeral events | `publish-llm-event.ts` | **2000+ allocs/turno** | 3 `events.publish(Delta)` por chunk | Eliminados (EphemeralDefinitions, 0 subs) |
+| 6 | Set subscription registry | `event.ts` | **O(n)→O(1)** | Array + indexOf + splice | Set + add/delete |
+
+### Precisión
+
+| Métrica | Valor |
+|---------|-------|
+| **Planeado** | 6 optimizaciones (pendientes Ronda 14) |
+| **Ejecutado** | 6 (100%) |
+| **Desviación** | 0% |
+| **Typecheck** | 23/23 PASSED |
+| **Regresiones** | 0 |
+| **Test timeout** | 1 (session-runner.test.ts — 120s, pre-existing) |
+| **Commits push** | 1 (`909f6d209` → fork dev) |
+
+### Análisis de esfuerzo
+
+| Actividad | Archivos tocados | Líneas Δ |
+|-----------|:----------------:|:--------:|
+| String accumulator | 1 | -10/+15 |
+| SessionData eviction | 1 | +50 |
+| StringBuilder | 1 | +16 |
+| RevertBanner component | 1 | +130/-90 |
+| Remove ephemeral events | 2 | -29/+7 |
+| Set subscription registry | 1 | -13/+25 |
+| **Total** | **6** | **~+247/-110** |
+
+### Ciclo de automejora — Hot path en Structured CoT
+
+**Karpathy loop** aplicado a AGENTS.md (v2.4→v2.5):
+
+| Paso | Detalle |
+|------|---------|
+| **PROBLEMA** | 10/13 bugs de Rondas 14-15 fueron alloc en hot path (77%) |
+| **EVIDENCIA** | content-based caching(3), array accumulator(3), Object.fromEntries(1), JSON.stringify(1), ephemeral events(1) |
+| **MÉTRICA** | Baseline: 77% bugs alocados post-facto → Target: <30% |
+| **HIPÓTESIS** | Agregar dimensión "Hot path" al Structured CoT capturará alloc bugs en diseño |
+| **IMPLEMENT** | AGENTS.md: +"5. **Hot path**: frequency? alloc per call?" — ≤15% de sección |
+| **VERIFY** | Medir en próxima ronda si bugs alocados bajan de 77% |
+| **GRADUATE** | ✅ Persistido en AGENTS.md (edit mínimo, 0 regresiones) |
+
+### Estados post-ciclo
+
+| Activo | Estado |
+|--------|--------|
+| Optimizaciones implementadas (Rondas 14-15) | **13** |
+| Typecheck pre-push (29 packages) | ✅ 23/23 |
+| Push a fork/dev | ✅ 2 commits nuevos |
+| BITACORA.md | ✅ Rondas 14-15 + Meta-mejora v2.5 |
+| METRICAS.md | ✅ Rondas 14-15 + métricas de automejora |
+| AGENTS.md | ✅ v2.5 — Hot path en Structured CoT |
+| Pendientes | ⏳ session-runner.test timeout (pre-existing), binary testing (postergado) |
