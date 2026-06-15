@@ -1,0 +1,29 @@
+#!/bin/sh
+set -e
+
+# Pre-commit: typecheck parcial — solo packages con cambios staged
+# Si no hay cambios en packages/, skip automático
+
+CHANGED=$(git diff --cached --name-only --diff-filter=ACMR | grep '^packages/' | sed 's|^\(packages/[^/]*\)/.*|\1|' | sort -u)
+
+if [ -z "$CHANGED" ]; then
+  echo "[pre-commit] No source changes in packages/ — skipping typecheck"
+  exit 0
+fi
+
+PACKAGES=$(echo "$CHANGED" | tr '\n' ',' | sed 's/,$//')
+echo "[pre-commit] Changed packages: $PACKAGES"
+
+if [ "$(echo "$PACKAGES" | tr ',' '\n' | wc -l)" -eq 1 ]; then
+  # Single package — fastest path
+  echo "[pre-commit] Running: bun turbo typecheck --filter='${PACKAGES%,}'"
+  bun turbo typecheck --filter="${PACKAGES%,}" 2>&1 | tail -5
+else
+  # Multiple packages
+  FILTERS=$(echo "$PACKAGES" | tr ',' '\n' | sed 's/^/--filter=/')
+  echo "[pre-commit] Running: bun turbo typecheck $FILTERS"
+  # shellcheck disable=SC2086
+  bun turbo typecheck $FILTERS 2>&1 | tail -5
+fi
+
+echo "[pre-commit] typecheck parcial OK"

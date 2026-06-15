@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenCode Custom Config Schema",
+  "description": "Valida la configuración personal de opencode en ~/.config/opencode/opencode.json",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "compaction": {
+      "type": "object",
+      "properties": {
+        "auto": { "type": "boolean" },
+        "prune": { "type": "boolean" },
+        "reserved": { "type": "integer", "minimum": 1024, "maximum": 65536 }
+      }
+    },
+    "skills": {
+      "type": "object",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      },
+      "required": ["paths"]
+    },
+    "agent": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "type": "object",
+          "properties": {
+            "description": { "type": "string" },
+            "mode": { "type": "string", "enum": ["primary", "subagent", "hidden"] },
+            "prompt": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "object" }
+              ]
+            },
+            "permission": {
+              "type": "object",
+              "properties": {
+                "edit": { "type": "string", "enum": ["allow", "deny", "ask"] },
+                "write": { "type": "string", "enum": ["allow", "deny", "ask"] },
+                "bash": { "type": "string", "enum": ["allow", "deny", "ask"] },
+                "read": { "type": "string", "enum": ["allow", "deny", "ask"] }
+              }
+            }
+          },
+          "required": ["description", "mode", "prompt"]
+        }
+      },
+      "minProperties": 1
+    }
+  },
+  "required": ["agent", "skills"],
+  "additionalProperties": true
+}

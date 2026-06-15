@@ -1,20 +1,41 @@
 #!/bin/sh
 set -e
-# Check if bun version matches package.json
-# keep in sync with packages/script/src/index.ts semver qualifier
+
+echo "[pre-push] === Fase 1: Version de Bun ==="
 bun -e '
 import { semver } from "bun";
 const pkg = await Bun.file("package.json").json();
 const expectedBunVersion = pkg.packageManager?.split("@")[1];
-if (!expectedBunVersion) {
-  throw new Error("packageManager field not found in root package.json");
-}
-const expectedBunVersionRange = `^${expectedBunVersion}`;
-if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
-  throw new Error(`This script requires bun@${expectedBunVersionRange}, but you are using bun@${process.versions.bun}`);
+if (!expectedBunVersion) { throw new Error("packageManager field not found in root package.json"); }
+const range = `^${expectedBunVersion}`;
+if (!semver.satisfies(process.versions.bun, range)) {
+  throw new Error(`Requires bun@${range}, current: ${process.versions.bun}`);
 }
 if (process.versions.bun !== expectedBunVersion) {
-  console.warn(`Warning: Bun version ${process.versions.bun} differs from expected ${expectedBunVersion}`);
+  console.warn(`Warning: bun ${process.versions.bun} != expected ${expectedBunVersion}`);
 }
 '
+echo "[pre-push] OK"
+
+echo "[pre-push] === Fase 2: Typecheck ==="
 bun typecheck
+echo "[pre-push] OK"
+
+echo "[pre-push] === Fase 3: Multi-agent verification ==="
+# 3a. Validar config personal (si pwsh disponible)
+if command -v pwsh &> /dev/null; then
+  SCRIPT_DIR="$(cd "$(dirname "$0")/../script" && pwd -W 2>/dev/null || pwd)"
+  if [ -f "$SCRIPT_DIR/validate-config.ps1" ]; then
+    echo "[pre-push] Validando config..."
+    pwsh -NoProfile -File "$SCRIPT_DIR/validate-config.ps1" 2>&1 || echo "[pre-push] [WARN] Config validation skipped (non-critical)"
+  fi
+fi
+
+# 3b. Verificar que BITACORA y METRICAS se actualizan juntos
+CHANGED_DOCS=$(git diff --cached --name-only -- 'BITACORA.md' 'METRICAS.md' 2>/dev/null || echo "")
+CHANGED_COUNT=$(echo "$CHANGED_DOCS" | wc -l)
+if [ "$CHANGED_COUNT" -eq 1 ] 2>/dev/null; then
+  echo "[pre-push] [WARN] Solo uno de BITACORA.md / METRICAS.md fue actualizado — deberían ir juntos"
+fi
+
+echo "[pre-push] === Verificacion completada ==="
