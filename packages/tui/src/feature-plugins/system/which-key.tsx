@@ -424,7 +424,7 @@ function WhichKeyPanel(props: {
                   }
                 >
                   {(group) => {
-                    const selected = createMemo(() => currentGroup()?.label === group().label)
+                    const selected = () => currentGroup()?.label === group().label
                     return (
                       <box
                         paddingLeft={1}
@@ -461,12 +461,12 @@ function WhichKeyPanel(props: {
                 <box width="100%" flexDirection="row" justifyContent="center" gap={COLUMN_GAP}>
                   <For each={shown()}>
                     {(column) => {
-                      const item = createMemo(() => column[row])
-                      const entry = createMemo(() => {
+                      const item = () => column[row]
+                      const entry = () => {
                         const value = item()
                         if (value?.type !== "entry") return undefined
                         return value
-                      })
+                      }
                       return (
                         <box width={columnWidth()} flexDirection="row" gap={1} justifyContent="space-between">
                           <Show when={item()}>

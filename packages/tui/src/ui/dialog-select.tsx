@@ -559,8 +559,8 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                   </Show>
                   <For each={options}>
                     {(option) => {
-                      const active = createMemo(() => !props.locked && isDeepEqual(option.value, selected()?.value))
-                      const current = createMemo(() => isDeepEqual(option.value, props.current))
+                      const active = () => !props.locked && isDeepEqual(option.value, selected()?.value)
+                      const current = () => isDeepEqual(option.value, props.current)
                       return (
                         <box
                           flexDirection="column"
