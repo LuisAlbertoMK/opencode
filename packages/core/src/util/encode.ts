@@ -1,12 +1,16 @@
 export function base64Encode(value: string) {
   const bytes = new TextEncoder().encode(value)
-  const binary = Array.from(bytes, (b) => String.fromCharCode(b)).join("")
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "")
+  // Single-pass: avoid intermediate Array from + join
+  let binary = ""
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/[+/=]/g, (c) => (c === "+" ? "-" : c === "/" ? "_" : ""))
 }
 
 export function base64Decode(value: string) {
-  const binary = atob(value.replace(/-/g, "+").replace(/_/g, "/"))
-  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+  const binary = atob(value.replace(/[-_]/g, (c) => (c === "-" ? "+" : "/")))
+  // Single-pass: avoid Uint8Array.from with callback
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
   return new TextDecoder().decode(bytes)
 }
 
