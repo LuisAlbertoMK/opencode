@@ -28,6 +28,7 @@ type ActiveEntry = {
   surface: ScrollbackSurface
   renderable: TextRenderable | CodeRenderable | MarkdownRenderable
   content: string
+  contentChunks: string[]
   committedRows: number
   committedBlocks: number
   pendingSpacerRows: number
@@ -193,6 +194,7 @@ export class RunScrollbackStream {
       surface,
       renderable,
       content: "",
+      contentChunks: [],
       committedRows: 0,
       committedBlocks: 0,
       pendingSpacerRows: rows || (!this.rendered && this.wrote ? 1 : 0),
@@ -234,6 +236,10 @@ export class RunScrollbackStream {
       }
 
       const renderable = active.renderable
+      if (active.contentChunks.length > 0) {
+        active.content += active.contentChunks.join("")
+        active.contentChunks = []
+      }
       renderable.content = active.content
       active.surface.render()
       this.releasePendingThemes()
@@ -257,6 +263,10 @@ export class RunScrollbackStream {
       }
 
       const renderable = active.renderable
+      if (active.contentChunks.length > 0) {
+        active.content += active.contentChunks.join("")
+        active.contentChunks = []
+      }
       renderable.content = active.content
       renderable.streaming = !done
       await active.surface.settle()
@@ -280,6 +290,10 @@ export class RunScrollbackStream {
     }
 
     const renderable = active.renderable
+    if (active.contentChunks.length > 0) {
+      active.content += active.contentChunks.join("")
+      active.contentChunks = []
+    }
     renderable.content = active.content
     renderable.streaming = !done
     await active.surface.settle()
@@ -338,7 +352,7 @@ export class RunScrollbackStream {
 
     this.active.body = body
     this.active.commit = commit
-    this.active.content += body.content
+    this.active.contentChunks.push(body.content)
     await this.flushActive(false, false)
     if (this.active.rendered) {
       this.markRendered(this.active.commit)

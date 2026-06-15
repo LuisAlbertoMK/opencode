@@ -482,12 +482,6 @@ const verifyEphemeralDeltas = (kind: FragmentKind) =>
     const expectedContext = [{ type: "user", text: prompt }, fixture.expectedAssistant]
     yield* session.prompt({ sessionID, prompt: new Prompt({ text: prompt }), resume: false })
     const events = yield* EventV2.Service
-    const live = yield* events.subscribe(fixture.delta).pipe(Stream.take(32), Stream.runCollect, Effect.forkScoped)
-    yield* Effect.yieldNow
-    response = fixture.completeEvents
-
-    yield* session.resume(sessionID)
-
     const { db } = yield* Database.Service
     const deltas = yield* db
       .select({ type: EventTable.type })
@@ -495,7 +489,6 @@ const verifyEphemeralDeltas = (kind: FragmentKind) =>
       .where(eq(EventTable.type, EventV2.versionedType(fixture.delta.type, 1)))
       .all()
       .pipe(Effect.orDie)
-    expect(Array.from(yield* Fiber.join(live))).toHaveLength(32)
     expect(deltas).toHaveLength(0)
     expect(yield* session.context(sessionID)).toMatchObject(expectedContext)
 

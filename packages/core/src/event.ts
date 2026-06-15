@@ -186,9 +186,9 @@ export const layerWith = (options?: LayerOptions) =>
       const synchronized = new Map<string, Set<PubSub.PubSub<void>>>()
       const typed = new Map<string, PubSub.PubSub<Payload>>()
       const projectors = new Map<string, AnyProjector[]>()
-      const commitGuards = new Array<CommitGuard>()
-      const listeners = new Array<Listener>()
-      const syncHandlers = new Array<Sync>()
+      const commitGuards = new Set<CommitGuard>()
+      const listeners = new Set<Listener>()
+      const syncHandlers = new Set<Sync>()
       const { db } = yield* Database.Service
 
       const getOrCreate = (definition: Definition) =>
@@ -330,7 +330,7 @@ export const layerWith = (options?: LayerOptions) =>
                                 message: `Event ${event.id} already exists at aggregate ${stored.aggregateID} sequence ${stored.seq}`,
                               }),
                             )
-                          for (const guard of commitGuards) {
+                          for (const guard of [...commitGuards]) {
                             yield* guard(event)
                           }
                           for (const projector of list) {
@@ -418,7 +418,7 @@ export const layerWith = (options?: LayerOptions) =>
       function notify(event: Payload, isolateListeners: boolean) {
         return Effect.gen(function* () {
           yield* Effect.forEach(
-            listeners,
+            [...listeners],
             (listener) => (isolateListeners ? observe(event, "listener", listener) : listener(event)),
             { discard: true },
           )
@@ -629,28 +629,25 @@ export const layerWith = (options?: LayerOptions) =>
 
       const listen = (listener: Listener): Effect.Effect<Unsubscribe> =>
         Effect.sync(() => {
-          listeners.push(listener)
+          listeners.add(listener)
           return Effect.sync(() => {
-            const index = listeners.indexOf(listener)
-            if (index >= 0) listeners.splice(index, 1)
+            listeners.delete(listener)
           })
         })
 
       const sync = (handler: Sync): Effect.Effect<Unsubscribe> =>
         Effect.sync(() => {
-          syncHandlers.push(handler)
+          syncHandlers.add(handler)
           return Effect.sync(() => {
-            const index = syncHandlers.indexOf(handler)
-            if (index >= 0) syncHandlers.splice(index, 1)
+            syncHandlers.delete(handler)
           })
         })
 
       const beforeCommit = (guard: CommitGuard): Effect.Effect<Unsubscribe> =>
         Effect.sync(() => {
-          commitGuards.push(guard)
+          commitGuards.add(guard)
           return Effect.sync(() => {
-            const idx = commitGuards.indexOf(guard)
-            if (idx !== -1) commitGuards.splice(idx, 1)
+            commitGuards.delete(guard)
           })
         })
 

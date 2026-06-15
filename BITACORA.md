@@ -363,6 +363,43 @@ Solo se incorporaron técnicas con **benchmarks verificados** o **datos de rendi
 
 ---
 
+## Ronda 14 — 6 high-impact low-risk optimizations (2026-06-14)
+
+> Commit: `1e2fcba9d` — `perf: 6 high-impact low-risk optimizations`  
+> Basado en hallazgos de 3 delegados de exploración (TUI, Core, Memory)  
+> Typecheck: 23/23 PASSED, 0 regresiones
+
+| # | Cambio | Archivo | Problema | Fix | Impacto estimado |
+|:-:|--------|---------|----------|-----|:----------------:|
+| 1 | userMessageIDs content cache | `session/index.tsx:221-228` | Nuevo `Set` en cada cambio de mensaje → cascada de layout re-evals por token stream | `createMemo` con content-equality check | **Alto** — evita re-evaluar layout de N tools inline por char |
+| 2 | providers content cache | `session/index.tsx:274` | Nuevo `Map` en cada cambio de providers → invalida memos de assistant messages | `createMemo` con content-equality check | **Alto** — evita re-render de headers de mensajes |
+| 3 | toolprops createMemo | `session/index.tsx:1763-1779` | Objeto literal nuevo por render → rompe memoización en Shell/Write/Edit | `createMemo` keyeado por `props.part` | **Alto** — evita re-evaluación de tool components |
+| 4 | syncExtmarks throttle | `prompt/index.tsx:1382-1388` | `produce()` y extmark scan en cada keystroke | Timer 100ms — coalesce cambios durante tipeo | **Medio** — ~90% menos produce() en tipeo normal |
+| 5 | Autocomplete rAF position | `autocomplete.tsx:112-125` | setInterval 50ms (20 checks/seg) con autocomplete abierto | requestAnimationFrame (idle → check) | **Bajo-Medio** — menos checks cuando idle |
+| 6 | JSON.stringify cache | `compaction.ts:79` | `JSON.stringify(request)` en cada turno para token estimate | Cache keyeado por hash de request | **Medio** — ~0.5-2ms por turno ahorrado |
+| 7 | Object.fromEntries → spread+delete | `runner/model.ts:58-59` | 3 arrays intermedios por turno para filtrar apiKey | `{ ...body }` + `delete httpBody.apiKey` | **Bajo** — eliminación directa sin allocs |
+
+### Fuente de hallazgos
+- Delegado TUI (`usual-moccasin-ox`): H1, H2, H3, H5, H7
+- Delegado Core (`urban-harlequin-guanaco`): H3 (JSON.stringify), H5 (Object.fromEntries)
+- Delegado Memory (`chronic-chocolate-possum`): confirmó prioridades, no agregó nuevos a esta ronda
+
+### Precisión
+- **Planeado**: 6 optimizaciones (Prioridad 1 del ranking combinado) + typecheck + commit + push
+- **Ejecutado**: 7 optimizaciones (la #7 surgió durante implementación) + typecheck + commit + push
+- **Desviación**: +14% (1 adicional no planeada) — dentro del margen porque surgió naturalmente
+- **Cancelado**: RevertBanner extraction (H4, Prioridad 2), array accumulator text-delta (H1 core, Prioridad 2)
+
+### Pendiente para próxima ronda (Prioridad 2)
+1. **Array accumulator** en publish-llm-event.ts — reemplazar `current + value` por `push()` + `join()`
+2. **SessionData Maps eviction** — podar `text`, `ids` Maps en session-data.ts
+3. **Scrollback StringBuilder** — evitar O(n²) en scrollback.surface.ts
+4. **Extract RevertBanner component** — sacar IIFE con `createSignal` del render body
+5. **Per-delta event publish optimization** — bachear eventos efímeros en publish-llm-event.ts
+6. **Subscription registry leak detection** — reemplazar arrays por Sets en event.ts
+
+---
+
 ## Lecciones aprendidas
 
 1. **tsgo + workspace dependencies**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace (usa el tsconfig del package invocador). Si un package depende de `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback en su propio tsconfig.

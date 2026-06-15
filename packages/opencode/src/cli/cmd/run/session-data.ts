@@ -49,6 +49,48 @@ type MessageRole = "assistant" | "user"
 type Dict = Record<string, unknown>
 type SessionCommit = StreamCommit
 
+// Auto-evicting collections to prevent unbounded growth in long sessions.
+const MAX_IDS = 10_000
+const MAX_CALL = 2000
+const MAX_SHELL = 1000
+const MAX_ROLE = 1000
+
+class LimitedSet<T> extends Set<T> {
+  constructor(private maxSize: number) {
+    super()
+  }
+  override add(value: T): this {
+    super.add(value)
+    if (this.size > this.maxSize) {
+      const iter = this.values()
+      let item = iter.next()
+      while (this.size > this.maxSize * 0.5 && !item.done) {
+        this.delete(item.value)
+        item = iter.next()
+      }
+    }
+    return this
+  }
+}
+
+class LimitedMap<K, V> extends Map<K, V> {
+  constructor(private maxSize: number) {
+    super()
+  }
+  override set(key: K, value: V): this {
+    super.set(key, value)
+    if (this.size > this.maxSize) {
+      const iter = this.keys()
+      let item = iter.next()
+      while (this.size > this.maxSize * 0.5 && !item.done) {
+        this.delete(item.value)
+        item = iter.next()
+      }
+    }
+    return this
+  }
+}
+
 // Mutable accumulator for the reducer. Each field tracks a different aspect
 // of the stream so we can produce correct incremental output:
 //
@@ -110,13 +152,13 @@ export function createSessionData(
   return {
     includeUserText: input.includeUserText ?? false,
     announced: false,
-    ids: new Set(),
+    ids: new LimitedSet<string>(MAX_IDS),
     tools: new Set(),
-    call: new Map(),
-    shell: new Map(),
+    call: new LimitedMap<string, Dict>(MAX_CALL),
+    shell: new LimitedMap<string, ShellCall>(MAX_SHELL),
     permissions: [],
     questions: [],
-    role: new Map(),
+    role: new LimitedMap<string, MessageRole>(MAX_ROLE),
     msg: new Map(),
     part: new Map(),
     text: new Map(),

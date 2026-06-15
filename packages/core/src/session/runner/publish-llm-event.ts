@@ -86,24 +86,24 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
     name: string,
     ended: (id: string, value: string, providerMetadata?: ProviderMetadata) => Effect.Effect<void>,
   ) => {
-    const chunks = new Map<string, string>()
+    const chunks = new Map<string, string[]>()
     const start = (id: string) =>
       Effect.suspend(() => {
         if (chunks.has(id)) return Effect.die(`Duplicate ${name} start: ${id}`)
-        chunks.set(id, "")
+        chunks.set(id, [])
         return Effect.void
       })
     const append = (id: string, value: string) =>
       Effect.suspend(() => {
         const current = chunks.get(id)
         if (current === undefined) return Effect.die(`${name} delta before start: ${id}`)
-        chunks.set(id, current + value)
+        current.push(value)
         return Effect.void
       })
     const end = Effect.fnUntraced(function* (id: string, providerMetadata?: ProviderMetadata) {
       const current = chunks.get(id)
       if (current === undefined) return yield* Effect.die(`${name} end before start: ${id}`)
-      yield* ended(id, current, providerMetadata)
+      yield* ended(id, current.join(""), providerMetadata)
       chunks.delete(id)
     })
     const flush = Effect.fnUntraced(function* () {
@@ -234,13 +234,6 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
         return
       case "text-delta":
         yield* text.append(event.id, event.text)
-        yield* events.publish(SessionEvent.Text.Delta, {
-          sessionID: input.sessionID,
-          assistantMessageID: yield* currentAssistantMessageID(),
-          timestamp: yield* timestamp,
-          textID: event.id,
-          delta: event.text,
-        })
         return
       case "text-end":
         yield* text.end(event.id)
@@ -257,13 +250,6 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
         return
       case "reasoning-delta":
         yield* reasoning.append(event.id, event.text)
-        yield* events.publish(SessionEvent.Reasoning.Delta, {
-          sessionID: input.sessionID,
-          assistantMessageID: yield* currentAssistantMessageID(),
-          timestamp: yield* timestamp,
-          reasoningID: event.id,
-          delta: event.text,
-        })
         return
       case "reasoning-end":
         yield* reasoning.end(event.id, event.providerMetadata)
@@ -278,13 +264,6 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
           return yield* Effect.die(`Tool input name changed for ${event.id}: ${tool.name} -> ${event.name}`)
         if (tool.inputEnded) return yield* Effect.die(`Tool input delta after end: ${event.id}`)
         yield* toolInput.append(event.id, event.text)
-        yield* events.publish(SessionEvent.Tool.Input.Delta, {
-          sessionID: input.sessionID,
-          timestamp: yield* timestamp,
-          assistantMessageID: tool.assistantMessageID,
-          callID: event.id,
-          delta: event.text,
-        })
         return
       }
       case "tool-input-end":

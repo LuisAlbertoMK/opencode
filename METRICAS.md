@@ -541,3 +541,66 @@ Con el guard (mismo patrón que `limitFrames()` existente), todo esto se salta c
 2. **syncExtmarksWithPromptParts** es el cuello de botella invisible en TUI — no aparece en profiles porque `produce()` es rápido, pero ejecutado 1000+ veces por minuto de tipeo suma
 3. **GlobalBus sin maxListeners** es un riesgo silencioso de memory leak — sin warning, los listeners se acumulan sin que nadie sepa
 4. **No todo hallazgo es implementable inmediatamente**: `useTerminalDimensions` debounce es correcto pero requiere modificar el package externo `@opentui/solid` (scope para otra ronda)
+
+---
+
+## Ronda 14 — 6 high-impact low-risk optimizations (2026-06-14)
+
+> Commit: `1e2fcba9d` — `perf: 6 high-impact low-risk optimizations`  
+> Basado en 3 delegados de exploración (TUI, Core, Memory)  
+> Typecheck: 23/23 PASSED, 0 regresiones
+
+### Optimizaciones implementadas
+
+| # | Cambio | Archivo | Categoría | Impacto estimado |
+|:-:|--------|---------|:---------:|:----------------:|
+| 1 | userMessageIDs content-based Set cache | `packages/tui/src/routes/session/index.tsx` | Reactividad | **Alto** — evita N layout re-evals por token streamed |
+| 2 | providers content-based Map cache | `packages/tui/src/routes/session/index.tsx` | Reactividad | **Alto** — evita re-render de assistant message headers |
+| 3 | toolprops `createMemo` | `packages/tui/src/routes/session/index.tsx` | Reactividad | **Alto** — evita re-evaluación de Shell/Write/Edit en cada render |
+| 4 | syncExtmarks throttle 100ms | `packages/tui/src/component/prompt/index.tsx` | I/O | **Medio** — ~90% menos produce() en tipeo normal |
+| 5 | Autocomplete rAF en vez de 50ms interval | `packages/tui/src/component/prompt/autocomplete.tsx` | CPU | **Bajo-Medio** — ~20 checks/seg → idle-driven |
+| 6 | JSON.stringify cache por hash | `packages/core/src/session/compaction.ts` | CPU | **Medio** — ~0.5-2ms/turno sin cambios en request |
+| 7 | Object.fromEntries → spread+delete | `packages/core/src/session/runner/model.ts` | Alocación | **Bajo** — elimina 3 arrays intermedios por turno |
+
+### Source de hallazgos
+
+| Delegado | Hallazgos usados | Hallazgos diferidos |
+|----------|-----------------|-------------------|
+| **TUI** (`usual-moccasin-ox`) | H1 (userMessageIDs), H2 (providers), H3 (toolprops), H5 (syncExtmarks), H7 (autocomplete rAF) | H4 (RevertBanner — Prioridad 2), H6 (autocomplete filter — complejo) |
+| **Core** (`urban-harlequin-guanaco`) | H3 (JSON.stringify cache), H5 (Object.fromEntries) | H1 (array accumulator — Prioridad 2), H2 (batch events — Prioridad 2) |
+| **Memory** (`chronic-chocolate-possum`) | — (todos Prioridad 2+) | #2 (SessionData eviction), #5 (scrollback StringBuilder), #6 (event registry) |
+
+### Precisión
+
+| Métrica | Valor |
+|---------|-------|
+| **Planeado** | 6 optimizaciones |
+| **Ejecutado** | 7 (+1 no planeada: #7) |
+| **Desviación** | +14% (1 extra — surgió naturalmente durante implementación de #6) |
+| **Typecheck** | 23/23 PASSED |
+| **Regresiones** | 0 |
+| **Commits push** | 1 (`1e2fcba9d` → fork dev) |
+
+### Análisis de esfuerzo
+
+| Actividad | Archivos tocados | Líneas aprox |
+|-----------|:----------------:|:------------:|
+| userMessageIDs cache | 1 | +8 |
+| providers cache | 1 | +8 |
+| toolprops createMemo | 1 | +5 |
+| syncExtmarks throttle | 1 | +8 |
+| Autocomplete rAF | 1 | +9 |
+| JSON.stringify cache | 1 | +12 |
+| Object.fromEntries fix | 1 | +3 |
+| **Total** | **4** | **~+53** |
+
+### Pendiente para próxima ronda (Prioridad 2)
+
+| # | Hallazgo | Archivo | Impacto estimado |
+|:-:|----------|---------|:----------------:|
+| 1 | Array accumulator text-delta | `publish-llm-event.ts` | O(n²) → O(n) por stream |
+| 2 | SessionData Maps eviction | `session-data.ts` | 1-2MB/sesión reclaimable |
+| 3 | Scrollback StringBuilder | `scrollback.surface.ts` | O(n²) → O(n) por flush |
+| 4 | Extract RevertBanner component | `session/index.tsx` | Elimina signal creation/GC por render |
+| 5 | Batch ephemeral events | `publish-llm-event.ts` | 2000+ allocs/turno evitables |
+| 6 | Subscription registry leak | `event.ts` | Closures leak por cleanup omitido |
