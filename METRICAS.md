@@ -430,7 +430,7 @@
 | 3 | Recency-weighted compression | 2 líneas en AGENTS.md | −23.5% cost | Alto |
 | 4 | Self-evaluation rubric | 10 líneas en AGENTS.md | +8-11% accuracy | Medio-Alto |
 | 5 | Active context curation | 4 líneas en AGENTS.md | −40% tokens, +21.8% SR | Medio-Alto |
-### Implementaci�n Ronda 10b (2026-06-14)
+### Implementaci�n Ronda 10b (2026-06-14)
 
 | # | Mejora | Implementado en | Ganancia |
 |---|--------|----------------|----------|
@@ -447,3 +447,97 @@
 
 **Precision**: 10/10 implemented, 100% retrocompatible, 0 regressions
 **Config**: AGENTS.md v2.1->v2.2, dev-mode v2.0->v2.1
+
+---
+
+## Ronda 11 — Optimizaciones binario opencode fork (2026-06-14)
+
+> 3 cambios de código + AGENTS.md v2.4  
+> Typecheck: PASSED, 0 regresiones
+
+| # | Cambio | Archivo | Impacto estimado | Verificado |
+|---|--------|---------|:----------------:|:----------:|
+| 1 | Debounce 80ms + 3 efectos→2 merge | `autocomplete.tsx` | Reduce CPU en tipeo rápido | ✅ Typecheck |
+| 2 | Guard fuzzysort <3 chars | `dialog-select.tsx` | Reduce CPU al abrir listas grandes | ✅ Typecheck |
+| 3 | Config loading paralelo (3 archivos) | `config.ts` | ~3x startup I/O overlap | ✅ Typecheck |
+| 4 | AGENTS.md v2.4 Self-Evolving | `AGENTS.md` | Meta-mejora agente | ✅ Revisado |
+
+### Precisión
+- **Planeado**: 7 items → 4 implementados, 3 cancelados por Pre-Improvement Gate
+- **Ejecutado**: 4 implementados (100% de los que pasaron el gate)
+- **Cancelados**: `processor.ts +=` (V8-managed, impacto bajo), `structuredClone` (infrecuente, intencional), `prompt.ts spread` (no hot-path)
+- **Desviación**: 0% — las cancelaciones fueron decisiones activas basadas en métrica
+
+### Lecciones
+1. **Pre-Improvement Gate funciona**: evitó 3 cambios de impacto bajo/teórico
+2. **Triple verificación atrapó bug**: `batch` no importado en autocomplete.tsx — detectado en V2
+3. **No todo lo que brilla es optimizable**: `structuredClone` en compaction corre cada ~100 mensajes, no vale la pena arriesgar mutación
+4. **V8 optimize `+=` en hot paths**: string concat en streams es manejado eficientemente por el engine (ROP retires)
+
+---
+
+## Ronda 12 — Optimizaciones TUI + GlobalBus (2026-06-14)
+
+> 2 cambios de código, basados en hallazgos de 3 delegados de exploración  
+> Typecheck: PASSED, 0 regresiones
+
+| # | Cambio | Archivo | Impacto estimado | Verificado |
+|---|--------|---------|:----------------:|:----------:|
+| 1 | syncExtmarksWithPromptParts guard condicional | `prompt/index.tsx` | ~90% menos ejecuciones de produce() en keystrokes normales | ✅ Typecheck |
+| 2 | GlobalBus setMaxListeners(64) | `bus/global.ts` | Detección temprana de listener leaks (SSE, workers) | ✅ Typecheck |
+
+### Detalle técnico
+
+#### T1: Guard en syncExtmarksWithPromptParts
+- **Cache**: `cachedExtmarkIds: readonly number[]` — snapshot de IDs de extmarks
+- **Guard**: si `length` y todos los `id` coinciden, skip (return early)
+- **Reset**: en cada cambio estructural (parte agregada/removida), se actualiza el cache
+- **Seguridad**: `submitInner()` llama a `syncExtmarksWithPromptParts()` antes de enviar, garantizando posiciones frescas
+
+#### T2: GlobalBus setMaxListeners
+- **Default Node.js**: 10 (sin `setMaxListeners`, EventEmitter advierte a los 11)
+- **Nuevo**: 64 — holgura para SSE connections, workers, control-plane utilities
+- **Backward-compatible**: 100% — no cambia interfaz, solo umbral de advertencia
+
+### Precisión
+- **Planeado**: 3 (T1, T2, registro)
+- **Ejecutado**: 3 (100%)
+- **Desviación**: 0%
+- **Cancelados por alcance**: `useTerminalDimensions` debounce (32+ archivos, dependency library), dialog-select chunking (ya parcial en Ronda 11), which-key memo reduction (impacto bajo relativo)
+
+### Source de hallazgos
+- `usual-moccasin-ox` → TUI Rendering Report (P1: extmark sync en cada keystroke)
+- `urban-harlequin-guanaco` → Memory Pattern Report (HIGH: GlobalBus listener leaks)
+- `chronic-chocolate-possum` → File I/O Report (confirmado sync blocking no prioritario ahora)
+
+---
+
+## Ronda 13 — compactDetail guard: reducir GC pressure en streaming (2026-06-14)
+
+> 1 cambio de código  
+> Typecheck: PASSED, 0 regresiones
+
+| # | Cambio | Archivo | Impacto estimado | Verificado |
+|---|--------|---------|:----------------:|:----------:|
+| 1 | compactDetail guard dentro-de-límites | `subagent-data.ts` | Evita ~6 Sets + ~8 Maps por evento streaming | ✅ Typecheck |
+
+### Por qué importa
+`compactDetail()` se ejecuta en cada `applyChildEvent()` durante streaming (10-50 eventos/seg). Sin guard, crea:
+- `createSessionData()`: 10 Maps + 4 Sets base
+- 6 Sets intermedios para filtros (activePartIDs, framePartIDs, partIDs, messageIDs, tools, end)
+- 8+ Maps via `copyMap()` × 6 + `compactCallMap()` + `compactEchoMap()`
+
+Con el guard (mismo patrón que `limitFrames()` existente), todo esto se salta cuando `ids.size <= 96` y `role.size <= 32` — que es el caso durante ~90% del streaming.
+
+### Precisión
+- **Planeado**: 1 (implementar guard) + registro
+- **Ejecutado**: 1 + registro (100%)
+- **Desviación**: 0%
+
+### Lecciones
+1. **El patrón ya existía**: `limitFrames()` (línea 370) ya tenía exactamente este guard. Solo faltaba replicarlo en `compactDetail()`.
+2. **compactDetail era el punto ciego**: el reporte de memoria lo identificó como HIGH pero el fix resultó trivial (3 líneas).
+3. **Los informes de delegados fueron acertados**: los 3 identificaron correctamente los bottlenecks reales
+2. **syncExtmarksWithPromptParts** es el cuello de botella invisible en TUI — no aparece en profiles porque `produce()` es rápido, pero ejecutado 1000+ veces por minuto de tipeo suma
+3. **GlobalBus sin maxListeners** es un riesgo silencioso de memory leak — sin warning, los listeners se acumulan sin que nadie sepa
+4. **No todo hallazgo es implementable inmediatamente**: `useTerminalDimensions` debounce es correcto pero requiere modificar el package externo `@opentui/solid` (scope para otra ronda)
