@@ -234,3 +234,41 @@ d376f31fe fix(opencode): add core src path fallback for cross-package @/ resolut
 7. **InstanceState overhead**: Los tests de `packages/opencode` tienen ~14s de overhead por archivo debido a `InstanceState` + `PluginBoot`. Esto hace que la suite completa (239 archivos) no sea práctica para ejecutar completa en Windows (~55 min teóricos). Los tests individuales o por categoría funcionan correctamente.
 8. **Pre-existing Windows test failures**: Los 14 failures en opencode + tui son todos pre-existing y no relacionados con nuestras correcciones. Son problemas de Windows compat (path separators, symlinks, SolidJS context).
 
+---
+
+## Ronda 8 — Event listener cleanup + micro-optimizaciones (2026-06-14)
+
+| Commit | Descripción | Impacto |
+|--------|-------------|---------|
+| `d4d3e47de` | fix(tui): store event listener unsubs for cleanup, export win32InstallCtrlCGuard | Elimina 12+ memory leaks de listeners en TUI |
+| `1fbe22688` | perf(tui): replace createMemo with plain functions inside For | Elimina ~N señales huérfanas por render en which-key + dialog-select |
+| `2bf375c5c` | perf(core): optimize base64 encode/decode, fix hardcoded /tmp/ path | +Single-pass base64, -3 replace calls, Windows compat |
+
+### Detalle de cambios
+
+#### 1. Event listener cleanup (TUI)
+- **app.tsx**: 6 `event.on()` → `unsubs.push(event.on(...))` + cleanup en `onCleanup`
+- **routes/session/index.tsx**: 2 `event.on()` → `unsubs.push(event.on(...))` + cleanup
+- **component/prompt/index.tsx**: `event.on()` → `onCleanup(event.on(...))`
+- **context/local.tsx**: `event.on()` → `onCleanup(event.on(...))`
+- **feature-plugins/system/notifications.ts**: 7 `api.event.on()` → `unsubs[]` + `lifecycle.onDispose()`
+
+#### 2. Redundant platform guards removed
+- **terminal-win32.ts**: Eliminados 3 `process.platform !== "win32"` guards redundantes
+- Exportado `win32InstallCtrlCGuard` (pre-existing missing export, rompía opencode package)
+
+#### 3. createMemo inside For
+- **which-key.tsx**: 3 `createMemo` → plain arrow functions
+- **dialog-select.tsx**: 2 `createMemo` → plain arrow functions
+
+#### 4. Micro-optimizaciones
+- **encode.ts**: base64Encode: `Array.from+join` → single-pass `for` loop; 3 `.replace()` → single regex alternation
+- **encode.ts**: base64Decode: `Uint8Array.from(callback)` → direct `for` loop
+- **debug-workspace-plugin.ts**: `/tmp/` hardcoded → `os.tmpdir()`
+
+### Verificación
+- ✅ Typecheck core, tui, opencode packages
+- ✅ Typecheck 29 packages (pre-push hook)
+- ✅ Tests core: 1007 pass, 1 pre-existing timeout flake
+- ✅ Tests notifications: 6/6 pass
+

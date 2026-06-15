@@ -306,3 +306,26 @@
 7. **Bun build en Windows**: `bun build --compile` funciona sin problemas. Native plugins (`@opentui/solid`) se integran correctamente. El proceso completo (web UI + compile) toma ~3 min.
 8. **InstanceState overhead**: packages/opencode tiene ~14s de overhead por archivo de test debido al ciclo completo InstanceState + PluginBoot. La suite completa no es práctica en Windows, pero tests individuales corren bien.
 9. **Windows compat pre-existing**: Los failures en tui y opencode son todos pre-existing y ajenos a nuestras correcciones. Son problemas típicos de Windows (path separators, symlinks, SolidJS server rendering).
+
+---
+
+## Ronda 8 — Event listener cleanup + micro-optimizaciones (2026-06-14)
+
+> Baseline: `5815a569a` → HEAD: `2bf375c5c`  
+> 3 commits, 11 archivos
+
+| Métrica | Antes | Después | Δ |
+|---------|-------|---------|---|
+| **Event listeners leak en TUI** (app.tsx) | 6 listeners sin cleanup | 6 listeners con cleanup en onCleanup | ✅ Eliminado |
+| **Event listeners leak en Session** | 2 sin cleanup | 2 con cleanup | ✅ Eliminado |
+| **Event listeners leak en Prompt** | 1 sin cleanup | 1 con cleanup | ✅ Eliminado |
+| **Event listeners leak en LocalProvider** | 1 sin cleanup | 1 con cleanup | ✅ Eliminado |
+| **Event listeners leak en notifications plugin** | 7 sin cleanup | 7 con cleanup via lifecycle.onDispose | ✅ Eliminado |
+| **Missing export win32InstallCtrlCGuard** | ❌ typecheck error en opencode | ✅ Exportado | ✅ Fixed |
+| **Redundant process.platform guards** (terminal-win32) | 3 guards redundantes | 0 | -100% |
+| **createMemo inside For** (which-key) | 3 createMemo | 0 (plain fns) | ✅ 3 signal nodes menos/ítem |
+| **createMemo inside For** (dialog-select) | 2 createMemo | 0 (plain fns) | ✅ 2 signal nodes menos/ítem |
+| **base64Encode allocs** | Array.from + join (3x alloc) | Single-pass for loop (1x alloc) | -66% allocs |
+| **base64Encode replace calls** | 3 chained .replace() | 1 regex alternation | -66% string copies |
+| **base64Decode allocs** | Uint8Array.from(callback) | Direct for loop | -100% callback alloc |
+| **Hardcoded /tmp/ path** | `/tmp/opencode-workspace-dev-data.json` | `os.tmpdir()` | ✅ Windows compat |
