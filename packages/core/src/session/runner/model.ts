@@ -55,9 +55,7 @@ const withDefaults = (model: ModelV2.Info, route: AnyRoute) => {
   const options = model.request.options ?? {}
   const namespace = model.api.type === "aisdk" ? ModelRequest.namespace(model.api.package) : undefined
   const body = model.request.body
-  const httpBody = Object.hasOwn(body, "apiKey")
-    ? Object.fromEntries(Object.entries(body).filter(([key]) => key !== "apiKey"))
-    : body
+  const httpBody = Object.hasOwn(body, "apiKey") ? { ...body, apiKey: undefined } : body
   return route.with({
     provider: model.providerID,
     endpoint: model.api.url === undefined ? undefined : { baseURL: model.api.url },

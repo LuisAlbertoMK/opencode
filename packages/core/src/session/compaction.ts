@@ -76,7 +76,15 @@ type Input = {
   readonly request: LLMRequest
 }
 
-const estimate = (value: unknown) => Token.estimate(JSON.stringify(value))
+let cachedEstimateJson = ""
+let cachedEstimateResult = 0
+const estimate = (value: unknown) => {
+  const json = JSON.stringify(value)
+  if (json === cachedEstimateJson) return cachedEstimateResult
+  cachedEstimateJson = json
+  cachedEstimateResult = Token.estimate(json)
+  return cachedEstimateResult
+}
 
 const truncate = (value: string) =>
   value.length <= TOOL_OUTPUT_MAX_CHARS ? value : `${value.slice(0, TOOL_OUTPUT_MAX_CHARS)}\n[truncated]`

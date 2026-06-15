@@ -218,14 +218,13 @@ export function Session() {
       ),
     ),
   )
-  const userMessageIDs = createMemo(
-    () =>
-      new Set(
-        messages()
-          .filter((message) => message.role === "user")
-          .map((message) => message.id),
-      ),
-  )
+  const userMessageIDs = createMemo((prev: Set<string> | undefined): Set<string> => {
+    const ids = messages()
+      .filter((message) => message.role === "user")
+      .map((message) => message.id)
+    if (prev && prev.size === ids.length && ids.every((id) => prev.has(id))) return prev
+    return new Set(ids)
+  })
   const permissions = createMemo(() => {
     if (session()?.parentID) return []
     return children().flatMap((x) => sync.data.permission[x.id] ?? [])
@@ -271,7 +270,12 @@ export function Session() {
   })
   const showTimestamps = createMemo(() => timestamps() === "show")
   const contentWidth = createMemo(() => dimensions().width - (sidebarVisible() ? 42 : 0) - 4)
-  const providers = createMemo(() => Model.index(sync.data.provider))
+  const providers = createMemo((prev: Map<string, Provider> | undefined): Map<string, Provider> => {
+    const list = sync.data.provider
+    if (!list) return new Map()
+    if (prev && list.length === prev.size && list.every((p) => prev.get(p.id) === p)) return prev
+    return new Map(list.map((item) => [item.id, item] as const))
+  })
 
   const scrollAcceleration = createMemo(() => getScrollAcceleration(tuiConfig))
   const toast = useToast()
@@ -1760,68 +1764,58 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
     return true
   })
 
-  const toolprops = {
-    get metadata() {
-      return props.part.state.status === "pending" ? {} : (props.part.state.metadata ?? {})
-    },
-    get input() {
-      return props.part.state.input ?? {}
-    },
-    get output() {
-      return props.part.state.status === "completed" ? props.part.state.output : undefined
-    },
-    get tool() {
-      return props.part.tool
-    },
-    get part() {
-      return props.part
-    },
-  }
+  const toolprops = createMemo(() => ({
+    metadata: props.part.state.status === "pending" ? {} : (props.part.state.metadata ?? {}),
+    input: props.part.state.input ?? {},
+    output: props.part.state.status === "completed" ? props.part.state.output : undefined,
+    tool: props.part.tool,
+    part: props.part,
+  }))
 
   return (
     <Show when={!shouldHide()}>
       <Switch>
         <Match when={display() === "bash"}>
-          <Shell {...toolprops} />
+          <Shell {...toolprops()} />
         </Match>
         <Match when={display() === "glob"}>
-          <Glob {...toolprops} />
+          <Glob {...toolprops()} />
         </Match>
         <Match when={display() === "read"}>
-          <Read {...toolprops} />
+          <Read {...toolprops()} />
         </Match>
         <Match when={display() === "grep"}>
-          <Grep {...toolprops} />
+          <Grep {...toolprops()} />
         </Match>
         <Match when={display() === "webfetch"}>
-          <WebFetch {...toolprops} />
+          <WebFetch {...toolprops()} />
         </Match>
         <Match when={display() === "websearch"}>
-          <WebSearch {...toolprops} />
+          <WebSearch {...toolprops()} />
         </Match>
         <Match when={display() === "write"}>
-          <Write {...toolprops} />
+          <Write {...toolprops()} />
         </Match>
         <Match when={display() === "edit"}>
-          <Edit {...toolprops} />
+          <Edit {...toolprops()} />
         </Match>
         <Match when={display() === "task"}>
-          <Task {...toolprops} />
+          <Task {...toolprops()} />
         </Match>
         <Match when={display() === "apply_patch"}>
-          <ApplyPatch {...toolprops} />
+          <ApplyPatch {...toolprops()} />
         </Match>
         <Match when={display() === "todowrite"}>
-          <TodoWrite {...toolprops} />
+          <TodoWrite {...toolprops()} />
         </Match>
         <Match when={display() === "question"}>
-          <Question {...toolprops} />
+          <Question {...toolprops()} />
         </Match>
         <Match when={display() === "skill"}>
-          <Skill {...toolprops} />
+          <Skill {...toolprops()} />
         </Match>
         <Match when={true}>
-          <GenericTool {...toolprops} />
+          <GenericTool {...toolprops()} />
         </Match>
       </Switch>
     </Show>

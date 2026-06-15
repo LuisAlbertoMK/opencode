@@ -112,15 +112,17 @@ export function Autocomplete(props: {
   createEffect(() => {
     if (store.visible) {
       let lastPos = { x: 0, y: 0, width: 0 }
-      const interval = setInterval(() => {
+      let rafId: number
+      const check = () => {
+        rafId = requestAnimationFrame(check)
         const anchor = props.anchor()
         if (anchor.x !== lastPos.x || anchor.y !== lastPos.y || anchor.width !== lastPos.width) {
           lastPos = { x: anchor.x, y: anchor.y, width: anchor.width }
           setPositionTick((t) => t + 1)
         }
-      }, 50)
-
-      onCleanup(() => clearInterval(interval))
+      }
+      rafId = requestAnimationFrame(check)
+      onCleanup(() => cancelAnimationFrame(rafId))
     }
   })
 

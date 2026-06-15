@@ -229,6 +229,7 @@ export function Prompt(props: PromptProps) {
   const pasteStyleId = syntax().getStyleId("extmark.paste")!
   let promptPartTypeId = 0
   let cachedExtmarkIds: readonly number[] | undefined
+  let syncTimer: ReturnType<typeof setTimeout> | undefined
   const event = useEvent()
 
   onCleanup(
@@ -1383,7 +1384,14 @@ export function Prompt(props: PromptProps) {
                 const value = input.plainText
                 setStore("prompt", "input", value)
                 auto()?.onInput(value)
-                syncExtmarksWithPromptParts()
+                // Throttle extmark sync to 100ms — positions only matter at submit time;
+                // syncExtmarksWithPromptParts() is called explicitly before submit in submitInner().
+                if (!syncTimer) {
+                  syncTimer = setTimeout(() => {
+                    syncTimer = undefined
+                    syncExtmarksWithPromptParts()
+                  }, 100)
+                }
                 setCursorVersion((value) => value + 1)
               }}
               onCursorChange={() => setCursorVersion((value) => value + 1)}
