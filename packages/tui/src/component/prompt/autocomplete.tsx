@@ -3,7 +3,7 @@ import { pathToFileURL } from "bun"
 import fuzzysort from "fuzzysort"
 import path from "path"
 import { firstBy } from "remeda"
-import { createMemo, createResource, createEffect, onMount, onCleanup, Index, Show, createSignal } from "solid-js"
+import { batch, createMemo, createResource, createEffect, onMount, onCleanup, Index, Show, createSignal } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useEditorContext } from "../../context/editor"
 import { useProject } from "../../context/project"
@@ -152,18 +152,28 @@ export function Autocomplete(props: {
   // On keypress those can be briefly out of sync, so filter() may return an empty/partial string.
   // Copy it into search in an effect because effects run after reactive updates have been rendered and painted
   // so the input has settled and all consumers read the same stable value.
+  // Debounced (80ms) to avoid running fuzzysort+frecency on every keystroke — reduces CPU during fast typing.
   const [search, setSearch] = createSignal("")
   createEffect(() => {
     const next = filter()
-    setSearch(next ? next : "")
+    if (next === undefined || next === "") {
+      setSearch("")
+      return
+    }
+    const id = setTimeout(() => setSearch(next), 80)
+    onCleanup(() => clearTimeout(id))
   })
 
   // When the filter changes due to how TUI works, the mousemove might still be triggered
   // via a synthetic event as the layout moves underneath the cursor. This is a workaround to make sure the input mode remains keyboard so
   // that the mouseover event doesn't trigger when filtering.
+  // Merged with selection reset (previously a third isolated filter() effect) to avoid redundant re-evaluation.
   createEffect(() => {
     filter()
-    setStore("input", "keyboard")
+    batch(() => {
+      setStore("input", "keyboard")
+      setStore("selected", 0)
+    })
   })
 
   function insertPart(text: string, part: PromptInfo["parts"][number]) {
@@ -509,11 +519,6 @@ export function Autocomplete(props: {
       .map((arr) => arr.obj)
 
     return [...fuzziedNonFiles, ...fileOptions].slice(0, 10)
-  })
-
-  createEffect(() => {
-    filter()
-    setStore("selected", 0)
   })
 
   function move(direction: -1 | 1) {

@@ -228,6 +228,7 @@ export function Prompt(props: PromptProps) {
   const agentStyleId = syntax().getStyleId("extmark.agent")!
   const pasteStyleId = syntax().getStyleId("extmark.paste")!
   let promptPartTypeId = 0
+  let cachedExtmarkIds: readonly number[] | undefined
   const event = useEvent()
 
   onCleanup(
@@ -697,6 +698,14 @@ export function Prompt(props: PromptProps) {
 
   function syncExtmarksWithPromptParts() {
     const allExtmarks = input.extmarks.getAllForTypeId(promptPartTypeId)
+
+    // Skip if extmarks haven't changed structurally — avoids expensive produce() on every keystroke.
+    // Extmark positions shift on every edit but only the ID set matters for application logic.
+    // Positions are synced before submit in submitInner().
+    if (cachedExtmarkIds && cachedExtmarkIds.length === allExtmarks.length &&
+        cachedExtmarkIds.every((id, i) => id === allExtmarks[i].id)) return
+    cachedExtmarkIds = allExtmarks.map(e => e.id)
+
     setStore(
       produce((draft) => {
         const newMap = new Map<number, number>()

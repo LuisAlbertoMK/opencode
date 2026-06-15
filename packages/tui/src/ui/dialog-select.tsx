@@ -153,6 +153,8 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       filter((x) => x.disabled !== true),
     )
     if (!needle) return options
+    // Skip fuzzysort for very short queries (<3 chars) to reduce CPU on fast typing
+    if (needle.length < 3) return options
 
     // prioritize title matches (weight: 2) over category matches (weight: 1).
     // users typically search by the item name, and not its category.
