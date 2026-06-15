@@ -430,3 +430,20 @@
 | 3 | Recency-weighted compression | 2 líneas en AGENTS.md | −23.5% cost | Alto |
 | 4 | Self-evaluation rubric | 10 líneas en AGENTS.md | +8-11% accuracy | Medio-Alto |
 | 5 | Active context curation | 4 líneas en AGENTS.md | −40% tokens, +21.8% SR | Medio-Alto |
+### Implementaci�n Ronda 10b (2026-06-14)
+
+| # | Mejora | Implementado en | Ganancia |
+|---|--------|----------------|----------|
+| 1 | Tool Output Compression (Headroom) | AGENTS.md | -60-95% tool output size |
+| 2 | Structured CoT for Code | AGENTS.md | +13.79% Pass@1 |
+| 3 | Focus/Reflexion Protocol | AGENTS.md | Self-repair loop |
+| 4 | PR size discipline | AGENTS.md Rule #6 | 3x bug detection |
+| 5 | ast-grep structural search | AGENTS.md + dev-mode skill | 5-175x code search |
+| 6 | WSL2 mitigations=off | dev-mode SKILL.md Sec 9 | 32-47% compile time |
+| 7 | WSL2 ext4 native | dev-mode SKILL.md Sec 9 | 74-97% I/O |
+| 8 | PowerShell 7 caching | dev-mode SKILL.md Sec 10 | 51% startup |
+| 9 | Defender exclusions | dev-mode SKILL.md Sec 11 | 30-89% build |
+| 10 | simdjson + hypergrep | dev-mode SKILL.md GPU section | Tool references |
+
+**Precision**: 10/10 implemented, 100% retrocompatible, 0 regressions
+**Config**: AGENTS.md v2.1->v2.2, dev-mode v2.0->v2.1

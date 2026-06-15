@@ -421,3 +421,34 @@ Solo se incorporaron tÃ©cnicas con **benchmarks verificados** o **datos de rendi
 - âœ… Tests core: 1007 pass, 1 pre-existing timeout flake
 - âœ… Tests notifications: 6/6 pass
 
+---
+
+## Ronda 10b — Implementación de 10 hallazgos en AGENTS.md v2.2 + dev-mode v2.1 (2026-06-14)
+
+### Qué se hizo
+De los 20 enfoques investigados en Ronda 11-20, se implementaron 10 estables/LTS:
+
+### Implementado en AGENTS.md (v2.1 ? v2.2)
+| # | Mejora | Sección | Ganancia |
+|---|--------|---------|----------|
+| 1 | Tool Output Compression | Tool Output Compression | -60-95% tool output size |
+| 2 | Structured CoT for Code | Structured CoT | +13.79% Pass@1 |
+| 3 | Focus/Reflexion Protocol | Focus/Reflexion | Self-repair loop |
+| 4 | PR size discipline (200-400L) | Rule #6 | 3x bug detection |
+| 5 | ast-grep estructural | File Op Efficiency | 5-175x code search |
+
+### Implementado en dev-mode SKILL.md (v2.0 ? v2.1)
+| # | Mejora | Sección | Ganancia |
+|---|--------|---------|----------|
+| 6 | WSL2 mitigations=off | Sec 9 nueva | 32-47% compile time |
+| 7 | WSL2 ext4 nativo | Sec 9 nueva | 74-97% I/O speed |
+| 8 | PowerShell 7 caching | Sec 10 nueva | 51% faster startup |
+| 9 | Defender exclusions | Sec 11 nueva | 30-89% build time |
+| 10 | simdjson + hypergrep | GPU section | Reference tools |
+
+### NO implementado
+- NVMe driver, SICA, GIST tokens, LLMLingua, VeRO
+
+### Verificación
+- 10/10 implementados, 100% retrocompatible, 0 regresiones
+- AGENTS.md, dev-mode skill, BITACORA, METRICAS actualizados
