@@ -255,9 +255,16 @@ export const layer = Layer.effect(
             .pipe(Effect.catch(() => Effect.void))
         }
       }
-      result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "config.json"), env))
-      result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "opencode.json"), env))
-      result = mergeConfig(result, yield* loadFile(path.join(Global.Path.config, "opencode.jsonc"), env))
+      // Load all global config files in parallel to reduce startup time (~3x I/O overlap).
+      const loaded = yield* Effect.all(
+        ["config.json", "opencode.json", "opencode.jsonc"].map((f) =>
+          loadFile(path.join(Global.Path.config, f), env),
+        ),
+        { concurrency: "unbounded" },
+      )
+      for (const cfg of loaded) {
+        if (Object.keys(cfg).length > 0) result = mergeConfig(result, cfg)
+      }
 
       const legacy = path.join(Global.Path.config, "config")
       if (existsSync(legacy)) {

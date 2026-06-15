@@ -525,6 +525,14 @@ function compactIDs(detail: DetailState) {
 }
 
 function compactDetail(detail: DetailState) {
+  // Skip if within limits — avoids creating 6+ Sets and 8+ Maps per call.
+  // Maps `ids` and `role` are the only ones with numeric limits;
+  // all others (part, msg, text, sent, tools, end) are filtered by active IDs only.
+  if (detail.data.ids.size <= SUBAGENT_COMMIT_LIMIT + SUBAGENT_ERROR_LIMIT &&
+      detail.data.role.size <= SUBAGENT_ROLE_LIMIT) {
+    return
+  }
+
   const next = createSessionData({
     includeUserText: true,
   })
