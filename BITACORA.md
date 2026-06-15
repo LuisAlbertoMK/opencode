@@ -223,6 +223,38 @@ d376f31fe fix(opencode): add core src path fallback for cross-package @/ resolut
 - Probar con modelo 7B+ para mejor rendimiento (3B es lento ~1 min primer token)
 - Si se desea release, build multi-plataforma con `bun run build` (sin `--single`)
 
+## Ronda 9 — Meta-mejora: Self-Evaluation + Precision Budget (2026-06-14)
+
+### Qué se hizo
+Investigación de herramientas y técnicas de auto-mejora para AI agents, análisis de hallazgos e integración al AGENTS.md:
+
+| Encontrado | Fuente | Adoptado |
+|-----------|--------|----------|
+| Self-Improving Agent Loop (Karpathy) | Addy Osmani, Karpathy | ✅ Self-Evaluation Gate |
+| Precision/Token Budget Tracking | GitHub Blog, TokenWise, Ares | ✅ Precision Budget ≤5% |
+| Meta-tool optimization (AWO) | AWO paper (arXiv) | ✅ Pattern Graduation v2 |
+| Sub-agent Contracts | 6-mo experience report (DEV) | ⏳ Pendiente para próxima ronda |
+| Loud Failure Protocol | Multiple sources | ✅ Adoptado |
+| Failure Taxonomy (AgentEval) | AgentEval (GitHub) | ⏳ Pendiente para próxima ronda |
+| DAG-based evaluation | AgentEval | ❌ Overkill |
+| RL/RLHF optimization | DEPO, SWE-RL | ❌ Sin infraestructura |
+| HyperAgents / ADAS | arXiv, NeurIPS | ❌ Riesgo recursivo |
+
+### Cambios en AGENTS.md
+- **Precision Budget**: ≤5% loss entre planeado y ejecutado. Si desviación >5%, registrar causa raíz en métricas.
+- **Self-Evaluation Gate**: pre-complete checklist (Precision, Efficiency, Quality, Memory)
+- **Routing Efficiency Check**: pre-start verification de skill óptimo + estimación de tokens
+- **Loud Failure Protocol**: nunca retry silencioso, siempre surface con what/why/fix
+
+### Lecciones aprendidas clave
+1. **La mayoría del gasto de tokens es evitable**: estudios muestran 40-60% waste en agent systems (Omnithium). Context pruning da 35-50% reduction.
+2. **El cheapest LLM call es el que no se hace**: relevance gates que skipean el LLM para tareas deterministas es la optimización más efectiva (GitHub -62%).
+3. **Meta-tools reducen pasos enteros**: AWO reduce 5-15% LLM calls reemplazando secuencias de tool calls con meta-tools.
+4. **Self-improvement sin evaluación es ciego**: AgentEval mostró que 34% de failure modes estaban "invisibles" antes de tener taxonomy.
+5. **El scaffolding-level es más riesgoso pero más efectivo**: SICA/ADAS demuestran que modificar la estructura del agente (no solo prompts) da mejoras cualitativas.
+
+---
+
 ## Lecciones aprendidas
 
 1. **tsgo + workspace dependencies**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace (usa el tsconfig del package invocador). Si un package depende de `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback en su propio tsconfig.

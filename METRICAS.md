@@ -329,3 +329,35 @@
 | **base64Encode replace calls** | 3 chained .replace() | 1 regex alternation | -66% string copies |
 | **base64Decode allocs** | Uint8Array.from(callback) | Direct for loop | -100% callback alloc |
 | **Hardcoded /tmp/ path** | `/tmp/opencode-workspace-dev-data.json` | `os.tmpdir()` | ✅ Windows compat |
+
+---
+
+## Ronda 9 — Meta-mejora: Self-Evaluation + Precision Budget (2026-06-14)
+
+> Baseline AGENTS.md v2.0 → HEAD: v2.1  
+> Cambios solo en configuración del agente
+
+| Métrica | Antes | Después | Δ |
+|---------|-------|---------|---|
+| **Precision Tracking** | ❌ No existía | ✅ ≤5% loss threshold | Nueva capacidad |
+| **Self-Evaluation** | ❌ No existía | ✅ 4-dim gate pre-complete | Nueva capacidad |
+| **Routing Check** | ❌ No existía | ✅ Skill optimality + token budget | Nueva capacidad |
+| **Failure Handling** | Silencioso (retry) | Loud + immediate catalog | Mejora cualitativa |
+| **Pattern Graduation** | 2 rep → skill | 1 rep → monitor, 2 → skill | 2x más rápido |
+| **Loud Failure** | ❌ No existía | ✅ What/Why/Fix siempre | Nueva capacidad |
+
+### Precisión de esta ronda
+- **Planeado**: Investigar + analizar + implementar mejoras + registrar
+- **Ejecutado**: 5/5 pasos completados
+- **Desviación**: 0% (se cumplió el plan exacto)
+- **Tokens estimados**: ~8000 (research) + ~3000 (analysis) + ~2000 (implementation) = ~13000
+- **Tokens reales**: A medir en próxima iteración
+
+### Baseline para próximas rondas
+| Dimensión | Target | Método de medición |
+|-----------|--------|-------------------|
+| Precision loss | ≤5% | ( \|planned - actual\| / planned ) × 100 |
+| Token efficiency | Mínimo necesario | tokens/task |
+| Self-eval score | ≥7/10 en 4 dims | Post-task checklist |
+| Pattern capture | 100% de patrones ≥2 rep | Engram dedup check |
+| Failure surface | 100% de fallos visibles | Loud protocol audit |
