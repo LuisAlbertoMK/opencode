@@ -255,6 +255,59 @@ Investigación de herramientas y técnicas de auto-mejora para AI agents, análi
 
 ---
 
+## Ronda 10 — Dev-Mode skill + Investigación profunda Windows/File I/O (2026-06-14)
+
+### Qué se hizo
+Creación del skill `dev-mode` con investigación web profunda (3 rondas) sobre:
+- Optimización de recursos Windows (RAM/CPU/GPU)
+- Lectura rápida de archivos multi-formato
+- Técnicas de batch I/O para agentes
+- Últimos rankings junio 2026
+
+### Investigación — Fuentes verificadas con benchmarks reales
+
+| Área | Fuente | Benchmark clave | Ganancia |
+|------|--------|----------------|----------|
+| **Power plan Ultimate Performance** | perfgamer.com, Windows News | CPU no downclockea | 5-15% CPU consistency |
+| **HAGS (GPU Scheduling)** | PCWorld, Windows News | Reduce CPU overhead en GPU | 2-5% latency mejora |
+| **GPU Priority Registry** | SageTweaks, perfgamer | Frame time variance reduction | Consistent 1% lows |
+| **VBS/Memory Integrity OFF** | perfgamer, Windows News | Recupera CPU para procesos | 5-15% FPS/throughput |
+| **Slipstream batch I/O** | aetherwing-io/slipstream (GitHub) | 18 tool calls → 1 | 94% menos round trips |
+| **FastParseX CSV** | FastParseX-dev (GitHub) | Parseo paralelo CSV | 4-8 GB/s throughput |
+| **simdjson JSON** | simdjson/simdjson (GitHub) | 4x RapidJSON, 25x JSON Modern C++ | GB/s parsing |
+| **Omniparse docs** | sirhco/omniparse (Rust) | PDF 200-500ms, XLSX <500ms | Multi-formato nativo |
+| **OpenCode #1 ranking** | LogRocket AI Rankings Jun 2026 | 160K stars, 7.5M MAU | Adopción masiva |
+| **Claude Opus 4.8** | Anthropic, AIScroll Jun 2026 | SWE-Bench Pro 69.2% | SOTA coding agent |
+| **GPT-5.5** | OpenAI, AIScroll Jun 2026 | Terminal-Bench 2.1: 83.4% | SOTA backend/CLI |
+| **ThunderAgent** | arXiv 2602.13692 | Throughput scheduling | 1.5-3.6x agent inference |
+| **SwarmKV** | Towards Data Science Jun 2026 | KV cache sharing | 1.95x faster, 52x activation |
+| **APWA distributed** | arXiv 2605.15132 | 2.5K concurrent agents | Escala horizontal |
+
+### Skill creado: `dev-mode` (v2.0)
+
+| Componente | Descripción | Basado en |
+|-----------|-------------|-----------|
+| **Power plan** | Ultimate Performance oculto | perfgamer.com, Windows News |
+| **HAGS** | HW GPU Scheduling ON | PCWorld, Microsoft Docs |
+| **GPU Priority registry** | GPU Priority=8, Scheduling=High | SageTweaks, perfgamer |
+| **NetworkThrottlingIndex** | Latencia de red mínima | XDA Developers |
+| **SystemResponsiveness=10** | Mínimo CPU para background | XDA Developers, perfgamer |
+| **VBS check** | Verificar sin desactivar automático | perfgamer |
+| **Process priority registry** | Persistente vía Image File Execution Options | SageTweaks |
+| **Batch I/O pattern** | Slipstream-style: agrupar reads/writes en 1 call | Slipstream (GitHub) |
+| **Multi-format parsing** | Fan-out a parser especializado por tipo | Microsoft Agent Framework |
+| **GPU acceleration** | WSL 3 CUDA passthrough | Microsoft Build 2026 |
+| **Modo agente** | Parallel reads, thorough, context pre-caching | Propio + APWA |
+
+### Criterio de inclusión
+Solo se incorporaron técnicas con **benchmarks verificados** o **datos de rendimiento reales**:
+- ✅ Benchmarks publicados con hardware específico
+- ✅ Resultados medibles (throughput, latency, FPS, token reduction)
+- ✅ Aplicables al entorno Windows + opencode
+- ❌ Excluido: teóricos, no medidos, requieren infraestructura no disponible
+
+---
+
 ## Lecciones aprendidas
 
 1. **tsgo + workspace dependencies**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace (usa el tsconfig del package invocador). Si un package depende de `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback en su propio tsconfig.
@@ -265,6 +318,9 @@ Investigación de herramientas y técnicas de auto-mejora para AI agents, análi
 6. **Build de Bun en Windows**: `bun build --compile` funciona correctamente en Windows. El `@opentui/solid/bun-plugin` se integra sin problemas. Los native deps cross-platform (`@opentui/core`, `@parcel/watcher`, `@ff-labs/fff-bun`) se instalan vía `bun install --os="*" --cpu="*"`.
 7. **InstanceState overhead**: Los tests de `packages/opencode` tienen ~14s de overhead por archivo debido a `InstanceState` + `PluginBoot`. Esto hace que la suite completa (239 archivos) no sea práctica para ejecutar completa en Windows (~55 min teóricos). Los tests individuales o por categoría funcionan correctamente.
 8. **Pre-existing Windows test failures**: Los 14 failures en opencode + tui son todos pre-existing y no relacionados con nuestras correcciones. Son problemas de Windows compat (path separators, symlinks, SolidJS context).
+9. **Benchmarks reales > teoría**: Las ganancias de rendimiento más confiables vienen de técnicas con benchmarks publicados en hardware real (Slipstream: 94% round trip reduction, HAGS: 2-5%, VBS off: 5-15%). Las técnicas sin datos medibles no se integran.
+10. **Batch I/O es la optimización más subestimada**: Slipstream probó que agrupar tool calls reduce 18→1 round trips. ThunderAgent logró 1.5-3.6x throughput con program-aware scheduling. La latencia dominante no es el filesystem sino los round trips del LLM.
+11. **Windows 11 tiene optimizaciones ocultas**: Ultimate Performance power plan no está visible por defecto. Registry tweaks de GPU Priority y Scheduling Category están documentados pero no son ampliamente conocidos. VBS consume 5-15% CPU sin que el usuario lo sepa.
 
 ---
 

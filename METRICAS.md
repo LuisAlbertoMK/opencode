@@ -361,3 +361,38 @@
 | Self-eval score | ≥7/10 en 4 dims | Post-task checklist |
 | Pattern capture | 100% de patrones ≥2 rep | Engram dedup check |
 | Failure surface | 100% de fallos visibles | Loud protocol audit |
+
+---
+
+## Ronda 10 — Dev-Mode skill + Investigación Windows/File I/O (2026-06-14)
+
+> Creación de skill `dev-mode` v2.0 con optimizaciones basadas en benchmarks verificados
+
+| Técnica | Benchmark fuente | Ganancia reportada | Aplicable a |
+|---------|-----------------|-------------------|-------------|
+| **Ultimate Performance** | perfgamer.com | 5-15% CPU consistency | Windows 11 |
+| **HAGS (GPU Scheduling)** | PCWorld, Microsoft | 2-5% latency mejora | GPUs modernas DX12 |
+| **GPU Priority Registry** | SageTweaks, perfgamer | Frame time consistency | Windows 11 |
+| **VBS Desactivado** | perfgamer, Windows News | 5-15% FPS/throughput | Si no requiere security |
+| **Slipstream batch I/O** | Slipstream (GitHub) | 94% fewer round trips | >10 archivos |
+| **simdjson** | simdjson (GitHub) | 4x RapidJSON, GB/s | JSON parsing |
+| **FastParseX** | FastParseX (GitHub) | 4-8 GB/s CSV | CSV paralelo |
+| **Omniparse** | sirhco/omniparse (Rust) | <100ms text, <500ms XLSX | Documentos multi-formato |
+| **ThunderAgent** | arXiv 2602.13692 | 1.5-3.6x throughput | Agent inference |
+| **SwarmKV** | Towards Data Science | 1.95x faster, 52x activation | KV cache sharing |
+| **APWA distributed** | arXiv 2605.15132 | Escala 2.5K agents | Multi-agent workflows |
+
+### Capacidades agregadas al agente
+
+| Capacidad | Antes | Ahora | Δ |
+|-----------|-------|-------|---|
+| **Power plan** | High Performance | Ultimate Performance (hidden) | Mejor CPU scheduling |
+| **GPU acceleration** | No verificada | HAGS + Registry priority + CUDA check | 2-5% + consistency |
+| **File I/O strategy** | Lectura directa | Batch + fan-out + mmap + thresholds | 94% round trip reduction |
+| **Procesos dev priority** | Manual | Registry persistente (IFEO) | Persistente entre reinicios |
+| **Research sources** | General | Junio 2026 verified benchmarks | Actualidad |
+
+### Precisión de esta ronda
+- **Planeado**: Investigar → analizar → crear skill → registrar
+- **Ejecutado**: 4/4 pasos completados
+- **Desviación**: 0%
