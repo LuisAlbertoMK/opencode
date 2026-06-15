@@ -455,6 +455,29 @@ Solo se incorporaron técnicas con **benchmarks verificados** o **datos de rendi
 
 ---
 
+## Meta-mejora v2.5b — Graduation-track exempted from metric gate (2026-06-14)
+
+**Ciclo de automejora** (Karpathy: arXiv 2504.15228 SICA)
+
+| Paso | Resultado |
+|------|-----------|
+| **1. PROBLEMA** | Graduation scoring (freq×impact ≥6) contradice Karpathy metric gate ("no metric → DO NOT IMPLEMENT") — viví la fricción: tuve que inventar métrica proxy (77%) para cambio Hot path |
+| **2. METRIC** | Baseline: ~3 min inventando proxy metric por ciclo. Target: 0 min para Graduation-track items |
+| **3. HYPOTHESIS** | Eximir Graduation-track del metric gate resuelve la contradicción y reduce fricción en patrones con evidencia sólida |
+| **4. IMPLEMENT** | AGENTS.md v2.5: "Self-Improvement Cycle: except Graduation-track pattern extraction per §4" + "Pre-Improvement Gate: except Graduation-track pattern extraction per §4" |
+| **5. VERIFY** | En próxima graduación de patrón con score ≥6 (content-based caching, array accumulator), verificar que no requiere métrica proxy |
+| **6. GRADUATE** | ✅ Persistido en AGENTS.md v2.5 (2 edits, cada uno ≤15% de sección) |
+
+### Patrones pendientes de graduación (score ≥6)
+| Patrón | Frecuencia | Impacto | Score | Próximo ciclo |
+|--------|:----------:|:-------:|:-----:|:-------------:|
+| Content-based caching | 3 | 3 (Alto) | **9** | ✅ Elegible |
+| Array accumulator | 3 | 2 (Medio) | **6** | ✅ Elegible |
+| Guard/clip data structures | 2 | 2 (Medio) | 4 | ⏳ Enogr.am |
+| Throttle + flush-before-submit | 2 | 2 (Medio) | 4 | ⏳ Enogr.am |
+
+---
+
 ## Lecciones aprendidas
 
 1. **tsgo + workspace dependencies**: tsgo NO resuelve `@/` paths cuando typecheckea archivos de otro workspace (usa el tsconfig del package invocador). Si un package depende de `@opencode-ai/core` con imports `@/`, necesita `"../core/src/*"` como fallback en su propio tsconfig.
