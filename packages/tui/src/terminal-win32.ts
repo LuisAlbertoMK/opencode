@@ -28,7 +28,6 @@ function load() {
  * Clear ENABLE_PROCESSED_INPUT on the console stdin handle.
  */
 export function win32DisableProcessedInput() {
-  if (process.platform !== "win32") return
   if (!process.stdin.isTTY) return
   if (!load()) return
 
@@ -45,7 +44,6 @@ export function win32DisableProcessedInput() {
  * Discard any queued console input (mouse events, key presses, etc.).
  */
 export function win32FlushInputBuffer() {
-  if (process.platform !== "win32") return
   if (!process.stdin.isTTY) return
   if (!load()) return
 
@@ -66,8 +64,7 @@ let unhook: (() => void) | undefined
  * - A `setRawMode(...)` hook to re-clear after known raw-mode toggles.
  * - A low-frequency poll as a backstop for native/external mode changes.
  */
-function win32InstallCtrlCGuard() {
-  if (process.platform !== "win32") return
+export function win32InstallCtrlCGuard() {
   if (!process.stdin.isTTY) return
   if (!load()) return
   if (unhook) return unhook

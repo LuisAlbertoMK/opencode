@@ -409,6 +409,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
     })
 
   // Let selection copy/dismiss win ahead of normal bindings when explicit copy is required.
+  const unsubs: (() => void)[] = []
   const offSelectionKeys = keymap.intercept(
     "key",
     ({ event }) => {
@@ -420,6 +421,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
   onCleanup(() => {
     offSelectionKeys()
     attention.dispose()
+    for (const unsub of unsubs) unsub()
   })
 
   // Wire up console copy-to-clipboard via opentui's onCopySelection callback
@@ -952,53 +954,64 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
     bindings: tuiConfig.keybinds.gather("app_exit", ["app.exit"]),
   }))
 
-  event.on("tui.command.execute", (evt, { workspace }) => {
-    if (workspace !== project.workspace.current()) return
-    keymap.dispatchCommand(evt.properties.command)
-  })
+  unsubs.push(
+    event.on("tui.command.execute", (evt, { workspace }) => {
+      if (workspace !== project.workspace.current()) return
+      keymap.dispatchCommand(evt.properties.command)
+    }),
+  )
 
-  event.on("tui.toast.show", (evt, { workspace }) => {
-    if (workspace !== project.workspace.current()) return
-    toast.show({
-      title: evt.properties.title,
-      message: evt.properties.message,
-      variant: evt.properties.variant,
-      duration: evt.properties.duration,
-    })
-  })
-
-  event.on("tui.session.select", (evt, { workspace }) => {
-    if (workspace !== project.workspace.current()) return
-    route.navigate({
-      type: "session",
-      sessionID: evt.properties.sessionID,
-    })
-  })
-
-  event.on("session.deleted", (evt) => {
-    if (route.data.type === "session" && route.data.sessionID === evt.properties.info.id) {
-      route.navigate({ type: "home" })
+  unsubs.push(
+    event.on("tui.toast.show", (evt, { workspace }) => {
+      if (workspace !== project.workspace.current()) return
       toast.show({
-        variant: "info",
-        message: "The current session was deleted",
+        title: evt.properties.title,
+        message: evt.properties.message,
+        variant: evt.properties.variant,
+        duration: evt.properties.duration,
       })
-    }
-  })
+    }),
+  )
 
-  event.on("session.error", (evt, { workspace }) => {
-    if (workspace !== project.workspace.current()) return
-    const error = evt.properties.error
-    if (error && typeof error === "object" && error.name === "MessageAbortedError") return
-    const message = errorMessage(error)
+  unsubs.push(
+    event.on("tui.session.select", (evt, { workspace }) => {
+      if (workspace !== project.workspace.current()) return
+      route.navigate({
+        type: "session",
+        sessionID: evt.properties.sessionID,
+      })
+    }),
+  )
 
-    toast.show({
-      variant: "error",
-      message,
-      duration: 5000,
-    })
-  })
+  unsubs.push(
+    event.on("session.deleted", (evt) => {
+      if (route.data.type === "session" && route.data.sessionID === evt.properties.info.id) {
+        route.navigate({ type: "home" })
+        toast.show({
+          variant: "info",
+          message: "The current session was deleted",
+        })
+      }
+    }),
+  )
 
-  event.on("installation.update-available", async (evt) => {
+  unsubs.push(
+    event.on("session.error", (evt, { workspace }) => {
+      if (workspace !== project.workspace.current()) return
+      const error = evt.properties.error
+      if (error && typeof error === "object" && error.name === "MessageAbortedError") return
+      const message = errorMessage(error)
+
+      toast.show({
+        variant: "error",
+        message,
+        duration: 5000,
+      })
+    }),
+  )
+
+  unsubs.push(
+    event.on("installation.update-available", async (evt) => {
     console.log("installation.update-available", evt)
     const version = evt.properties.version
 
@@ -1044,7 +1057,8 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
     )
 
     void exit()
-  })
+    }),
+  )
 
   const plugin = createMemo(() => {
     if (!ready()) return
