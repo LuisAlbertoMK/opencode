@@ -248,11 +248,12 @@ function normalizeComponentNames(spec: OpenApiSpec) {
 
 function componentTypeName(name: string) {
   if (!name.includes(".")) return name
-  return name
-    .split(".")
-    .filter((part) => !/^\d+$/.test(part))
-    .map((part) => part.slice(0, 1).toUpperCase() + part.slice(1))
-    .join("")
+  const parts: string[] = []
+  for (const part of name.split(".")) {
+    if (/^\d+$/.test(part)) continue
+    parts.push(part.slice(0, 1).toUpperCase() + part.slice(1))
+  }
+  return parts.join("")
 }
 
 function applyLegacySchemaOverrides(spec: OpenApiSpec) {
@@ -315,12 +316,17 @@ function canonicalizeSchema(input: unknown, schemas: Record<string, OpenApiSchem
   if (!input || typeof input !== "object") return input
   const schema = input as OpenApiSchema
   if (schema.$ref) return { $ref: canonicalRef(schema.$ref, schemas) }
-  return Object.fromEntries(
-    Object.entries(input)
-      .filter(([key]) => key !== "description")
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, value]) => [key, canonicalizeSchema(value, schemas)]),
-  )
+  const entries: [string, unknown][] = []
+  for (const [key, value] of Object.entries(input)) {
+    if (key === "description") continue
+    entries.push([key, value])
+  }
+  entries.sort(([a], [b]) => a.localeCompare(b))
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of entries) {
+    result[key] = canonicalizeSchema(value, schemas)
+  }
+  return result
 }
 
 function canonicalRef(ref: string, schemas: Record<string, OpenApiSchema>) {
