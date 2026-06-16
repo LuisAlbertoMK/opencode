@@ -230,13 +230,16 @@ export function merge(...rulesets: PermissionV1.Ruleset[]): PermissionV1.Rule[] 
 
 export function disabled(tools: string[], ruleset: PermissionV1.Ruleset): Set<string> {
   const edits = ["edit", "write", "apply_patch"]
-  return new Set(
-    tools.filter((tool) => {
-      const permission = edits.includes(tool) ? "edit" : tool
-      const rule = ruleset.findLast((rule) => Wildcard.match(permission, rule.permission))
-      return rule?.pattern === "*" && rule.action === "deny"
-    }),
-  )
+  const result: string[] = []
+  for (const tool of tools) {
+    const permission = edits.includes(tool) ? "edit" : tool
+    let rule: PermissionV1.Rule | undefined
+    for (let i = ruleset.length - 1; i >= 0; i--) {
+      if (Wildcard.match(permission, ruleset[i]!.permission)) { rule = ruleset[i]; break }
+    }
+    if (rule?.pattern === "*" && rule.action === "deny") result.push(tool)
+  }
+  return new Set(result)
 }
 
 export const defaultLayer = layer.pipe(Layer.provide(EventV2Bridge.defaultLayer))

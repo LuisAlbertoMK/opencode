@@ -33,11 +33,12 @@ export const layer = Layer.effect(
       }),
       hasStatements: () => statements.length > 0,
       evaluate: EffectRuntime.fn("Policy.evaluate")(function* (action, resource, fallback) {
-        return (
-          statements.findLast(
-            (statement) => Wildcard.match(action, statement.action) && Wildcard.match(resource, statement.resource),
-          )?.effect ?? fallback
-        )
+        for (let i = statements.length - 1; i >= 0; i--) {
+          if (Wildcard.match(action, statements[i]!.action) && Wildcard.match(resource, statements[i]!.resource)) {
+            return statements[i]!.effect
+          }
+        }
+        return fallback
       }),
     })
   }),

@@ -62,8 +62,12 @@ const markLastSystem = (system: LLMRequest["system"], hint: CacheHint): LLMReque
   return result
 }
 
-const lastIndexOfRole = (messages: ReadonlyArray<Message>, role: Message["role"]): number =>
-  messages.findLastIndex((m) => m.role === role)
+const lastIndexOfRole = (messages: ReadonlyArray<Message>, role: Message["role"]): number => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i]!.role === role) return i
+  }
+  return -1
+}
 
 // Mark the last text part of `messages[index]`. If no text part exists, mark
 // the last content part regardless of type — that's the breakpoint position
@@ -72,7 +76,10 @@ const markMessageAt = (messages: ReadonlyArray<Message>, index: number, hint: Ca
   if (index < 0 || index >= messages.length) return messages
   const target = messages[index]!
   if (target.content.length === 0) return messages
-  const lastTextIndex = target.content.findLastIndex((part) => part.type === "text")
+  let lastTextIndex = -1
+  for (let i = target.content.length - 1; i >= 0; i--) {
+    if (target.content[i]!.type === "text") { lastTextIndex = i; break }
+  }
   const markAt = lastTextIndex >= 0 ? lastTextIndex : target.content.length - 1
   const existing = target.content[markAt]!
   if ("cache" in existing && existing.cache) return messages
