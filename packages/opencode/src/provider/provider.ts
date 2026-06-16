@@ -1241,12 +1241,7 @@ export function fromModelsDevProvider(provider: ModelsDev.Provider): Info {
         name: `${model.name} ${mode[0].toUpperCase()}${mode.slice(1)}`,
         cost: opts.cost ? mergeDeep(base.cost, cost(opts.cost)) : base.cost,
         options: opts.provider?.body
-          ? Object.fromEntries(
-              Object.entries(opts.provider.body).map(([k, v]) => [
-                k.replace(/_([a-z])/g, (_, c) => c.toUpperCase()),
-                v,
-              ]),
-            )
+          ? (() => { const o: Record<string, unknown> = {}; const b = opts.provider!.body; for (const k of Object.keys(b)) o[k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = b[k]; return o })()
           : base.options,
         headers: opts.provider?.headers ?? base.headers,
       }
@@ -1370,16 +1365,9 @@ export const layer = Layer.effect(
 
           provider.models = yield* Effect.promise(async () => {
             const next = await models(toPublicInfo(provider), { auth: pluginAuth })
-            return Object.fromEntries(
-              Object.entries(next).map(([id, model]) => [
-                id,
-                {
-                  ...model,
-                  id: ModelV2.ID.make(id),
-                  providerID,
-                },
-              ]),
-            )
+            const result = {} as typeof provider.models
+            for (const [id, model] of Object.entries(next)) result[id] = { ...model, id: ModelV2.ID.make(id), providerID } as typeof result[string]
+            return result
           })
         }
 
