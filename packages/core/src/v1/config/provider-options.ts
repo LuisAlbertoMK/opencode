@@ -157,13 +157,21 @@ function body(input: unknown) {
 }
 
 function snake(options: Options) {
-  return Object.fromEntries(Object.entries(options).map(([key, value]) => [snakeKey(key), snakeValue(value)]))
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(options)) {
+    result[snakeKey(key)] = snakeValue(value)
+  }
+  return result
 }
 
 function snakeValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(snakeValue)
   if (!isRecord(value)) return value
-  return Object.fromEntries(Object.entries(value).map(([key, value]) => [snakeKey(key), snakeValue(value)]))
+  const result: Record<string, unknown> = {}
+  for (const [key, val] of Object.entries(value)) {
+    result[snakeKey(key)] = snakeValue(val)
+  }
+  return result
 }
 
 function snakeKey(key: string) {
@@ -175,27 +183,45 @@ function clone(options: Options) {
 }
 
 function omit(options: Options, keys: ReadonlyArray<string>) {
-  return Object.fromEntries(Object.entries(options).filter(([key]) => !keys.includes(key)))
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(options)) {
+    if (!keys.includes(key)) result[key] = value
+  }
+  return result
 }
 
 function pick(options: Options, keys: ReadonlyArray<string>) {
-  return Object.fromEntries(Object.entries(options).filter(([key]) => keys.includes(key)))
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(options)) {
+    if (keys.includes(key)) result[key] = value
+  }
+  return result
 }
 
 function headers(input: unknown) {
   if (!isRecord(input)) return undefined
-  return Object.fromEntries(
-    Object.entries(input).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
-  )
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(input)) {
+    if (typeof value === "string") result[key] = value
+  }
+  return result
 }
 
 function compact(input: Record<string, string | undefined>) {
-  const entries = Object.entries(input).filter((entry): entry is [string, string] => entry[1] !== undefined)
-  return entries.length ? Object.fromEntries(entries) : undefined
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) result[key] = value
+  }
+  const keys = Object.keys(result)
+  return keys.length ? result : undefined
 }
 
 function compactUnknown(input: Record<string, unknown>) {
-  return Object.fromEntries(Object.entries(input).filter((entry) => entry[1] !== undefined))
+  const result: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined) result[key] = value
+  }
+  return result
 }
 
 function string(input: unknown) {

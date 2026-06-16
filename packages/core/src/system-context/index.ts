@@ -204,9 +204,13 @@ export function initialize(value: SystemContext): Effect.Effect<Generation, Init
 function initializeObservation(entries: ReadonlyArray<Entry>): Generation {
   const available = entries.filter((entry): entry is AvailableEntry => entry._tag === "Available")
   const rendered = available.map((entry) => [entry.key, entry.baseline()] as const)
+  const snapshot: Record<string, SourceSnapshot> = {}
+  for (const [key, result] of rendered) {
+    snapshot[key] = result.snapshot
+  }
   return {
     baseline: render(rendered.map(([, result]) => result.text)),
-    snapshot: Object.fromEntries(rendered.map(([key, result]) => [key, result.snapshot])),
+    snapshot,
   }
 }
 
