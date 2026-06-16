@@ -4,7 +4,27 @@
 > Ronda 1: 6 commits, 47 archivos, +395/-233 líneas  
 > Ronda 2: 10 commits, 8 archivos, ~+146/-101 líneas
 
+## Metodología de Baseline de Recursos
+
+A partir de AGENTS.md v2.6, toda mejora de rendimiento requiere **baseline medible** antes y después:
+
+| Dimensión | Medición | API |
+|-----------|----------|-----|
+| **RAM** | heapUsed, heapTotal, rss | `process.memoryUsage()` (Bun/Node) |
+| **CPU** | user + system (microsegundos) | `process.cpuUsage()` (Bun/Node) |
+| **GPU/VRAM** | memory.used, utilization.gpu/memory | `nvidia-smi` (si disponible) |
+| **Throughput** | ops/s del benchmark específico | `performance.now()` + contador |
+
+**Protocolo**: Pre-ciclo → captura snapshot → implementar → post-ciclo → mismo workload (≥3 runs, median) → Δ% → log en `docs/metricas/`.
+
+**Target por ciclo**: ≥10% reducción en al menos una dimensión de recursos (RAM, CPU, VRAM). **Target acumulado**: 50%.
+
+### Baseline files
+Cada ciclo genera un archivo `docs/metricas/baseline-{cycle-name}.md` con raw numbers, para comparación exacta entre rondas.
+
 ---
+
+
 
 ## 1. Platform Abstraction (`process.platform` → `Platform.*`)
 
