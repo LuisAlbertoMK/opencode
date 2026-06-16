@@ -57,13 +57,13 @@ const isSensitiveHeaderName = (name: string) => SENSITIVE_NAME.test(name)
 
 const isSensitiveQueryName = (name: string) => isSensitiveHeaderName(name) || SHORT_QUERY_NAME.test(name)
 
-const redactHeaders = (headers: Headers.Headers, redactedNames: ReadonlyArray<string | RegExp>) =>
-  Object.fromEntries(
-    Object.entries(Headers.redact(headers, [...redactedNames, SENSITIVE_NAME])).map(([name, value]) => [
-      name,
-      String(value),
-    ]),
-  )
+const redactHeaders = (headers: Headers.Headers, redactedNames: ReadonlyArray<string | RegExp>) => {
+  const result: Record<string, string> = {}
+  for (const [name, value] of Object.entries(Headers.redact(headers, [...redactedNames, SENSITIVE_NAME]))) {
+    result[name] = String(value)
+  }
+  return result
+}
 
 const redactUrl = (value: string) => {
   if (!URL.canParse(value)) return REDACTED
@@ -74,8 +74,13 @@ const redactUrl = (value: string) => {
   return url.toString()
 }
 
-const normalizedHeaders = (headers: Headers.Headers) =>
-  Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]))
+const normalizedHeaders = (headers: Headers.Headers) => {
+  const result: Record<string, string> = {}
+  for (const [key, value] of Object.entries(headers)) {
+    result[key.toLowerCase()] = value
+  }
+  return result
+}
 
 const requestId = (headers: Record<string, string>) => {
   return (

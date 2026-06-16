@@ -123,11 +123,15 @@ const endpointBaseURL = <Body>(endpoint: Endpoint<Body>) =>
   typeof endpoint.baseURL === "string" ? endpoint.baseURL : undefined
 
 const mergeHeaders = (...items: ReadonlyArray<Record<string, string> | undefined>) => {
-  const entries = items.flatMap((item) =>
-    item === undefined ? [] : Object.entries(item).filter((entry): entry is [string, string] => entry[1] !== undefined),
-  )
-  if (entries.length === 0) return undefined
-  return Object.fromEntries(entries)
+  const result: Record<string, string> = {}
+  for (const item of items) {
+    if (!item) continue
+    for (const [key, value] of Object.entries(item)) {
+      if (value !== undefined) result[key] = value
+    }
+  }
+  const keys = Object.keys(result)
+  return keys.length ? result : undefined
 }
 
 export const generationOptions = (input: GenerationOptions.Input | undefined) =>

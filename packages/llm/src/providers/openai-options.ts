@@ -22,21 +22,15 @@ export type OpenAIProviderOptionsInput = ProviderOptions & {
   readonly openai?: OpenAIOptionsInput
 }
 
-const definedEntries = (input: Record<string, unknown>) =>
-  Object.entries(input).filter((entry) => entry[1] !== undefined)
-
 const openAIProviderOptions = (options: OpenAIOptionsInput | undefined): ProviderOptions | undefined => {
-  const openai = Object.fromEntries(
-    definedEntries({
-      store: options?.store,
-      promptCacheKey: options?.promptCacheKey,
-      reasoningEffort: options?.reasoningEffort,
-      reasoningSummary: options?.reasoningSummary,
-      include: options?.include,
-      textVerbosity: options?.textVerbosity,
-      serviceTier: options?.serviceTier,
-    }),
-  )
+  const openai: Record<string, unknown> = {}
+  if (options?.store !== undefined) openai.store = options.store
+  if (options?.promptCacheKey !== undefined) openai.promptCacheKey = options.promptCacheKey
+  if (options?.reasoningEffort !== undefined) openai.reasoningEffort = options.reasoningEffort
+  if (options?.reasoningSummary !== undefined) openai.reasoningSummary = options.reasoningSummary
+  if (options?.include !== undefined) openai.include = options.include
+  if (options?.textVerbosity !== undefined) openai.textVerbosity = options.textVerbosity
+  if (options?.serviceTier !== undefined) openai.serviceTier = options.serviceTier
   if (Object.keys(openai).length === 0) return undefined
   return { openai }
 }
