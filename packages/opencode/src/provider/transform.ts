@@ -860,30 +860,28 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/azure":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/azure
       if (id === "o1-mini") return {}
-      return Object.fromEntries(
-        openaiReasoningEfforts(id, model.release_date).map((effort) => [
-          effort,
-          {
-            reasoningEffort: effort,
-            reasoningSummary: "auto",
-            include: INCLUDE_ENCRYPTED_REASONING,
-          },
-        ]),
-      )
+      const azureResult: Record<string, Record<string, any>> = {}
+      for (const effort of openaiReasoningEfforts(id, model.release_date)) {
+        azureResult[effort] = {
+          reasoningEffort: effort,
+          reasoningSummary: "auto",
+          include: INCLUDE_ENCRYPTED_REASONING,
+        }
+      }
+      return azureResult
     case "@ai-sdk/amazon-bedrock/mantle":
     case "@ai-sdk/openai": {
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/openai
-      const efforts = openaiReasoningEfforts(model.api.id, model.release_date)
-      return Object.fromEntries(
-        efforts.map((effort) => [
-          effort,
-          {
-            reasoningEffort: effort,
-            reasoningSummary: "auto",
-            include: INCLUDE_ENCRYPTED_REASONING,
-          },
-        ]),
-      )
+      const oaiEfforts = openaiReasoningEfforts(model.api.id, model.release_date)
+      const oaiResult: Record<string, Record<string, any>> = {}
+      for (const effort of oaiEfforts) {
+        oaiResult[effort] = {
+          reasoningEffort: effort,
+          reasoningSummary: "auto",
+          include: INCLUDE_ENCRYPTED_REASONING,
+        }
+      }
+      return oaiResult
     }
 
     case "@ai-sdk/anthropic":
@@ -891,30 +889,33 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/google-vertex/anthropic":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/google-vertex#anthropic-provider
       if (adaptiveEfforts) {
-        let efforts = [...adaptiveEfforts]
+        let adaptedEfforts = [...adaptiveEfforts]
         if (model.providerID === "github-copilot") {
           if (model.api.id.includes("opus-4.7")) {
-            efforts = ["medium"]
+            adaptedEfforts = ["medium"]
           }
           // Efforts currently supported are: low, medium, high
-          efforts = efforts.filter((v) => v !== "max" && v !== "xhigh")
+          adaptedEfforts = adaptedEfforts.filter((v) => v !== "max" && v !== "xhigh")
         }
-        return Object.fromEntries(
-          efforts.map((effort) => [
-            effort,
-            {
-              thinking: {
-                type: "adaptive",
-                ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}),
-              },
-              effort,
+        const anthropicResult: Record<string, Record<string, any>> = {}
+        for (const effort of adaptedEfforts) {
+          anthropicResult[effort] = {
+            thinking: {
+              type: "adaptive",
+              ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}),
             },
-          ]),
-        )
+            effort,
+          }
+        }
+        return anthropicResult
       }
 
       if (["opus-4-5", "opus-4.5"].some((v) => model.api.id.includes(v))) {
-        return Object.fromEntries(WIDELY_SUPPORTED_EFFORTS.map((effort) => [effort, { effort }]))
+        const opusResult: Record<string, Record<string, any>> = {}
+        for (const effort of WIDELY_SUPPORTED_EFFORTS) {
+          opusResult[effort] = { effort }
+        }
+        return opusResult
       }
 
       return {
@@ -935,18 +936,17 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/amazon-bedrock":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/amazon-bedrock
       if (adaptiveEfforts) {
-        return Object.fromEntries(
-          adaptiveEfforts.map((effort) => [
-            effort,
-            {
-              reasoningConfig: {
-                type: "adaptive",
-                maxReasoningEffort: effort,
-                ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}),
-              },
+        const bedrockAdaptiveResult: Record<string, Record<string, any>> = {}
+        for (const effort of adaptiveEfforts) {
+          bedrockAdaptiveResult[effort] = {
+            reasoningConfig: {
+              type: "adaptive",
+              maxReasoningEffort: effort,
+              ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}),
             },
-          ]),
-        )
+          }
+        }
+        return bedrockAdaptiveResult
       }
       // For Anthropic models on Bedrock, use reasoningConfig with budgetTokens
       if (model.api.id.includes("anthropic")) {
@@ -967,17 +967,16 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       }
 
       // For Amazon Nova models, use reasoningConfig with maxReasoningEffort
-      return Object.fromEntries(
-        WIDELY_SUPPORTED_EFFORTS.map((effort) => [
-          effort,
-          {
-            reasoningConfig: {
-              type: "enabled",
-              maxReasoningEffort: effort,
-            },
+      const novaResult: Record<string, Record<string, any>> = {}
+      for (const effort of WIDELY_SUPPORTED_EFFORTS) {
+        novaResult[effort] = {
+          reasoningConfig: {
+            type: "enabled",
+            maxReasoningEffort: effort,
           },
-        ]),
-      )
+        }
+      }
+      return novaResult
 
     case "@ai-sdk/google-vertex":
     // https://v5.ai-sdk.dev/providers/ai-sdk-providers/google-vertex
@@ -1009,14 +1008,11 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/groq":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/groq
       const groqEffort = ["none", ...WIDELY_SUPPORTED_EFFORTS]
-      return Object.fromEntries(
-        groqEffort.map((effort) => [
-          effort,
-          {
-            reasoningEffort: effort,
-          },
-        ]),
-      )
+      const groqResult: Record<string, Record<string, any>> = {}
+      for (const effort of groqEffort) {
+        groqResult[effort] = { reasoningEffort: effort }
+      }
+      return groqResult
 
     case "@ai-sdk/perplexity":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/perplexity
@@ -1027,17 +1023,14 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         if (adaptiveEfforts) {
           // Bedrock adaptive splits `effort` out into `output_config` (vs Anthropic
           // native which inlines it). Opus 4.7+ flipped `display` default to "omitted".
-          return wrapInSapModelParams(
-            Object.fromEntries(
-              adaptiveEfforts.map((effort) => [
-                effort,
-                {
-                  thinking: { type: "adaptive", ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}) },
-                  output_config: { effort },
-                },
-              ]),
-            ),
-          )
+          const sapAnthropicResult: Record<string, Record<string, any>> = {}
+          for (const effort of adaptiveEfforts) {
+            sapAnthropicResult[effort] = {
+              thinking: { type: "adaptive", ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}) },
+              output_config: { effort },
+            }
+          }
+          return wrapInSapModelParams(sapAnthropicResult)
         }
         return wrapInSapModelParams({
           high: { thinking: { type: "enabled", budget_tokens: 16000 } },
@@ -1048,12 +1041,18 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         return wrapInSapModelParams(googleThinkingVariants(model))
       }
       if (id.includes("gpt") || /\bo[1-9]/.test(id)) {
-        const efforts = openaiReasoningEfforts(id, model.release_date)
-        return wrapInSapModelParams(Object.fromEntries(efforts.map((effort) => [effort, { reasoning_effort: effort }])))
+        const sapOaiEfforts = openaiReasoningEfforts(id, model.release_date)
+        const sapOaiResult: Record<string, Record<string, any>> = {}
+        for (const effort of sapOaiEfforts) {
+          sapOaiResult[effort] = { reasoning_effort: effort }
+        }
+        return wrapInSapModelParams(sapOaiResult)
       }
-      return wrapInSapModelParams(
-        Object.fromEntries(["low", "medium", "high"].map((effort) => [effort, { reasoning_effort: effort }])),
-      )
+      const sapDefaultResult: Record<string, Record<string, any>> = {}
+      for (const effort of ["low", "medium", "high"]) {
+        sapDefaultResult[effort] = { reasoning_effort: effort }
+      }
+      return wrapInSapModelParams(sapDefaultResult)
     }
   }
   return {}
@@ -1260,7 +1259,10 @@ export function providerOptions(model: Provider.Model, options: { [x: string]: a
     const rawSlug = i > 0 ? model.api.id.slice(0, i) : undefined
     const slug = rawSlug ? (SLUG_OVERRIDES[rawSlug] ?? rawSlug) : undefined
     const gateway = options.gateway
-    const rest = Object.fromEntries(Object.entries(options).filter(([k]) => k !== "gateway"))
+    const rest: Record<string, any> = {}
+    for (const [k, v] of Object.entries(options)) {
+      if (k !== "gateway") rest[k] = v
+    }
     const has = Object.keys(rest).length > 0
 
     const result: Record<string, any> = {}
@@ -1328,7 +1330,10 @@ export function schema(model: Provider.Model, schema: JSONSchema7): JSONSchema7 
       if (Array.isArray(obj)) return obj.map(sanitizeMoonshot)
       // Moonshot expands $ref before validation and rejects sibling keywords like description on the same node.
       if ("$ref" in obj && typeof obj.$ref === "string") return { $ref: obj.$ref }
-      const result = Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, sanitizeMoonshot(value)]))
+      const result: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = sanitizeMoonshot(value)
+      }
       // MFJS does not support tuple-style `items` arrays; it requires one schema object for all array items.
       if (Array.isArray(result.items)) result.items = result.items[0] ?? {}
       return result
