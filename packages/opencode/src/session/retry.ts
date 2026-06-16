@@ -162,15 +162,15 @@ function num(value: unknown) {
   return parsed
 }
 
-function parseJSON(value: unknown) {
-  return iife(() => {
-    try {
-      if (typeof value !== "string") return undefined
-      return JSON.parse(value)
-    } catch {
-      return undefined
-    }
-  })
+const parseJSON = (value: unknown) => {
+  if (typeof value !== "string" || value.length === 0) return undefined
+  const first = value[0]
+  if (first !== "{" && first !== "[") return undefined
+  try {
+    return JSON.parse(value)
+  } catch {
+    return undefined
+  }
 }
 
 export function policy(opts: {

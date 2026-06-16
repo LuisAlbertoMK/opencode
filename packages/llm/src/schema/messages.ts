@@ -127,11 +127,14 @@ export const ToolOutput = Object.assign(
 
 const toolResultText = (value: unknown) => {
   if (typeof value === "string") return value
-  try {
-    return JSON.stringify(value) ?? String(value)
-  } catch {
-    return String(value)
+  if (typeof value === "object" || typeof value === "number" || typeof value === "boolean") {
+    try {
+      return JSON.stringify(value) ?? String(value)
+    } catch {
+      return String(value)
+    }
   }
+  return String(value)
 }
 
 export const ToolCallPart = Object.assign(

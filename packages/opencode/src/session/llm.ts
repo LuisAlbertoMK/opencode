@@ -174,13 +174,17 @@ const live: Layer.Layer<
               }),
             )
             const toolPatterns = approvalTools.map((t: { name: string; args: string }) => {
-              try {
-                const parsed = JSON.parse(t.args) as Record<string, unknown>
-                const title = (parsed?.title ?? parsed?.name ?? "") as string
-                return title ? `${t.name}: ${title}` : t.name
-              } catch {
-                return t.name
+              const raw = t.args
+              if (raw.length > 0 && (raw[0] === "{" || raw[0] === "[")) {
+                try {
+                  const parsed = JSON.parse(raw) as Record<string, unknown>
+                  const title = (parsed?.title ?? parsed?.name ?? "") as string
+                  if (title) return `${t.name}: ${title}`
+                } catch {
+                  // fall through to return t.name
+                }
               }
+              return t.name
             })
             const uniquePatterns = [...new Set(toolPatterns)] as string[]
             await bridge.promise(
