@@ -70,6 +70,7 @@ const toolResult = (tool: SessionMessage.AssistantTool, providerMetadata: Provid
 const assistant = (message: SessionMessage.Assistant, model: Model) => {
   const sameModel =
     String(message.model.providerID) === String(model.provider) && String(message.model.id) === String(model.id)
+  const results: Message[] = []
   const content = message.content.flatMap((item): ContentPart[] => {
     if (item.type === "text") return [{ type: "text", text: item.text }]
     if (item.type === "reasoning")
@@ -79,15 +80,17 @@ const assistant = (message: SessionMessage.Assistant, model: Model) => {
           ? [{ type: "text", text: item.text }]
           : []
     const call = toolCall(item, sameModel ? item.provider?.metadata : undefined)
+    if (item.provider?.executed === true) {
+      const result = toolResult(item, sameModel ? (item.provider?.resultMetadata ?? item.provider?.metadata) : undefined)
+      return result ? [call, result] : [call]
+    }
     const result = toolResult(item, sameModel ? (item.provider?.resultMetadata ?? item.provider?.metadata) : undefined)
-    return item.provider?.executed === true && result ? [call, result] : [call]
+    if (result) results.push(Message.tool(result))
+    return [call]
   })
-  const results = message.content
-    .filter((item): item is SessionMessage.AssistantTool => item.type === "tool" && item.provider?.executed !== true)
-    .map((item) => toolResult(item, sameModel ? (item.provider?.resultMetadata ?? item.provider?.metadata) : undefined))
-    .filter((message) => message !== undefined)
-    .map(Message.tool)
-  return [Message.make({ id: message.id, role: "assistant", content, metadata: message.metadata }), ...results]
+  const msg = Message.make({ id: message.id, role: "assistant", content, metadata: message.metadata })
+  results.unshift(msg)
+  return results
 }
 
 function toLLMMessage(message: SessionMessage.Message, model: Model): Message[] {

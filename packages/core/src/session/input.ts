@@ -217,7 +217,7 @@ export const guardReservedID = Effect.fn("SessionInput.guardReservedID")(functio
     Schema.is(SessionEvent.PromptLifecycle.Promoted)(event)
   )
     return
-  const id = reservedID(event)
+  const id = reservedID(event) as SessionMessage.ID | undefined
   if (id === undefined) return
   const admitted = yield* db
     .select({ id: SessionInputTable.id })
@@ -229,14 +229,19 @@ export const guardReservedID = Effect.fn("SessionInput.guardReservedID")(functio
   return yield* Effect.die(new LifecycleConflict({ id }))
 })
 
+const reservedIDMessageKeys: Record<string, "assistantMessageID" | "messageID"> = {
+  "session.next.step.started": "assistantMessageID",
+  "session.next.agent.switched": "messageID",
+  "session.next.model.switched": "messageID",
+  "session.next.prompted": "messageID",
+  "session.next.synthetic": "messageID",
+  "session.next.shell.started": "messageID",
+  "session.next.compaction.started": "messageID",
+}
+
 const reservedID = (event: EventV2.Payload) => {
-  if (Schema.is(SessionEvent.Step.Started)(event)) return event.data.assistantMessageID
-  if (Schema.is(SessionEvent.AgentSwitched)(event)) return event.data.messageID
-  if (Schema.is(SessionEvent.ModelSwitched)(event)) return event.data.messageID
-  if (Schema.is(SessionEvent.Prompted)(event)) return event.data.messageID
-  if (Schema.is(SessionEvent.Synthetic)(event)) return event.data.messageID
-  if (Schema.is(SessionEvent.Shell.Started)(event)) return event.data.messageID
-  if (Schema.is(SessionEvent.Compaction.Started)(event)) return event.data.messageID
+  const key = reservedIDMessageKeys[event.type]
+  return key === undefined ? undefined : (event.data as Record<string, unknown>)[key]
 }
 
 export const projectLegacyPrompted = Effect.fn("SessionInput.projectLegacyPrompted")(function* (

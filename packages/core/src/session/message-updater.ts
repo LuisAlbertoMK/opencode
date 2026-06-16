@@ -17,42 +17,52 @@ export interface Adapter {
 }
 
 export function memory(state: MemoryState): Adapter {
-  const assistantIndex = (messageID: SessionMessage.ID) =>
-    state.messages.findLastIndex((message) => message.id === messageID)
-  // A newer turn supersedes stale incomplete rows; never resume an older assistant projection.
-  const latestAssistantIndex = () => state.messages.findLastIndex((message) => message.type === "assistant")
-  const activeShellIndex = (callID: string) =>
-    state.messages.findLastIndex((message) => message.type === "shell" && message.callID === callID)
+  // Index maps for O(1) lookups instead of O(n) findLastIndex on every stream event.
+  const messageIndex = new Map<SessionMessage.ID, number>()
+  const shellIndex = new Map<string, number>()
+  let latestAssistantIdx = -1
+
+  const rebuildIndex = () => {
+    messageIndex.clear()
+    shellIndex.clear()
+    latestAssistantIdx = -1
+    for (let i = 0; i < state.messages.length; i++) {
+      const msg = state.messages[i]
+      messageIndex.set(msg.id, i)
+      if (msg.type === "shell") shellIndex.set(msg.callID, i)
+      if (msg.type === "assistant") latestAssistantIdx = i
+    }
+  }
+  rebuildIndex()
 
   return {
     getCurrentAssistant() {
       return Effect.sync(() => {
-        const index = latestAssistantIndex()
-        if (index < 0) return
-        const assistant = state.messages[index]
+        if (latestAssistantIdx < 0) return
+        const assistant = state.messages[latestAssistantIdx]
         return assistant?.type === "assistant" && !assistant.time.completed ? assistant : undefined
       })
     },
     getAssistant(messageID) {
       return Effect.sync(() => {
-        const index = assistantIndex(messageID)
-        if (index < 0) return
+        const index = messageIndex.get(messageID)
+        if (index === undefined) return
         const assistant = state.messages[index]
         return assistant?.type === "assistant" ? assistant : undefined
       })
     },
     getCurrentShell(callID) {
       return Effect.sync(() => {
-        const index = activeShellIndex(callID)
-        if (index < 0) return
+        const index = shellIndex.get(callID)
+        if (index === undefined) return
         const shell = state.messages[index]
         return shell?.type === "shell" ? shell : undefined
       })
     },
     updateAssistant(assistant) {
       return Effect.sync(() => {
-        const index = assistantIndex(assistant.id)
-        if (index < 0) return
+        const index = messageIndex.get(assistant.id)
+        if (index === undefined) return
         const current = state.messages[index]
         if (current?.type !== "assistant") return
         state.messages[index] = assistant
@@ -60,8 +70,8 @@ export function memory(state: MemoryState): Adapter {
     },
     updateShell(shell) {
       return Effect.sync(() => {
-        const index = activeShellIndex(shell.callID)
-        if (index < 0) return
+        const index = shellIndex.get(shell.callID)
+        if (index === undefined) return
         const current = state.messages[index]
         if (current?.type !== "shell") return
         state.messages[index] = shell
@@ -70,9 +80,16 @@ export function memory(state: MemoryState): Adapter {
     appendMessage(message) {
       return Effect.sync(() => {
         state.messages.push(message)
+        const index = state.messages.length - 1
+        messageIndex.set(message.id, index)
+        if (message.type === "shell") shellIndex.set(message.callID, index)
+        if (message.type === "assistant") latestAssistantIdx = index
         // Limit in-memory history to prevent unbounded growth.
         // Source of truth is the database; this is a fast projection.
-        if (state.messages.length > 1000) state.messages.splice(0, state.messages.length - 1000)
+        if (state.messages.length > 1000) {
+          const removed = state.messages.splice(0, state.messages.length - 1000)
+          rebuildIndex()
+        }
       })
     },
   }

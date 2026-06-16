@@ -4,6 +4,7 @@ import { LLM, LLMError, LLMEvent, Message, type LLMRequest, type Model } from "@
 import { DateTime, Effect, Stream } from "effect"
 import type { Config } from "../config"
 import type { EventV2 } from "../event"
+import { LruCache } from "../lru-cache"
 import { SessionEvent } from "./event"
 import { SessionMessage } from "./message"
 import { SessionSchema } from "./schema"
@@ -76,14 +77,14 @@ type Input = {
   readonly request: LLMRequest
 }
 
-let cachedEstimateJson = ""
-let cachedEstimateResult = 0
+const estimateCache = new LruCache<string, number>(10, 30_000)
 const estimate = (value: unknown) => {
   const json = JSON.stringify(value)
-  if (json === cachedEstimateJson) return cachedEstimateResult
-  cachedEstimateJson = json
-  cachedEstimateResult = Token.estimate(json)
-  return cachedEstimateResult
+  const cached = estimateCache.get(json)
+  if (cached !== undefined) return cached
+  const result = Token.estimate(json)
+  estimateCache.set(json, result)
+  return result
 }
 
 const truncate = (value: string) =>

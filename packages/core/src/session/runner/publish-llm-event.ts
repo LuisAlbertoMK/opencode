@@ -318,6 +318,7 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
             result: event.result,
             provider,
           })
+          tools.delete(event.id)
           return
         }
         yield* events.publish(SessionEvent.Tool.Success, {
@@ -330,6 +331,7 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
           ...(provider.executed ? { result: event.result } : {}),
           provider,
         })
+        tools.delete(event.id)
         return
       }
       case "tool-error": {
@@ -350,6 +352,7 @@ export const createLLMEventPublisher = (events: EventV2.Interface, input: Input)
             ...(event.providerMetadata === undefined ? {} : { metadata: event.providerMetadata }),
           },
         })
+        tools.delete(event.id)
         return
       }
       case "step-finish":
