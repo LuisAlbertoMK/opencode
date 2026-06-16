@@ -39,7 +39,8 @@ export const ripgrepLayer = Layer.effect(
           Effect.sync(() => {
             state.files.push(entry.path)
             const parts = entry.path.split("/")
-            parts.slice(0, -1).forEach((_, index) => directories.add(parts.slice(0, index + 1).join("/") + path.sep))
+            const end = parts.length - 1
+            for (let i = 0; i < end; i++) directories.add(parts.slice(0, i + 1).join("/") + path.sep)
           }),
       })
       .pipe(Effect.orDie, Effect.asVoid, Effect.forkIn(scope))

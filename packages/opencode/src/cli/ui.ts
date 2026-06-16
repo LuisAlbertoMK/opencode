@@ -92,14 +92,15 @@ export function logo(pad?: string) {
     }
     return parts.join("")
   }
-  glyphs.left.forEach((row, index) => {
+  for (let index = 0; index < glyphs.left.length; index++) {
+    const row = glyphs.left[index]!
     if (pad) result.push(pad)
     result.push(draw(row, left.fg, left.shadow, left.bg))
     result.push(gap)
     const other = glyphs.right[index] ?? ""
     result.push(draw(other, right.fg, right.shadow, right.bg))
     result.push(EOL)
-  })
+  }
   return result.join("").trimEnd()
 }
 

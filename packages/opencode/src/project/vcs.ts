@@ -21,9 +21,11 @@ const nums = (list: Git.Stat[]) =>
 
 const merge = (...lists: Git.Item[][]) => {
   const out = new Map<string, Git.Item>()
-  lists.flat().forEach((item) => {
-    if (!out.has(item.file)) out.set(item.file, item)
-  })
+  for (const list of lists) {
+    for (const item of list) {
+      if (!out.has(item.file)) out.set(item.file, item)
+    }
+  }
   return [...out.values()]
 }
 

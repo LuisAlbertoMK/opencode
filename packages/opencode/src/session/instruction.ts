@@ -126,7 +126,7 @@ export const layer: Layer.Layer<
             .findUp(file, ctx.directory, ctx.worktree)
             .pipe(Effect.catch(() => Effect.succeed([])))
           if (matches.length > 0) {
-            matches.forEach((item) => paths.add(path.resolve(item)))
+            for (const item of matches) paths.add(path.resolve(item))
             break
           }
         }
@@ -145,7 +145,7 @@ export const layer: Layer.Layer<
                 })
               : relative(instruction)
           ).pipe(Effect.catch(() => Effect.succeed([] as string[])))
-          matches.forEach((item) => paths.add(path.resolve(item)))
+          for (const item of matches) paths.add(path.resolve(item))
         }
       }
 
