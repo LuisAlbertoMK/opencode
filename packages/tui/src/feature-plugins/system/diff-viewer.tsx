@@ -13,7 +13,7 @@ import { useBindings, useCommandShortcut } from "../../keymap"
 import { useTheme } from "../../context/theme"
 import { useTerminalDimensions } from "@opentui/solid"
 import path from "path"
-import { createEffect, createMemo, createResource, createSignal, For, Match, onCleanup, Show, Switch } from "solid-js"
+import { createEffect, createMemo, createResource, createSignal, For, Match, on, onCleanup, Show, Switch } from "solid-js"
 import { DiffViewerFileTree } from "./diff-viewer-file-tree"
 import { Panel, PanelGroup, Separator } from "./diff-viewer-ui"
 import { DialogSelect } from "../../ui/dialog-select"
@@ -169,15 +169,21 @@ function DiffViewer(props: { api: TuiPluginApi }) {
 
   onCleanup(() => props.api.ui.dialog.clear())
 
-  createEffect(() => {
-    setExpandedFileNodes(allExpandedFileTreeDirectories(fileTree()))
-    setHighlightedFileNode(undefined)
-    setLastHighlightedFileNode(undefined)
-    setActivePatchFileIndex(undefined)
-    setSelectedFileIndex(undefined)
-    setSelectedHunk(undefined)
-    setReviewedFileNames(new Set<string>())
-  })
+  createEffect(
+    on(
+      () => fileTree(),
+      () => {
+        setExpandedFileNodes(allExpandedFileTreeDirectories(fileTree()))
+        setHighlightedFileNode(undefined)
+        setLastHighlightedFileNode(undefined)
+        setActivePatchFileIndex(undefined)
+        setSelectedFileIndex(undefined)
+        setSelectedHunk(undefined)
+        setReviewedFileNames(new Set<string>())
+      },
+      { defer: true },
+    ),
+  )
 
   const ensureHighlightedFileNode = () => {
     const highlighted = highlightedFileNode()

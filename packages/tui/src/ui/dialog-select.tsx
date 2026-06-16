@@ -9,7 +9,7 @@ import {
 import type { Binding } from "@opentui/keymap"
 import { useTheme, selectedForeground } from "../context/theme"
 import { entries, filter, flatMap, groupBy, pipe } from "remeda"
-import { batch, createEffect, createMemo, createSignal, For, Show, type JSX, on } from "solid-js"
+import { batch, createEffect, createMemo, createSignal, For, onCleanup, Show, type JSX, on } from "solid-js"
 import { createStore } from "solid-js/store"
 import { useTerminalDimensions } from "@opentui/solid"
 import * as fuzzysort from "fuzzysort"
@@ -90,6 +90,14 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     filter: "",
     input: "keyboard" as "keyboard" | "mouse",
   })
+  // Debounced filter: store.filter updates immediately for responsive UI,
+  // but debouncedFilter batches keystrokes before triggering expensive fuzzysort
+  const [debouncedFilter, setDebouncedFilter] = createSignal("")
+  createEffect(() => {
+    const filter = store.filter
+    const timer = setTimeout(() => setDebouncedFilter(filter), 150)
+    onCleanup(() => clearTimeout(timer))
+  })
   const [focusedAction, setFocusedAction] = createSignal<number>()
   const actionFocused = createMemo(() => focusedAction() !== undefined)
   // Throttled: setStore on mouse move fires at most once per frame
@@ -163,7 +171,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   const filtered = createMemo(() => {
     if (props.skipFilter || props.renderFilter === false) return props.options.filter((x) => x.disabled !== true)
-    const needle = store.filter.toLowerCase()
+    const needle = debouncedFilter().toLowerCase()
     const options = pipe(
       props.options,
       filter((x) => x.disabled !== true),
