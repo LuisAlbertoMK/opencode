@@ -6,30 +6,44 @@ import { isRecord } from "../utils/record"
 export const mergeJsonRecords = (
   ...items: ReadonlyArray<Record<string, unknown> | undefined>
 ): Record<string, unknown> | undefined => {
-  const defined = items.filter((item): item is Record<string, unknown> => item !== undefined)
-  if (defined.length === 0) return undefined
-  if (defined.length === 1 && Object.values(defined[0]).every((value) => value !== undefined)) return defined[0]
+  // Single pass: skip undefined items, check early-return path, collect into result
+  let firstDefined: Record<string, unknown> | undefined
+  let allHaveValues = true
+  let definedCount = 0
   const result: Record<string, unknown> = {}
-  for (const item of defined) {
+  for (const item of items) {
+    if (!item) continue
+    definedCount++
+    if (firstDefined === undefined) firstDefined = item
+    if (allHaveValues && Object.values(item).some((v) => v === undefined)) allHaveValues = false
     for (const [key, value] of Object.entries(item)) {
       if (value === undefined) continue
       result[key] = isRecord(result[key]) && isRecord(value) ? mergeJsonRecords(result[key], value) : value
     }
   }
+  if (definedCount === 0) return undefined
+  if (definedCount === 1 && allHaveValues) return firstDefined
   return Object.keys(result).length === 0 ? undefined : result
 }
 
 const mergeStringRecords = (
   ...items: ReadonlyArray<Record<string, string> | undefined>
 ): Record<string, string> | undefined => {
-  const defined = items.filter((item): item is Record<string, string> => item !== undefined)
-  if (defined.length === 0) return undefined
-  if (defined.length === 1) return defined[0]
-  const result = Object.fromEntries(
-    defined.flatMap((item) =>
-      Object.entries(item).filter((entry): entry is [string, string] => entry[1] !== undefined),
-    ),
-  )
+  // Single pass: avoid filter+flatMap intermediate allocations
+  let firstDefined: Record<string, string> | undefined
+  let definedCount = 0
+  const result: Record<string, string> = {}
+  for (const item of items) {
+    if (!item) continue
+    definedCount++
+    if (firstDefined === undefined) firstDefined = item
+    for (const [key, value] of Object.entries(item)) {
+      if (value === undefined) continue
+      result[key] = value
+    }
+  }
+  if (definedCount === 0) return undefined
+  if (definedCount === 1) return firstDefined
   return Object.keys(result).length === 0 ? undefined : result
 }
 
@@ -64,9 +78,19 @@ export namespace HttpOptions {
 }
 
 export const mergeHttpOptions = (...items: ReadonlyArray<HttpOptions | undefined>): HttpOptions | undefined => {
-  const body = mergeJsonRecords(...items.map((item) => item?.body))
-  const headers = mergeStringRecords(...items.map((item) => item?.headers))
-  const query = mergeStringRecords(...items.map((item) => item?.query))
+  // Single pass extracting body/headers/query — avoids 3 intermediate .map() arrays
+  const bodies: Record<string, unknown>[] = []
+  const headersList: Record<string, string>[] = []
+  const queries: Record<string, string>[] = []
+  for (const item of items) {
+    if (!item) continue
+    if (item.body) bodies.push(item.body)
+    if (item.headers) headersList.push(item.headers)
+    if (item.query) queries.push(item.query)
+  }
+  const body = bodies.length > 0 ? mergeJsonRecords(...bodies) : undefined
+  const headers = headersList.length > 0 ? mergeStringRecords(...headersList) : undefined
+  const query = queries.length > 0 ? mergeStringRecords(...queries) : undefined
   if (!body && !headers && !query) return undefined
   return new HttpOptions({ body, headers, query })
 }
