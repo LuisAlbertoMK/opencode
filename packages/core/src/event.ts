@@ -395,7 +395,7 @@ export const layerWith = (options?: LayerOptions) =>
           if (durable) {
             const committed = yield* commitSyncEvent(event as Payload, undefined, commit)
             if (committed) {
-              event = { ...event, seq: committed.seq }
+              ;(event as { seq: number }).seq = committed.seq
               yield* Effect.forEach(syncHandlers, (sync) => observe(event as Payload, "sync", sync), { discard: true })
               yield* notify(event as Payload, true)
               return event
@@ -475,7 +475,8 @@ export const layerWith = (options?: LayerOptions) =>
               strictOwner: options?.strictOwner,
             })
             if (committed && options?.publish) {
-              yield* notify({ ...payload, seq: committed.seq }, true)
+              ;(payload as { seq: number }).seq = committed.seq
+              yield* notify(payload, true)
             }
           }
         })

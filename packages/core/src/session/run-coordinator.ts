@@ -137,14 +137,17 @@ export const make = <Key, A, E>(options: {
           return
         }
         active.delete(key)
+        interruptSeq.delete(key)
         Deferred.doneUnsafe(entry.done, exit)
         Deferred.doneUnsafe(entry.settled, Effect.succeed(exit))
         return
       }
 
       const successor = entry.pending !== undefined ? makeEntry(entry.pending, entry.explicitWaiter) : undefined
-      if (successor === undefined) active.delete(key)
-      else active.set(key, successor)
+      if (successor === undefined) {
+        active.delete(key)
+        interruptSeq.delete(key)
+      } else active.set(key, successor)
       if (successor !== undefined) start(key, successor, successor.current, true)
       Deferred.doneUnsafe(entry.done, exit)
       Deferred.doneUnsafe(entry.settled, Effect.succeed(exit))
