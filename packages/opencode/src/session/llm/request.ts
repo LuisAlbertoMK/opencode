@@ -168,10 +168,13 @@ export const prepare = Effect.fn("LLMRequestPrep.prepare")(function* (input: Pre
     ? (yield* InstanceState.context).project.id
     : undefined
 
+  const sortedTools: typeof tools = {}
+  for (const [name, def] of Object.entries(tools).sort(([a], [b]) => a.localeCompare(b))) sortedTools[name] = def
+
   return {
     system,
     messages,
-    tools: Object.fromEntries(Object.entries(tools).toSorted(([a], [b]) => a.localeCompare(b))),
+    tools: sortedTools,
     params,
     messageTransformOptions: options,
     headers: {

@@ -74,7 +74,7 @@ function listState() {
     const config = yield* cfg.get()
     const statuses = yield* mcp.status()
     const stored = yield* Effect.all(
-      Object.fromEntries(configuredServers(config).map(([name]) => [name, mcp.hasStoredTokens(name)])),
+      (() => { const r: Record<string, ReturnType<typeof mcp.hasStoredTokens>> = {}; for (const [name] of configuredServers(config)) r[name] = mcp.hasStoredTokens(name); return r })(),
       { concurrency: "unbounded" },
     )
     return { config, statuses, stored }
@@ -87,7 +87,7 @@ function authState() {
     const mcp = yield* MCP.Service
     const config = yield* cfg.get()
     const auth = yield* Effect.all(
-      Object.fromEntries(oauthServers(config).map(([name]) => [name, mcp.getAuthStatus(name)])),
+      (() => { const r: Record<string, ReturnType<typeof mcp.getAuthStatus>> = {}; for (const [name] of oauthServers(config)) r[name] = mcp.getAuthStatus(name); return r })(),
       { concurrency: "unbounded" },
     )
     return { config, auth }

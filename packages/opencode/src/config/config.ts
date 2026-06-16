@@ -77,22 +77,21 @@ async function substituteWellKnownRemoteConfig(input: {
     env: input.env,
   })
   const headers = isRecord(input.value.headers)
-    ? Object.fromEntries(
-        await Promise.all(
-          Object.entries(input.value.headers)
-            .filter((entry): entry is [string, string] => typeof entry[1] === "string")
-            .map(async ([key, value]) => [
-              key,
-              await ConfigVariable.substitute({
-                text: value,
-                type: "virtual",
-                dir: input.dir,
-                source: input.source,
-                env: input.env,
-              }),
-            ]),
-        ),
-      )
+    ? await (async () => {
+        const rawHeaders = (input.value as Record<string, unknown>).headers as Record<string, unknown> ?? {}
+        const r: Record<string, string> = {}
+        for (const [key, val] of Object.entries(rawHeaders)) {
+          if (typeof val !== "string") continue
+          r[key] = await ConfigVariable.substitute({
+            text: val,
+            type: "virtual",
+            dir: input.dir,
+            source: input.source,
+            env: input.env,
+          })
+        }
+        return r
+      })()
     : undefined
 
   return { url, headers }

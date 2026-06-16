@@ -706,7 +706,7 @@ function snapshotState(data: SubagentData, details: FooterSubagentState["details
 export function snapshotSubagentData(data: SubagentData): FooterSubagentState {
   return snapshotState(
     data,
-    Object.fromEntries([...data.details.entries()].map(([sessionID, detail]) => [sessionID, snapshotDetail(detail)])),
+    (() => { const r: ReturnType<typeof snapshotState>['details'] = {}; for (const [sid, d] of data.details) r[sid] = snapshotDetail(d); return r })(),
   )
 }
 
