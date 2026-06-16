@@ -26,18 +26,15 @@ export const optionalNull = <const S extends Schema.Top>(schema: S) => Schema.op
 /** OpenAI function schemas require one flat object at the top level. */
 export const openAiToolInputSchema = (schema: JsonSchema.JsonSchema): JsonSchema.JsonSchema => {
   const variants = Array.isArray(schema.anyOf) ? schema.anyOf.filter(isRecord) : []
-  const flattened =
-    variants.length === 0
-      ? { ...schema, type: "object" }
-      : {
-          ...Object.fromEntries(Object.entries(schema).filter(([key]) => key !== "anyOf")),
-          type: "object",
-          properties: variants.reduce(
-            (properties, variant) => ({ ...(isRecord(variant.properties) ? variant.properties : {}), ...properties }),
-            {},
-          ),
-          additionalProperties: false,
-        }
+  const flattened: Record<string, unknown> = { ...(isRecord(schema) ? schema : {}), type: "object" }
+  delete flattened.anyOf
+  if (variants.length > 0) {
+    flattened.properties = variants.reduce(
+      (properties, variant) => ({ ...(isRecord(variant.properties) ? variant.properties : {}), ...properties }),
+      {},
+    )
+    flattened.additionalProperties = false
+  }
   const normalized = removeNullSchemas(flattened)
   return isRecord(normalized) ? normalized : { type: "object" }
 }
@@ -45,11 +42,12 @@ export const openAiToolInputSchema = (schema: JsonSchema.JsonSchema): JsonSchema
 const removeNullSchemas = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(removeNullSchemas)
   if (!isRecord(value)) return value
-  const fields = Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => key !== "anyOf")
-      .map(([key, field]) => [key, removeNullSchemas(field)]),
-  )
+  // Single pass: avoid Object.entries + filter + map chain
+  const fields: Record<string, unknown> = {}
+  for (const key of Object.keys(value)) {
+    if (key === "anyOf") continue
+    fields[key] = removeNullSchemas((value as Record<string, unknown>)[key]!)
+  }
   if (!Array.isArray(value.anyOf)) return fields
   const variants: ReturnType<typeof removeNullSchemas>[] = []
   for (const variant of value.anyOf) {

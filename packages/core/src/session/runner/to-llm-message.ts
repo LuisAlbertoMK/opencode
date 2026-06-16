@@ -20,11 +20,15 @@ const media = (file: FileAttachment): ContentPart => ({
 
 const toolInput = (tool: SessionMessage.AssistantTool) => {
   if (tool.state.status !== "pending") return tool.state.input
-  try {
-    return JSON.parse(tool.state.input) as unknown
-  } catch {
-    return tool.state.input
+  const raw = tool.state.input
+  if (raw.length > 0 && (raw[0] === "{" || raw[0] === "[")) {
+    try {
+      return JSON.parse(raw) as unknown
+    } catch {
+      // fall through to return raw string
+    }
   }
+  return raw
 }
 
 const toolCall = (tool: SessionMessage.AssistantTool, providerMetadata: ProviderMetadata | undefined): ContentPart =>
