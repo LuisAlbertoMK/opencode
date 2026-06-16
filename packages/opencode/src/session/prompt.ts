@@ -296,7 +296,7 @@ export const layer = Layer.effect(
 
       const taskAgent = yield* agents.get(task.agent)
       if (!taskAgent) {
-        const available = (yield* agents.list()).filter((a) => !a.hidden).map((a) => a.name)
+        const available = availableAgentNames(yield* agents.list())
         const hint = available.length ? ` Available agents: ${available.join(", ")}` : ""
         const error = new NamedError.Unknown({ message: `Agent not found: "${task.agent}".${hint}` })
         yield* events.publish(Session.Event.Error, { sessionID, error: error.toObject() })
@@ -444,7 +444,7 @@ export const layer = Layer.effect(
             }
             const agent = yield* agents.get(input.agent)
             if (!agent) {
-              const available = (yield* agents.list()).filter((a) => !a.hidden).map((a) => a.name)
+              const available = availableAgentNames(yield* agents.list())
               const hint = available.length ? ` Available agents: ${available.join(", ")}` : ""
               const error = new NamedError.Unknown({ message: `Agent not found: "${input.agent}".${hint}` })
               yield* events.publish(Session.Event.Error, { sessionID: input.sessionID, error: error.toObject() })
@@ -637,7 +637,7 @@ export const layer = Layer.effect(
       const agentName = input.agent
       const ag = agentName ? yield* agents.get(agentName) : yield* agents.defaultInfo()
       if (!ag) {
-        const available = (yield* agents.list()).filter((a) => !a.hidden).map((a) => a.name)
+        const available = availableAgentNames(yield* agents.list())
         const hint = available.length ? ` Available agents: ${available.join(", ")}` : ""
         const error = new NamedError.Unknown({ message: `Agent not found: "${agentName}".${hint}` })
         yield* events.publish(Session.Event.Error, { sessionID: input.sessionID, error: error.toObject() })
@@ -1228,7 +1228,7 @@ export const layer = Layer.effect(
 
           const agent = yield* agents.get(lastUser.agent)
           if (!agent) {
-            const available = (yield* agents.list()).filter((a) => !a.hidden).map((a) => a.name)
+            const available = availableAgentNames(yield* agents.list())
             const hint = available.length ? ` Available agents: ${available.join(", ")}` : ""
             const error = new NamedError.Unknown({ message: `Agent not found: "${lastUser.agent}".${hint}` })
             yield* events.publish(Session.Event.Error, { sessionID, error: error.toObject() })
@@ -1493,7 +1493,7 @@ export const layer = Layer.effect(
 
       const agent = agentName ? yield* agents.get(agentName) : yield* agents.defaultInfo()
       if (!agent) {
-        const available = (yield* agents.list()).filter((a) => !a.hidden).map((a) => a.name)
+        const available = availableAgentNames(yield* agents.list())
         const hint = available.length ? ` Available agents: ${available.join(", ")}` : ""
         const error = new NamedError.Unknown({ message: `Agent not found: "${agentName}".${hint}` })
         yield* events.publish(Session.Event.Error, { sessionID: input.sessionID, error: error.toObject() })
@@ -1501,9 +1501,7 @@ export const layer = Layer.effect(
       }
 
       const templateParts = yield* resolvePromptParts(template)
-      const inputFiles = new Set(
-        input.parts?.filter((part) => new URL(part.url).protocol === "file:").map((part) => fileURLToPath(part.url)),
-      )
+      const inputFiles = new Set(input.parts ? fileParts(input.parts) : undefined)
       const uniqueTemplateParts = templateParts.filter(
         (part) => part.type !== "file" || !inputFiles.has(fileURLToPath(part.url)),
       )
@@ -1728,5 +1726,19 @@ export const node = LayerNode.make(layer, [
   RuntimeFlags.node,
   Database.node,
 ])
+
+const availableAgentNames = (agents: readonly { name: string; hidden?: boolean }[]): string[] => {
+  const result: string[] = []
+  for (const a of agents) if (!a.hidden) result.push(a.name)
+  return result
+}
+
+const fileParts = (parts: readonly { url: string }[]): string[] => {
+  const result: string[] = []
+  for (const part of parts) {
+    if (new URL(part.url).protocol === "file:") result.push(fileURLToPath(part.url))
+  }
+  return result
+}
 
 export * as SessionPrompt from "./prompt"
