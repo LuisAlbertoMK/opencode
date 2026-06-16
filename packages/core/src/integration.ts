@@ -450,16 +450,16 @@ export const locationLayer = Layer.effect(
       connection: {
         list: Effect.fn("Integration.connection.list")(function* () {
           const saved = Map.groupBy(yield* credentials.all(), (credential) => credential.integrationID)
-          const ids = [...state.get().integrations.keys(), ...saved.keys()]
-          const seen = new Set<string>()
-          const result = new Map<string, Connection>()
-          for (const id of ids) {
-            if (seen.has(id)) continue
-            seen.add(id)
+          // Dedup integrated + saved credential IDs without Set spread allocation.
+          const seen = new Set<ID>()
+          for (const id of state.get().integrations.keys()) seen.add(id)
+          for (const id of saved.keys()) seen.add(id)
+          const entries: [ID, IntegrationConnection.Info][] = []
+          for (const id of seen) {
             const connection = activeConnection(state.get().integrations.get(id), saved.get(id) ?? [])
-            if (connection) result.set(id, connection)
+            if (connection) entries.push([id, connection])
           }
-          return result
+          return new Map(entries)
         }),
         forIntegration: Effect.fn("Integration.connection.forIntegration")(function* (id) {
           const entry = state.get().integrations.get(id)

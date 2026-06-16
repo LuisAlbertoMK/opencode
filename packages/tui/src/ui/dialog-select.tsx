@@ -92,10 +92,13 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   })
   const [focusedAction, setFocusedAction] = createSignal<number>()
   const actionFocused = createMemo(() => focusedAction() !== undefined)
+  // Throttled: setStore on mouse move fires at most once per frame
+  let mouseFramePending = false
   const onOptionMouseMove = () => {
     if (props.locked) return
-    setStore("input", "mouse")
-    setFocusedAction(undefined)
+    if (mouseFramePending) return
+    mouseFramePending = true
+    requestAnimationFrame(() => { mouseFramePending = false; setStore("input", "mouse"); setFocusedAction(undefined) })
   }
 
   createEffect(
@@ -148,6 +151,14 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   createEffect(() => {
     const index = focusedAction()
     if (index !== undefined && index >= actionItems().length) setFocusedAction(undefined)
+  })
+
+  // Pre-compute option→index map for O(1) mouse-over lookups instead of flat().findIndex()
+  const optionIndex = createMemo(() => {
+    const map = new Map<unknown, number>()
+    const all = flat()
+    for (let i = 0; i < all.length; i++) map.set(all[i].value, i)
+    return map
   })
 
   const filtered = createMemo(() => {
@@ -581,14 +592,14 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                           onMouseOver={() => {
                             if (props.locked) return
                             if (store.input !== "mouse") return
-                            const index = flat().findIndex((x) => isDeepEqual(x.value, option.value))
-                            if (index === -1) return
+                            const index = optionIndex().get(option.value)
+                            if (index === undefined) return
                             moveTo(index)
                           }}
                           onMouseDown={() => {
                             if (props.locked) return
-                            const index = flat().findIndex((x) => isDeepEqual(x.value, option.value))
-                            if (index === -1) return
+                            const index = optionIndex().get(option.value)
+                            if (index === undefined) return
                             moveTo(index)
                           }}
                         >

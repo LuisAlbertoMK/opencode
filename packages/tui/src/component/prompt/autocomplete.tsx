@@ -100,7 +100,13 @@ export function Autocomplete(props: {
     visible: false as AutocompleteRef["visible"],
     input: "keyboard" as "keyboard" | "mouse",
   })
-  const setInputMouse = () => setStore("input", "mouse")
+  // Throttled: setStore on mouse move fires at most once per frame
+  let mouseFramePending = false
+  const setInputMouse = () => {
+    if (mouseFramePending) return
+    mouseFramePending = true
+    requestAnimationFrame(() => { mouseFramePending = false; setStore("input", "mouse") })
+  }
 
   const [positionTick, setPositionTick] = createSignal(0)
 

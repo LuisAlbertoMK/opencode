@@ -237,9 +237,15 @@ export function Session() {
   const disabled = createMemo(() => permissions().length > 0 || questions().length > 0)
 
   const pending = createMemo(() => {
-    const completed = messages().findLast((x) => x.role === "assistant" && x.time.completed)?.id
-    return messages().findLast((x) => x.role === "assistant" && !x.time.completed && (!completed || x.id > completed))
-      ?.id
+    // Single pass: find completed ID + latest pending in one iteration
+    let completedID: string | undefined
+    let pendingID: string | undefined
+    for (const msg of messages()) {
+      if (msg.role !== "assistant") continue
+      if (msg.time.completed) completedID = msg.id
+      else if (!completedID || msg.id > completedID) pendingID = msg.id
+    }
+    return pendingID
   })
 
   const lastAssistant = createMemo(() => {
