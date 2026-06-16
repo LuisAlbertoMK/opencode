@@ -1534,7 +1534,7 @@ export function Prompt(props: PromptProps) {
                     </Show>
                   </box>
                   <box flexDirection="row" gap={1} flexShrink={0}>
-                    <RetryCountdown status={status} dialog={dialog} theme={theme} />
+                    <RetryCountdown status={status} dialog={dialog} />
                   </box>
                 </box>
                 <text fg={store.interrupt > 0 ? theme.primary : theme.text}>
@@ -1665,12 +1665,12 @@ export function Prompt(props: PromptProps) {
 function RetryCountdown(props: {
   status: () => { type: string } & Record<string, unknown>
   dialog: ReturnType<typeof useDialog>
-  theme: Record<string, string>
 }) {
+  const { theme } = useTheme()
   const retry = createMemo(() => {
     const s = props.status()
     if (s.type !== "retry") return
-    return s as { next?: number; message: string; attempt: number }
+    return s as unknown as { next?: number; message: string; attempt: number }
   })
   const message = createMemo(() => {
     const r = retry()
@@ -1710,7 +1710,7 @@ function RetryCountdown(props: {
   return (
     <Show when={retry()}>
       <box onMouseUp={handleMessageClick}>
-        <text fg={props.theme.error}>{retryText()}</text>
+        <text fg={theme.error}>{retryText()}</text>
       </box>
     </Show>
   )

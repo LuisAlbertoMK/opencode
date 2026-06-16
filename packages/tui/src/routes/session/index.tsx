@@ -1140,10 +1140,17 @@ export function Session() {
   const revertRevertedMessages = createMemo(() => {
     const messageID = revertMessageID()
     if (!messageID) return []
-    return messages().filter((x) => x.id >= messageID && x.role === "user")
+    const msgs = messages()
+    // Single-pass: iterate once collecting matching messages
+    const result: typeof msgs = []
+    for (let i = 0; i < msgs.length; i++) {
+      const x = msgs[i]
+      if (x.id >= messageID && x.role === "user") result.push(x)
+    }
+    return result
   })
 
-  const revert = createMemo(() => {
+  const revertValue = createMemo(() => {
     const info = revertInfo()
     if (!info) return
     if (!info.messageID) return
@@ -1202,12 +1209,16 @@ export function Session() {
               >
                 <box height={1} />
                 <For each={messages()}>
-                  {(message, index) => (
+                  {(message, index) => {
+                    // Read revert once per outer render, not N times per message
+                    const msgRevert = revertValue()
+                    const msgRevertMID = msgRevert?.messageID
+                    return (
                     <Switch>
-                      <Match when={revert()}>
-                        {(revert) => <RevertBanner messageID={message.id} revert={revert()} />}
+                      <Match when={msgRevert}>
+                        <RevertBanner messageID={message.id} revert={msgRevert!} />
                       </Match>
-                      <Match when={revert()?.messageID && message.id >= revert()!.messageID}>
+                      <Match when={msgRevertMID && message.id >= msgRevertMID}>
                         <></>
                       </Match>
                       <Match when={message.role === "user"}>
@@ -1237,6 +1248,7 @@ export function Session() {
                       </Match>
                     </Switch>
                   )}
+                }
                 </For>
               </scrollbox>
               <box flexShrink={0}>
@@ -1428,45 +1440,44 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
   const local = useLocal()
   const { theme } = useTheme()
   const sync = useSync()
-  const messages = createMemo(() => sync.data.message[props.message.sessionID] ?? [])
   const model = createMemo(() => Model.name(ctx.providers(), props.message.providerID, props.message.modelID))
 
   const final = createMemo(() => {
     return props.message.finish && !["tool-calls", "unknown"].includes(props.message.finish)
   })
 
-  const duration = createMemo(() => {
-    if (!final()) return 0
-    if (!props.message.time.completed || !props.message.time.created) return 0
-    return props.message.time.completed - props.message.time.created
-  })
+  // Merged memo: single computation for duration, post-hoc TPS, and live-streaming TPS
+  const stats = createMemo(() => {
+    const isFinal = final()
+    const created = props.message.time.created
+    const completed = props.message.time.completed
+    const hasTime = created && completed
+    const elapsed = hasTime ? completed - created : 0
 
-  const tps = createMemo(() => {
-    if (!final()) return 0
-    if (!props.message.time.completed || !props.message.time.created) return 0
-    const elapsed = props.message.time.completed - props.message.time.created
-    if (elapsed < 100) return 0 // avoid division by near-zero
-    const output = props.message.tokens?.output ?? 0
-    if (output <= 0) return 0
-    return Math.round(output / (elapsed / 1000))
-  })
+    let dur = 0
+    if (isFinal && hasTime && elapsed > 0) dur = elapsed
 
-  // Live TPS during streaming — estimate from text content length
-  const liveTps = createMemo(() => {
-    if (final()) return 0 // use post-hoc TPS instead
-    let totalChars = 0
-    for (let i = 0; i < props.parts.length; i++) {
-      const p = props.parts[i]
-      if (p.type === "text") totalChars += (p as TextPart).text?.length ?? 0
+    let tps = 0
+    if (isFinal && hasTime && elapsed >= 100) {
+      const output = props.message.tokens?.output ?? 0
+      if (output > 0) tps = Math.round(output / (elapsed / 1000))
     }
-    if (totalChars < 10) return 0
-    const now = performance.now()
-    const start = props.message.time.created
-    if (!start) return 0
-    const elapsed = (now - start) / 1000
-    if (elapsed < 0.5) return 0 // wait for stable reading
-    const estTokens = totalChars / 4 // chars/4 heuristic
-    return Math.round(estTokens / elapsed)
+
+    let live = 0
+    if (!isFinal && created) {
+      let totalChars = 0
+      for (let i = 0; i < props.parts.length; i++) {
+        const p = props.parts[i]
+        if (p.type === "text") totalChars += (p as TextPart).text?.length ?? 0
+      }
+      if (totalChars >= 10) {
+        const now = performance.now()
+        const liveElapsed = (now - created) / 1000
+        if (liveElapsed >= 0.5) live = Math.round((totalChars / 4) / liveElapsed)
+      }
+    }
+
+    return { dur, tps, live }
   })
 
   const childShortcut = useCommandShortcut("session.child.first")
@@ -1541,16 +1552,16 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
               </span>{" "}
               <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
               <span style={{ fg: theme.textMuted }}> · {model()}</span>
-              <Show when={duration()}>
-                <span style={{ fg: theme.textMuted }}> · {Locale.duration(duration())}</span>
+              <Show when={stats().dur}>
+                <span style={{ fg: theme.textMuted }}> · {Locale.duration(stats().dur)}</span>
               </Show>
               {final() ? (
-                <Show when={tps()}>
-                  <span style={{ fg: theme.textMuted }}> · {tps()} tok/s</span>
+                <Show when={stats().tps}>
+                  <span style={{ fg: theme.textMuted }}> · {stats().tps} tok/s</span>
                 </Show>
               ) : (
-                <Show when={liveTps()}>
-                  <span style={{ fg: theme.textMuted }}> · {liveTps()} tok/s</span>
+                <Show when={stats().live}>
+                  <span style={{ fg: theme.textMuted }}> · {stats().live} tok/s</span>
                 </Show>
               )}
               <Show when={props.message.error?.name === "MessageAbortedError"}>
