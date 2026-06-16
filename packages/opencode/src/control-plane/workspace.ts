@@ -960,7 +960,8 @@ function synced(db: Database.Interface["db"], state: Record<string, number>): Ef
     .pipe(
       Effect.orDie,
       Effect.map((rows) => {
-        const done = Object.fromEntries(rows.map((row) => [row.id, row.seq])) as Record<string, number>
+        const done: Record<string, number> = {}
+        for (const row of rows) done[row.id] = row.seq
         return ids.every((id) => (done[id] ?? -1) >= state[id])
       }),
     )

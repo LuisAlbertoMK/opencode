@@ -75,7 +75,7 @@ function dropUnknownKeybinds(input: Record<string, unknown>) {
 
   return {
     ...input,
-    keybinds: Object.fromEntries(Object.entries(input.keybinds).filter(([key]) => !invalid.includes(key))),
+    keybinds: (() => { const r: Record<string, unknown> = {}; for (const [k, v] of Object.entries(input.keybinds)) { if (!invalid.includes(k)) r[k] = v } return r })(),
   }
 }
 

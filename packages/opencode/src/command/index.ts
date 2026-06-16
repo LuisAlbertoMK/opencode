@@ -122,7 +122,7 @@ export const layer = Layer.effect(
                   prompt.client,
                   prompt.name,
                   prompt.arguments
-                    ? Object.fromEntries(prompt.arguments.map((argument, i) => [argument.name, `$${i + 1}`]))
+                    ? (() => { const r: Record<string, string> = {}; let i = 0; for (const argument of prompt.arguments) { r[argument.name] = `$${++i}` } return r })()
                     : {},
                 )
                 .pipe(
