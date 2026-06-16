@@ -76,7 +76,7 @@ function stat(file: string) {
 }
 
 function full(file: string) {
-  if (process.platform !== "win32") return file
+  if (!Platform.isWindows) return file
   const shell = FSUtil.windowsPath(file)
   if (path.win32.dirname(shell) !== ".") {
     if (shell.startsWith("/") && name(shell) === "bash") return gitbash() || shell
@@ -128,7 +128,7 @@ function select(file: string | undefined, opts?: { acceptable?: boolean }) {
     const shell = resolve(file)
     if (shell) return shell
   }
-  if (process.platform === "win32") return win()[0]
+  if (Platform.isWindows) return win()[0]
   return fallback()
 }
 
@@ -149,7 +149,7 @@ function fallback() {
 }
 
 export function name(file: string) {
-  if (process.platform === "win32") return path.win32.parse(FSUtil.windowsPath(file)).name.toLowerCase()
+  if (Platform.isWindows) return path.win32.parse(FSUtil.windowsPath(file)).name.toLowerCase()
   return path.basename(file).toLowerCase()
 }
 

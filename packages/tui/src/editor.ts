@@ -4,6 +4,7 @@ import { readFile, rm, writeFile } from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { spawn } from "node:child_process"
+import { Platform } from "@opencode-ai/core/util/platform"
 import type { Stream } from "node:stream"
 import { resolveZedDbPath, resolveZedSelection } from "./editor-zed"
 
@@ -36,7 +37,7 @@ export async function openEditor(input: { value: string; renderer: CliRenderer; 
       const child = spawn(parts[0]!, [...parts.slice(1), file], {
         cwd: input.cwd && existsSync(input.cwd) ? input.cwd : process.cwd(),
         stdio: [input.stdin ?? "inherit", "inherit", "inherit"],
-        shell: process.platform === "win32",
+        shell: Platform.isWindows,
       })
       child.on("error", reject)
       child.on("exit", (code, signal) => {

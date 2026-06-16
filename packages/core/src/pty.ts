@@ -8,6 +8,7 @@ import { Location } from "./location"
 import { NonNegativeInt, PositiveInt } from "./schema"
 import { PtyID } from "./pty/schema"
 import { Shell } from "./shell"
+import { Platform } from "./util/platform"
 import { lazy } from "./util/lazy"
 
 const BUFFER_LIMIT = 1024 * 1024 * 2
@@ -203,7 +204,7 @@ export const layer = Layer.effect(
         TERM: "xterm-256color",
         OPENCODE_TERMINAL: "1",
       } as Record<string, string>
-      if (process.platform === "win32") {
+      if (Platform.isWindows) {
         env.LC_ALL = "C.UTF-8"
         env.LC_CTYPE = "C.UTF-8"
         env.LANG = "C.UTF-8"

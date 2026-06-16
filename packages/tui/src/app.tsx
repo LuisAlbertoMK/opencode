@@ -4,6 +4,7 @@ import { createDefaultOpenTuiKeymap } from "@opentui/keymap/opentui"
 import { Deferred, Effect } from "effect"
 import { Global } from "@opencode-ai/core/global"
 import { Flag } from "@opencode-ai/core/flag/flag"
+import { Platform } from "@opencode-ai/core/util/platform"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { ClipboardProvider, useClipboard } from "./context/clipboard"
 import { ExitProvider, useExit } from "./context/exit"
@@ -851,7 +852,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         title: "Suspend terminal",
         category: "System",
         hidden: true,
-        enabled: process.platform !== "win32",
+        enabled: !Platform.isWindows,
         run: () => {
           renderer.suspend()
           process.once("SIGCONT", () => renderer.resume())

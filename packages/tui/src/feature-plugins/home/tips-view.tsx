@@ -2,6 +2,7 @@ import type { TuiPluginApi } from "@opencode-ai/plugin/tui"
 import { createMemo, For, type Accessor } from "solid-js"
 import { DEFAULT_THEMES, useTheme } from "../../context/theme"
 import { useCommandShortcut } from "../../keymap"
+import { Platform } from "@opencode-ai/core/util/platform"
 
 const themeCount = Object.keys(DEFAULT_THEMES).length
 
@@ -134,7 +135,7 @@ export function Tips(props: { api: TuiPluginApi; connected?: boolean }) {
   }
   const tip = createMemo(() => {
     if (props.connected === false) return NO_MODELS_TIP
-    const tips = [...TIPS, process.platform !== "win32" ? TERMINAL_SUSPEND_TIP : INPUT_UNDO_TIP].flatMap((item) => {
+    const tips = [...TIPS, !Platform.isWindows ? TERMINAL_SUSPEND_TIP : INPUT_UNDO_TIP].flatMap((item) => {
       const value = typeof item === "string" ? item : item(shortcuts)
       return value ? [value] : []
     })

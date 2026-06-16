@@ -1,5 +1,6 @@
 import { dlopen, ptr } from "bun:ffi"
 import type { ReadStream } from "node:tty"
+import { Platform } from "@opencode-ai/core/util/platform"
 
 const STD_INPUT_HANDLE = -10
 const ENABLE_PROCESSED_INPUT = 0x0001
@@ -15,7 +16,7 @@ const kernel = () =>
 let k32: ReturnType<typeof kernel> | undefined
 
 function load() {
-  if (process.platform !== "win32") return false
+  if (!Platform.isWindows) return false
   try {
     k32 ??= kernel()
     return true
