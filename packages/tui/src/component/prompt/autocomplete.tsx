@@ -100,6 +100,7 @@ export function Autocomplete(props: {
     visible: false as AutocompleteRef["visible"],
     input: "keyboard" as "keyboard" | "mouse",
   })
+  const setInputMouse = () => setStore("input", "mouse")
 
   const [positionTick, setPositionTick] = createSignal(0)
 
@@ -747,18 +748,16 @@ export function Autocomplete(props: {
               paddingRight={1}
               backgroundColor={index === store.selected ? theme.primary : undefined}
               flexDirection="row"
-              onMouseMove={() => {
-                setStore("input", "mouse")
-              }}
+              onMouseMove={setInputMouse}
               onMouseOver={() => {
                 if (store.input !== "mouse") return
                 moveTo(index)
               }}
               onMouseDown={() => {
-                setStore("input", "mouse")
+                setInputMouse()
                 moveTo(index)
               }}
-              onMouseUp={() => select()}
+              onMouseUp={select}
             >
               <text fg={index === store.selected ? selectedForeground(theme) : theme.text} flexShrink={0}>
                 {option().display}

@@ -2,7 +2,7 @@ import { useDialog } from "../ui/dialog"
 import { DialogSelect } from "../ui/dialog-select"
 import { useRoute } from "../context/route"
 import { useSync } from "../context/sync"
-import { createMemo, createResource, createSignal, onMount } from "solid-js"
+import { createMemo, createResource, createSignal, onCleanup, onMount } from "solid-js"
 import path from "path"
 import { Locale } from "../util/locale"
 import { useProject } from "../context/project"
@@ -28,7 +28,8 @@ export function DialogSessionList() {
   const local = useLocal()
   const toast = useToast()
   const [toDelete, setToDelete] = createSignal<string>()
-  const [search, setSearch] = createDebouncedSignal("", 150)
+  const [search, setSearch, disposeSearch] = createDebouncedSignal("", 150)
+  onCleanup(disposeSearch)
   const deleteHint = useCommandShortcut("session.delete")
   const quickSwitch1 = useCommandShortcut("session.quick_switch.1")
   const quickSwitch9 = useCommandShortcut("session.quick_switch.9")

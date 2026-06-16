@@ -92,6 +92,11 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   })
   const [focusedAction, setFocusedAction] = createSignal<number>()
   const actionFocused = createMemo(() => focusedAction() !== undefined)
+  const onOptionMouseMove = () => {
+    if (props.locked) return
+    setStore("input", "mouse")
+    setFocusedAction(undefined)
+  }
 
   createEffect(
     on(
@@ -567,11 +572,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                         <box
                           flexDirection="column"
                           position="relative"
-                          onMouseMove={() => {
-                            if (props.locked) return
-                            setStore("input", "mouse")
-                            setFocusedAction(undefined)
-                          }}
+                          onMouseMove={onOptionMouseMove}
                           onMouseUp={() => {
                             if (props.locked) return
                             option.onSelect?.(dialog)

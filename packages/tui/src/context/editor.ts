@@ -142,6 +142,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
     let lastZedSelectionKey: string | undefined
     let directory = paths.cwd
     let preserveSelectionOnReconnect = false
+    let socketCleanup: AbortController | undefined
     const pending = new Map<number, string>()
 
     const setSelection = (selection: EditorSelection | undefined) => {
@@ -211,8 +212,10 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
       }
 
       setStore("status", "connecting")
+      socketCleanup?.abort()
       const current = openEditorSocket(connection, WebSocketImpl)
       socket = current
+      const signal = (socketCleanup = new AbortController()).signal
 
       current.addEventListener("open", () => {
         if (socket !== current) {
@@ -227,7 +230,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
           capabilities: {},
           clientInfo: { name: "opencode", version: "0.0.0" },
         })
-      })
+      }, { signal })
 
       current.addEventListener("message", (event) => {
         const message = parseMessage(event.data)
@@ -259,7 +262,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
           send({ method: "notifications/initialized" })
           return
         }
-      })
+      }, { signal })
 
       current.addEventListener("close", () => {
         if (socket !== current) return
@@ -270,7 +273,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
 
         setStore("status", "connecting")
         scheduleReconnect()
-      })
+      }, { signal })
     }
 
     const scheduleReconnect = () => {

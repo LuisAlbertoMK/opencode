@@ -1534,62 +1534,7 @@ export function Prompt(props: PromptProps) {
                     </Show>
                   </box>
                   <box flexDirection="row" gap={1} flexShrink={0}>
-                    {(() => {
-                      const retry = createMemo(() => {
-                        const s = status()
-                        if (s.type !== "retry") return
-                        return s
-                      })
-                      const message = createMemo(() => {
-                        const r = retry()
-                        if (!r) return
-                        if (r.message.includes("exceeded your current quota") && r.message.includes("gemini"))
-                          return "gemini is way too hot right now"
-                        if (r.message.length > 80) return r.message.slice(0, 80) + "..."
-                        return r.message
-                      })
-                      const isTruncated = createMemo(() => {
-                        const r = retry()
-                        if (!r) return false
-                        return r.message.length > 120
-                      })
-                      const [seconds, setSeconds] = createSignal(0)
-                      onMount(() => {
-                        const timer = setInterval(() => {
-                          const next = retry()?.next
-                          if (next) setSeconds(Math.round((next - Date.now()) / 1000))
-                        }, 1000)
-
-                        onCleanup(() => {
-                          clearInterval(timer)
-                        })
-                      })
-                      const handleMessageClick = () => {
-                        const r = retry()
-                        if (!r) return
-                        if (isTruncated()) {
-                          void DialogAlert.show(dialog, "Retry Error", r.message)
-                        }
-                      }
-
-                      const retryText = () => {
-                        const r = retry()
-                        if (!r) return ""
-                        const baseMessage = message()
-                        const truncatedHint = isTruncated() ? " (click to expand)" : ""
-                        const duration = formatDuration(seconds())
-                        const retryInfo = ` [retrying ${duration ? `in ${duration} ` : ""}attempt #${r.attempt}]`
-                        return baseMessage + truncatedHint + retryInfo
-                      }
-
-                      return (
-                        <Show when={retry()}>
-                          <box onMouseUp={handleMessageClick}>
-                            <text fg={theme.error}>{retryText()}</text>
-                          </box>
-                        </Show>
-                      )
-                    })()}
+                    <RetryCountdown status={status} dialog={dialog} theme={theme} />
                   </box>
                 </box>
                 <text fg={store.interrupt > 0 ? theme.primary : theme.text}>
@@ -1712,5 +1657,61 @@ export function Prompt(props: PromptProps) {
         promptPartTypeId={() => promptPartTypeId}
       />
     </>
+  )
+}
+
+// ─── Inner Components ───────────────────────────────
+
+function RetryCountdown(props: {
+  status: () => { type: string } & Record<string, unknown>
+  dialog: ReturnType<typeof useDialog>
+  theme: Record<string, string>
+}) {
+  const retry = createMemo(() => {
+    const s = props.status()
+    if (s.type !== "retry") return
+    return s as { next?: number; message: string; attempt: number }
+  })
+  const message = createMemo(() => {
+    const r = retry()
+    if (!r) return
+    if (r.message.includes("exceeded your current quota") && r.message.includes("gemini"))
+      return "gemini is way too hot right now"
+    if (r.message.length > 80) return r.message.slice(0, 80) + "..."
+    return r.message
+  })
+  const isTruncated = createMemo(() => {
+    const r = retry()
+    if (!r) return false
+    return r.message.length > 120
+  })
+  const [seconds, setSeconds] = createSignal(0)
+  onMount(() => {
+    const timer = setInterval(() => {
+      const next = retry()?.next
+      if (next) setSeconds(Math.round((next - Date.now()) / 1000))
+    }, 1000)
+    onCleanup(() => clearInterval(timer))
+  })
+  const handleMessageClick = () => {
+    const r = retry()
+    if (!r) return
+    if (isTruncated()) void DialogAlert.show(props.dialog, "Retry Error", r.message)
+  }
+  const retryText = () => {
+    const r = retry()
+    if (!r) return ""
+    const baseMessage = message()
+    const truncatedHint = isTruncated() ? " (click to expand)" : ""
+    const duration = formatDuration(seconds())
+    const retryInfo = ` [retrying ${duration ? `in ${duration} ` : ""}attempt #${r.attempt}]`
+    return baseMessage + truncatedHint + retryInfo
+  }
+  return (
+    <Show when={retry()}>
+      <box onMouseUp={handleMessageClick}>
+        <text fg={props.theme.error}>{retryText()}</text>
+      </box>
+    </Show>
   )
 }

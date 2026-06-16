@@ -1,6 +1,9 @@
 import { createEffect, createSignal, on, onCleanup, type Accessor } from "solid-js"
 
-export function createDebouncedSignal<T>(value: T, ms: number): [Accessor<T>, (value: T) => void] {
+export function createDebouncedSignal<T>(
+  value: T,
+  ms: number,
+): [get: Accessor<T>, set: (value: T) => void, dispose: () => void] {
   const [get, set] = createSignal(value)
   let timer: ReturnType<typeof setTimeout> | undefined
   const debounced = (next: T) => {
@@ -10,10 +13,10 @@ export function createDebouncedSignal<T>(value: T, ms: number): [Accessor<T>, (v
       set(() => next)
     }, ms)
   }
-  onCleanup(() => {
+  const dispose = () => {
     if (timer) clearTimeout(timer)
-  })
-  return [get, debounced]
+  }
+  return [get, debounced, dispose]
 }
 
 export function createFadeIn(show: Accessor<boolean>, enabled: Accessor<boolean>) {
