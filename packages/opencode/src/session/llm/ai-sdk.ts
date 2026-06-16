@@ -52,15 +52,15 @@ function usage(value: unknown) {
     inputTokenDetails?: { cacheReadTokens?: number; cacheWriteTokens?: number }
     outputTokenDetails?: { reasoningTokens?: number }
   }
-  const entries = Object.entries({
-    inputTokens: item.inputTokens,
-    outputTokens: item.outputTokens,
-    totalTokens: item.totalTokens,
-    reasoningTokens: item.outputTokenDetails?.reasoningTokens ?? item.reasoningTokens,
-    cacheReadInputTokens: item.inputTokenDetails?.cacheReadTokens ?? item.cachedInputTokens,
-    cacheWriteInputTokens: item.inputTokenDetails?.cacheWriteTokens,
-  }).filter((entry) => entry[1] !== undefined)
-  return entries.length === 0 ? undefined : Object.fromEntries(entries)
+  const result: Record<string, number> = {}
+  const addVal = (key: string, val: number | undefined) => { if (val !== undefined) result[key] = val }
+  addVal("inputTokens", item.inputTokens)
+  addVal("outputTokens", item.outputTokens)
+  addVal("totalTokens", item.totalTokens)
+  addVal("reasoningTokens", item.outputTokenDetails?.reasoningTokens ?? item.reasoningTokens)
+  addVal("cacheReadInputTokens", item.inputTokenDetails?.cacheReadTokens ?? item.cachedInputTokens)
+  addVal("cacheWriteInputTokens", item.inputTokenDetails?.cacheWriteTokens)
+  return Object.keys(result).length === 0 ? undefined : result
 }
 
 function currentTextID(state: ReturnType<typeof adapterState>, id: string | undefined) {

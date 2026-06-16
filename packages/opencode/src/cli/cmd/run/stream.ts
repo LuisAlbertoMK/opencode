@@ -91,15 +91,16 @@ function traceCommit(commit: StreamCommit) {
 export function traceSubagentState(state: FooterSubagentState) {
   return {
     tabs: state.tabs,
-    details: Object.fromEntries(
-      Object.entries(state.details).map(([sessionID, detail]) => [
-        sessionID,
-        {
+    details: (() => {
+      const details: Record<string, { sessionID: string; commits: ReturnType<typeof traceCommit>[] }> = {}
+      for (const [sessionID, detail] of Object.entries(state.details)) {
+        details[sessionID] = {
           sessionID,
           commits: detail.commits.map(traceCommit),
-        },
-      ]),
-    ),
+        }
+      }
+      return details
+    })(),
     permissions: state.permissions.map((item) => ({
       id: item.id,
       sessionID: item.sessionID,

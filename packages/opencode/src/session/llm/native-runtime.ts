@@ -154,9 +154,11 @@ function providerFetch(input: Pick<StreamInput, "provider" | "auth">): typeof gl
 
 function providerHeaders(value: unknown): Record<string, string> | undefined {
   if (!isRecord(value)) return undefined
-  return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
-  )
+  const result: Record<string, string> = {}
+  for (const [key, val] of Object.entries(value)) {
+    if (typeof val === "string") result[key] = val
+  }
+  return Object.keys(result).length === 0 ? undefined : result
 }
 
 function nativeSchema(value: unknown): JsonSchema {
@@ -167,9 +169,9 @@ function nativeSchema(value: unknown): JsonSchema {
 }
 
 export function nativeTools(tools: Record<string, Tool>, input: Pick<StreamInput, "messages" | "abort">) {
-  return Object.fromEntries(
-    Object.entries(tools).map(([name, item]) => [
-      name,
+  const result: Record<string, ReturnType<typeof NativeTool.make>> = {}
+  for (const [name, item] of Object.entries(tools)) {
+    result[name] =
       // Tool execution remains opencode-owned. The native runtime only adapts
       // the @opencode-ai/llm tool call back into the AI SDK Tool.execute shape.
       NativeTool.make({
@@ -187,9 +189,9 @@ export function nativeTools(tools: Record<string, Tool>, input: Pick<StreamInput
             },
             catch: (error) => new ToolFailure({ message: errorMessage(error), error }),
           }),
-      }),
-    ]),
-  )
+      })
+    }
+  return result
 }
 
 export * as LLMNativeRuntime from "./native-runtime"

@@ -723,14 +723,15 @@ const onReasoningSummaryPartAdded = (state: ParserState, event: OpenAIResponsesE
         ...state.reasoningItems,
         [event.item_id]: {
           ...item,
-          summaryParts: {
-            ...Object.fromEntries(
-              Object.entries(item.summaryParts).map((entry) =>
-                entry[1] === "can-conclude" ? [entry[0], "concluded" as const] : entry,
-              ),
-            ),
-            [event.summary_index]: "active",
-          },
+          summaryParts: (() => {
+            const parts: Record<string, (typeof item.summaryParts)[number]> = {}
+            for (const key of Object.keys(item.summaryParts)) {
+              const val = item.summaryParts[Number(key)]
+              parts[key] = val === "can-conclude" ? "concluded" as const : val
+            }
+            parts[event.summary_index] = "active"
+            return parts
+          })(),
         },
       },
     },

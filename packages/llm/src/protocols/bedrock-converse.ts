@@ -553,9 +553,14 @@ const step = (state: ParserState, event: BedrockEvent) =>
           hasToolCalls: resultEvents.some(LLMEvent.is.toolCall) ? true : state.hasToolCalls,
           lifecycle,
           tools: result.tools,
-          reasoningSignatures: Object.fromEntries(
-            Object.entries(state.reasoningSignatures).filter(([key]) => key !== String(index)),
-          ),
+          reasoningSignatures: (() => {
+            const sigs: Record<string, (typeof state.reasoningSignatures)[number]> = {}
+            for (const key of Object.keys(state.reasoningSignatures)) {
+              const numKey = Number(key)
+              if (numKey !== index) sigs[key] = state.reasoningSignatures[numKey]
+            }
+            return sigs
+          })(),
         },
         events,
       ] as const

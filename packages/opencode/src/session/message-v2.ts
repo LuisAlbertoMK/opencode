@@ -412,7 +412,10 @@ export const toModelMessagesEffect = Effect.fnUntraced(function* (
     }
   }
 
-  const tools = Object.fromEntries(Array.from(toolNames).map((toolName) => [toolName, { toModelOutput }]))
+  const tools: Record<string, { toModelOutput: typeof toModelOutput }> = {}
+  for (const toolName of toolNames) {
+    tools[toolName] = { toModelOutput }
+  }
 
   return yield* Effect.promise(() =>
     convertToModelMessages(

@@ -36,9 +36,10 @@ export type RequestInput = {
 
 const providerMetadata = (value: unknown): ProviderMetadata | undefined => {
   if (!isRecord(value)) return undefined
-  const result = Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, Record<string, unknown>] => isRecord(entry[1])),
-  )
+  const result: Record<string, Record<string, unknown>> = {}
+  for (const [key, val] of Object.entries(value)) {
+    if (isRecord(val)) result[key] = val as Record<string, unknown>
+  }
   return Object.keys(result).length === 0 ? undefined : result
 }
 

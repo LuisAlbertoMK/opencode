@@ -263,7 +263,13 @@ export function withoutInternalHeaders<T extends { headers?: HeadersInit }>(init
 
   return {
     ...init,
-    headers: Object.fromEntries(Object.entries(init.headers).filter(([key]) => key.toLowerCase() !== TITLE_HEADER)),
+    headers: (() => {
+      const headers: Record<string, string> = {}
+      for (const [key, val] of Object.entries(init.headers)) {
+        if (key.toLowerCase() !== TITLE_HEADER) headers[key] = val as string
+      }
+      return headers
+    })(),
   }
 }
 

@@ -344,13 +344,15 @@ function parseWrappedError(event: Record<string, unknown> | undefined, body: str
   return {
     status,
     headers: isRecord(event.headers)
-      ? Object.fromEntries(
-          Object.entries(event.headers).flatMap(([key, value]) =>
-            typeof value === "string" || typeof value === "number" || typeof value === "boolean"
-              ? [[key, String(value)]]
-              : [],
-          ),
-        )
+      ? (() => {
+          const headers: Record<string, string> = {}
+          for (const [key, val] of Object.entries(event.headers)) {
+            if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+              headers[key] = String(val)
+            }
+          }
+          return headers
+        })()
       : undefined,
     body,
     message: isRecord(event.error) && typeof event.error.message === "string" ? event.error.message : `${status}`,

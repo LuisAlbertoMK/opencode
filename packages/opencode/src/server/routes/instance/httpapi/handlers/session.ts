@@ -73,7 +73,11 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session", 
     })
 
     const status = Effect.fn("SessionHttpApi.status")(function* () {
-      return Object.fromEntries(yield* statusSvc.list())
+      const result: Record<string, SessionStatus.Info> = {}
+      for (const [id, state] of yield* statusSvc.list()) {
+        result[id] = state
+      }
+      return result
     })
 
     const requireSession = Effect.fn("SessionHttpApi.requireSession")(function* (sessionID: SessionID) {

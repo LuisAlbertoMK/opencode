@@ -36,7 +36,11 @@ const signRequest = (input: {
         sessionToken: input.credentials.sessionToken,
         service: "bedrock",
       }).sign()
-      return Object.fromEntries(signed.headers.entries())
+      const headers: Record<string, string> = {}
+      for (const [key, val] of signed.headers.entries()) {
+        headers[key] = val
+      }
+      return headers
     },
     catch: (error) =>
       ProviderShared.invalidRequest(

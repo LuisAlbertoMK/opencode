@@ -166,11 +166,15 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV3 {
 
         stop: stopSequences,
         seed,
-        ...Object.fromEntries(
-          Object.entries(providerOptions?.[this.providerOptionsName] ?? {}).filter(
-            ([key]) => !Object.keys(openaiCompatibleProviderOptions.shape).includes(key),
-          ),
-        ),
+        ...(() => {
+          const extra: Record<string, unknown> = {}
+          for (const [key, val] of Object.entries(providerOptions?.[this.providerOptionsName] ?? {})) {
+            if (!Object.keys(openaiCompatibleProviderOptions.shape).includes(key)) {
+              extra[key] = val
+            }
+          }
+          return extra
+        })(),
 
         reasoning_effort: compatibleOptions.reasoningEffort,
         verbosity: compatibleOptions.textVerbosity,

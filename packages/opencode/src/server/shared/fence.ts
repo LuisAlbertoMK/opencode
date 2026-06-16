@@ -16,19 +16,22 @@ export function load(db: Database.Interface["db"], ids?: string[]) {
         : db.select().from(EventSequenceTable).all()
     ).pipe(Effect.orDie)
 
-    return Object.fromEntries(rows.map((row) => [row.aggregate_id, row.seq]))
+    const result: Record<string, number> = {}
+    for (const row of rows) {
+      result[row.aggregate_id] = row.seq
+    }
+    return result
   })
 }
 
 export function diff(prev: State, next: State) {
   const ids = new Set([...Object.keys(prev), ...Object.keys(next)])
-  return Object.fromEntries(
-    [...ids]
-      .map((id) => [id, next[id] ?? -1] as const)
-      .filter(([id, seq]) => {
-        return (prev[id] ?? -1) !== seq
-      }),
-  )
+  const result: Record<string, number> = {}
+  for (const id of ids) {
+    const seq = next[id] ?? -1
+    if ((prev[id] ?? -1) !== seq) result[id] = seq
+  }
+  return result
 }
 
 export function parse(headers: Headers): State | undefined {
@@ -44,11 +47,11 @@ export function parse(headers: Headers): State | undefined {
 
   if (!data || typeof data !== "object") return
 
-  return Object.fromEntries(
-    Object.entries(data).filter((entry): entry is [string, number] => {
-      return typeof entry[0] === "string" && Number.isInteger(entry[1])
-    }),
-  )
+  const result: Record<string, number> = {}
+  for (const [key, val] of Object.entries(data)) {
+    if (typeof key === "string" && Number.isInteger(val)) result[key] = val as number
+  }
+  return result
 }
 
 export function wait(workspaceID: WorkspaceV2.ID, state: State, signal?: AbortSignal) {
