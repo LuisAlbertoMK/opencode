@@ -62,7 +62,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
       async models(provider, ctx) {
         if (ctx.auth?.type !== "oauth") {
           models = {}
-          return Object.fromEntries(Object.entries(provider.models).map(([id, model]) => [id, fix(model, base())]))
+          return (() => { const r: Record<string, Model> = {}; for (const [id, model] of Object.entries(provider.models)) r[id] = fix(model, base()); return r })()
         }
 
         const auth = ctx.auth
@@ -78,15 +78,11 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
         )
           .then((result) => {
             models = result.models
-            return Object.fromEntries(
-              Object.entries(result.models).filter(([, model]) => result.pickerEnabled.has(model.api.id)),
-            )
+            const r2: Record<string, Model> = {}; for (const [id, model] of Object.entries(result.models)) if (result.pickerEnabled.has(model.api.id)) r2[id] = model; return r2
           })
           .catch((error) => {
             models = {}
-            return Object.fromEntries(
-              Object.entries(provider.models).map(([id, model]) => [id, fix(model, base(auth.enterpriseUrl))]),
-            )
+            const r3: Record<string, Model> = {}; for (const [id, model] of Object.entries(provider.models)) r3[id] = fix(model, base(auth.enterpriseUrl)); return r3
           })
       },
     },

@@ -366,32 +366,29 @@ export async function CodexAuthPlugin(input: PluginInput, options: CodexAuthPlug
       async models(provider, ctx) {
         if (ctx.auth?.type !== "oauth") return provider.models
 
-        return Object.fromEntries(
-          Object.entries(provider.models)
-            .filter(([, model]) => {
-              if (ALLOWED_MODELS.has(model.api.id)) return true
-              const match = model.api.id.match(/^gpt-(\d+\.\d+)/)
-              return match ? parseFloat(match[1]) > 5.4 : false
-            })
-            .map(([modelID, model]) => [
-              modelID,
-              {
-                ...model,
-                cost: {
-                  input: 0,
-                  output: 0,
-                  cache: { read: 0, write: 0 },
-                },
-                limit: model.id.includes("gpt-5.5")
-                  ? {
-                      context: 400_000,
-                      input: 272_000,
-                      output: 128_000,
-                    }
-                  : model.limit,
-              },
-            ]),
-        )
+        const r: Record<string, typeof provider.models[string]> = {}
+        for (const [modelID, model] of Object.entries(provider.models)) {
+          if (!ALLOWED_MODELS.has(model.api.id)) {
+            const match = model.api.id.match(/^gpt-(\d+\.\d+)/)
+            if (!(match && parseFloat(match[1]) > 5.4)) continue
+          }
+          r[modelID] = {
+            ...model,
+            cost: {
+              input: 0,
+              output: 0,
+              cache: { read: 0, write: 0 },
+            },
+            limit: model.id.includes("gpt-5.5")
+              ? {
+                  context: 400_000,
+                  input: 272_000,
+                  output: 128_000,
+                }
+              : model.limit,
+          }
+        }
+        return r
       },
     },
     auth: {
