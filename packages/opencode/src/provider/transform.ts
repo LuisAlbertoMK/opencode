@@ -641,7 +641,11 @@ function googleThinkingBudgetMax(apiId: string) {
 // SAP's Zod schema drops unknown top-level keys; reasoning controls survive
 // only via `modelParams` (catchall), forwarded verbatim by the SAP SDKs.
 function wrapInSapModelParams(variants: Record<string, Record<string, any>>): Record<string, Record<string, any>> {
-  return Object.fromEntries(Object.entries(variants).map(([k, v]) => [k, { modelParams: v }]))
+  const result: Record<string, Record<string, any>> = {}
+  for (const [k, v] of Object.entries(variants)) {
+    result[k] = { modelParams: v }
+  }
+  return result
 }
 
 function googleThinkingVariants(model: Provider.Model): Record<string, Record<string, any>> {
@@ -654,12 +658,11 @@ function googleThinkingVariants(model: Provider.Model): Record<string, Record<st
       },
     }
   }
-  return Object.fromEntries(
-    googleThinkingLevelEfforts(id).map((effort) => [
-      effort,
-      { thinkingConfig: { includeThoughts: true, thinkingLevel: effort } },
-    ]),
-  )
+  const result: Record<string, Record<string, any>> = {}
+  for (const effort of googleThinkingLevelEfforts(id)) {
+    result[effort] = { thinkingConfig: { includeThoughts: true, thinkingLevel: effort } }
+  }
+  return result
 }
 
 export function variants(model: Provider.Model): Record<string, Record<string, any>> {
@@ -707,13 +710,16 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
   if (id.includes("grok")) return {}
 
   switch (model.api.npm) {
-    case "@openrouter/ai-sdk-provider":
-      return Object.fromEntries(
-        (model.api.id.startsWith("openai/") || id.includes("gpt")
-          ? openaiCompatibleReasoningEfforts(model.api.id)
-          : WIDELY_SUPPORTED_EFFORTS
-        ).map((effort) => [effort, { reasoning: { effort } }]),
-      )
+    case "@openrouter/ai-sdk-provider": {
+      const openrouterEfforts = model.api.id.startsWith("openai/") || id.includes("gpt")
+        ? openaiCompatibleReasoningEfforts(model.api.id)
+        : WIDELY_SUPPORTED_EFFORTS
+      const result: Record<string, Record<string, any>> = {}
+      for (const effort of openrouterEfforts) {
+        result[effort] = { reasoning: { effort } }
+      }
+      return result
+    }
 
     case "ai-gateway-provider": {
       // Cloudflare AI Gateway routes every upstream through its OpenAI-compatible
@@ -722,31 +728,33 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       // (e.g. Anthropic thinking budgets) when needed. Variants therefore stay
       // OAI-style for all upstreams, with an extended effort set for OpenAI
       // models that support it.
-      if (model.api.id.startsWith("openai/")) {
-        const efforts = openaiReasoningEfforts(model.api.id, model.release_date)
-        return Object.fromEntries(efforts.map((effort) => [effort, { reasoningEffort: effort }]))
+      const gatewayEfforts = model.api.id.startsWith("openai/")
+        ? openaiReasoningEfforts(model.api.id, model.release_date)
+        : WIDELY_SUPPORTED_EFFORTS
+      const result: Record<string, Record<string, any>> = {}
+      for (const effort of gatewayEfforts) {
+        result[effort] = { reasoningEffort: effort }
       }
-      return Object.fromEntries(WIDELY_SUPPORTED_EFFORTS.map((effort) => [effort, { reasoningEffort: effort }]))
+      return result
     }
 
     case "@ai-sdk/gateway":
       if (model.id.includes("anthropic")) {
         if (adaptiveEfforts) {
-          return Object.fromEntries(
-            adaptiveEfforts.map((effort) => [
-              effort,
-              {
-                thinking: {
-                  type: "adaptive",
-                  // Newer adaptive-only models default `display` to "omitted", which
-                  // returns empty thinking blocks. Force "summarized" so summaries
-                  // survive (4.6/Sonnet 4.6 already default to "summarized").
-                  ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}),
-                },
-                effort,
+          const gatewayAnthropicResult: Record<string, Record<string, any>> = {}
+          for (const effort of adaptiveEfforts) {
+            gatewayAnthropicResult[effort] = {
+              thinking: {
+                type: "adaptive",
+                // Newer adaptive-only models default `display` to "omitted", which
+                // returns empty thinking blocks. Force "summarized" so summaries
+                // survive (4.6/Sonnet 4.6 already default to "summarized").
+                ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}),
               },
-            ]),
-          )
+              effort,
+            }
+          }
+          return gatewayAnthropicResult
         }
         return {
           high: {
@@ -780,19 +788,17 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
             },
           }
         }
-        return Object.fromEntries(
-          ["low", "high"].map((effort) => [
-            effort,
-            {
-              includeThoughts: true,
-              thinkingLevel: effort,
-            },
-          ]),
-        )
+        const googleResult: Record<string, Record<string, any>> = {}
+        for (const effort of ["low", "high"]) {
+          googleResult[effort] = { includeThoughts: true, thinkingLevel: effort }
+        }
+        return googleResult
       }
-      return Object.fromEntries(
-        openaiCompatibleReasoningEfforts(model.api.id).map((effort) => [effort, { reasoningEffort: effort }]),
-      )
+      const defaultGatewayResult: Record<string, Record<string, any>> = {}
+      for (const effort of openaiCompatibleReasoningEfforts(model.api.id)) {
+        defaultGatewayResult[effort] = { reasoningEffort: effort }
+      }
+      return defaultGatewayResult
 
     case "@ai-sdk/github-copilot":
       if (model.id.includes("gemini")) {
@@ -800,7 +806,11 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         return {}
       }
       if (model.id.includes("claude")) {
-        return Object.fromEntries(WIDELY_SUPPORTED_EFFORTS.map((effort) => [effort, { reasoningEffort: effort }]))
+        const claudeResult: Record<string, Record<string, any>> = {}
+        for (const effort of WIDELY_SUPPORTED_EFFORTS) {
+          claudeResult[effort] = { reasoningEffort: effort }
+        }
+        return claudeResult
       }
       const copilotEfforts = iife(() => {
         if (id.includes("5.1-codex-max") || id.includes("5.2") || id.includes("5.3"))
@@ -809,16 +819,15 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         if (id.includes("gpt-5") && model.release_date >= "2025-12-04") arr.push("xhigh")
         return arr
       })
-      return Object.fromEntries(
-        copilotEfforts.map((effort) => [
-          effort,
-          {
-            reasoningEffort: effort,
-            reasoningSummary: "auto",
-            include: INCLUDE_ENCRYPTED_REASONING,
-          },
-        ]),
-      )
+      const copilotResult: Record<string, Record<string, any>> = {}
+      for (const effort of copilotEfforts) {
+        copilotResult[effort] = {
+          reasoningEffort: effort,
+          reasoningSummary: "auto",
+          include: INCLUDE_ENCRYPTED_REASONING,
+        }
+      }
+      return copilotResult
 
     case "@ai-sdk/cerebras":
     // https://v5.ai-sdk.dev/providers/ai-sdk-providers/cerebras
@@ -832,13 +841,21 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     // https://docs.venice.ai/overview/guides/reasoning-models#reasoning-effort
     case "@ai-sdk/openai-compatible":
       if (model.api.id.toLowerCase().includes("north-mini-code")) {
-        return Object.fromEntries(["none", "high"].map((effort) => [effort, { reasoningEffort: effort }]))
+        const northResult: Record<string, Record<string, any>> = {}
+        for (const effort of ["none", "high"]) {
+          northResult[effort] = { reasoningEffort: effort }
+        }
+        return northResult
       }
-      const efforts = [...WIDELY_SUPPORTED_EFFORTS]
+      const compatibleEfforts = [...WIDELY_SUPPORTED_EFFORTS]
       if (model.api.id.toLowerCase().includes("deepseek-v4")) {
-        efforts.push("max")
+        compatibleEfforts.push("max")
       }
-      return Object.fromEntries(efforts.map((effort) => [effort, { reasoningEffort: effort }]))
+      const compatibleResult: Record<string, Record<string, any>> = {}
+      for (const effort of compatibleEfforts) {
+        compatibleResult[effort] = { reasoningEffort: effort }
+      }
+      return compatibleResult
 
     case "@ai-sdk/azure":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/azure
