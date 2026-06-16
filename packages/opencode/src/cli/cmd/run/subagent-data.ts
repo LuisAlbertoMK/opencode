@@ -516,7 +516,8 @@ function compactCallMap(detail: DetailState) {
 }
 
 function compactEchoMap(data: SessionData, messageIDs: Set<string>) {
-  const keys = new Set([...messageIDs, ...recent(data.echo.keys(), SUBAGENT_ECHO_LIMIT)])
+  const keys = new Set(messageIDs)
+  for (const id of recent(data.echo.keys(), SUBAGENT_ECHO_LIMIT)) keys.add(id)
   return copyMap(data.echo, keys)
 }
 
@@ -538,26 +539,30 @@ function compactDetail(detail: DetailState) {
   })
   const activePartIDs = new Set(detail.data.part.keys())
   const framePartIDs = new Set(detail.frames.flatMap((item) => (item.commit.partID ? [item.commit.partID] : [])))
-  const partIDs = new Set([...activePartIDs, ...framePartIDs, ...detail.data.tools])
-  const messageIDs = new Set([
-    ...[...activePartIDs]
-      .map((partID) => detail.data.msg.get(partID))
-      .filter((item): item is string => typeof item === "string"),
-    ...recent(detail.data.role.keys(), SUBAGENT_ROLE_LIMIT),
-  ])
+  const partIDs = new Set(activePartIDs)
+  for (const id of framePartIDs) partIDs.add(id)
+  for (const id of detail.data.tools) partIDs.add(id)
+  const messageIDs = new Set(recent(detail.data.role.keys(), SUBAGENT_ROLE_LIMIT))
+  for (const partID of activePartIDs) {
+    const msg = detail.data.msg.get(partID)
+    if (typeof msg === "string") messageIDs.add(msg)
+  }
 
   next.announced = detail.data.announced
   next.permissions = detail.data.permissions
   next.questions = detail.data.questions
   next.ids = compactIDs(detail)
-  next.tools = new Set([...detail.data.tools].filter((item) => partIDs.has(item)))
+  const tools = new Set<string>()
+  for (const item of detail.data.tools) if (partIDs.has(item)) tools.add(item)
+  next.tools = tools
   next.call = compactCallMap(detail)
   next.role = copyMap(detail.data.role, messageIDs)
   next.msg = copyMap(detail.data.msg, activePartIDs)
   next.part = copyMap(detail.data.part, activePartIDs)
   next.text = copyMap(detail.data.text, activePartIDs)
   next.sent = copyMap(detail.data.sent, activePartIDs)
-  next.end = new Set([...detail.data.end].filter((item) => activePartIDs.has(item)))
+  next.end = new Set<string>()
+  for (const item of detail.data.end) if (activePartIDs.has(item)) next.end.add(item)
   next.echo = compactEchoMap(detail.data, messageIDs)
   detail.data = next
 }

@@ -270,7 +270,8 @@ const lowerToolMessages = Effect.fn("OpenAIChat.lowerToolMessages")(function* (m
       continue
     }
     const content: ReadonlyArray<ToolContent> = part.result.value
-    const text = content.filter((item) => item.type === "text").map((item) => item.text)
+    const text: string[] = []
+    for (const item of content) if (item.type === "text") text.push(item.text)
     messages.push({ role: "tool", tool_call_id: part.id, content: text.join("\n") })
     const files = content.filter((item) => item.type === "file")
     images.push(

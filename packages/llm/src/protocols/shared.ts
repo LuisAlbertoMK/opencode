@@ -51,7 +51,10 @@ const removeNullSchemas = (value: unknown): unknown => {
       .map(([key, field]) => [key, removeNullSchemas(field)]),
   )
   if (!Array.isArray(value.anyOf)) return fields
-  const variants = value.anyOf.filter((variant) => !isRecord(variant) || variant.type !== "null").map(removeNullSchemas)
+  const variants: ReturnType<typeof removeNullSchemas>[] = []
+  for (const variant of value.anyOf) {
+    if (!isRecord(variant) || variant.type !== "null") variants.push(removeNullSchemas(variant))
+  }
   if (variants.length === 1 && isRecord(variants[0])) return { ...fields, ...variants[0] }
   return { ...fields, anyOf: variants }
 }

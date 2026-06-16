@@ -450,12 +450,16 @@ export const locationLayer = Layer.effect(
       connection: {
         list: Effect.fn("Integration.connection.list")(function* () {
           const saved = Map.groupBy(yield* credentials.all(), (credential) => credential.integrationID)
-          return new Map(
-            new Set([...state.get().integrations.keys(), ...saved.keys()]).values().flatMap((id) => {
-              const connection = activeConnection(state.get().integrations.get(id), saved.get(id) ?? [])
-              return connection ? [[id, connection] as const] : []
-            }),
-          )
+          const ids = [...state.get().integrations.keys(), ...saved.keys()]
+          const seen = new Set<string>()
+          const result = new Map<string, Connection>()
+          for (const id of ids) {
+            if (seen.has(id)) continue
+            seen.add(id)
+            const connection = activeConnection(state.get().integrations.get(id), saved.get(id) ?? [])
+            if (connection) result.set(id, connection)
+          }
+          return result
         }),
         forIntegration: Effect.fn("Integration.connection.forIntegration")(function* (id) {
           const entry = state.get().integrations.get(id)

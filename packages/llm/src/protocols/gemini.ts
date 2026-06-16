@@ -263,7 +263,8 @@ const lowerMessages = Effect.fn("Gemini.lowerMessages")(function* (request: LLMR
         continue
       }
       const content: ReadonlyArray<ToolContent> = part.result.value
-      const text = content.filter((item) => item.type === "text").map((item) => item.text)
+      const text: string[] = []
+      for (const item of content) if (item.type === "text") text.push(item.text)
       parts.push({
         functionResponse: {
           name: part.name,
