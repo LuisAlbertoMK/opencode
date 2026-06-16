@@ -219,9 +219,11 @@ export function Session() {
     ),
   )
   const userMessageIDs = createMemo((prev: Set<string> | undefined): Set<string> => {
-    const ids = messages()
-      .filter((message) => message.role === "user")
-      .map((message) => message.id)
+    const msgList = messages()
+    const ids: string[] = []
+    for (const msg of msgList) {
+      if (msg.role === "user") ids.push(msg.id)
+    }
     if (prev && prev.size === ids.length && ids.every((id) => prev.has(id))) return prev
     return new Set(ids)
   })
@@ -2231,11 +2233,13 @@ function Task(props: ToolProps) {
   const messages = createMemo(() => sync.data.message[sessionID() ?? ""] ?? [])
 
   const tools = createMemo(() => {
-    return messages().flatMap((msg) =>
-      (sync.data.part[msg.id] ?? [])
-        .filter((part): part is ToolPart => part.type === "tool")
-        .map((part) => ({ tool: part.tool, state: part.state })),
-    )
+    const result: { tool: ToolPart["tool"]; state: ToolPart["state"] }[] = []
+    for (const msg of messages()) {
+      for (const part of sync.data.part[msg.id] ?? []) {
+        if (part.type === "tool") result.push({ tool: part.tool, state: part.state })
+      }
+    }
+    return result
   })
 
   const current = createMemo(() =>

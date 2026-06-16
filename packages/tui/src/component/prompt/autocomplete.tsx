@@ -409,49 +409,51 @@ export function Autocomplete(props: {
   })
 
   const agents = createMemo(() => {
-    return sync.data.agent
-      .filter((agent) => !agent.hidden && agent.mode !== "primary")
-      .map(
-        (agent): AutocompleteOption => ({
-          display: "@" + agent.name,
-          onSelect: () => {
-            insertPart(agent.name, {
-              type: "agent",
-              name: agent.name,
-              source: {
-                start: 0,
-                end: 0,
-                value: "",
-              },
-            })
-          },
-        }),
-      )
+    const result: AutocompleteOption[] = []
+    for (const agent of sync.data.agent) {
+      if (agent.hidden || agent.mode === "primary") continue
+      result.push({
+        display: "@" + agent.name,
+        onSelect: () => {
+          insertPart(agent.name, {
+            type: "agent",
+            name: agent.name,
+            source: {
+              start: 0,
+              end: 0,
+              value: "",
+            },
+          })
+        },
+      })
+    }
+    return result
   })
 
-  const referenceAliases = createMemo(() =>
-    references()
-      .filter((reference) => !reference.hidden)
-      .map(
-        (reference): AutocompleteOption => ({
-          display: "@" + reference.name,
-          description: ` ${reference.source.type === "git" ? reference.source.repository : reference.source.path}`,
-          onSelect: () => {
-            insertPart(reference.name, {
+  const referenceAliases = createMemo(() => {
+    const result: AutocompleteOption[] = []
+    for (const reference of references()) {
+      if (reference.hidden) continue
+      result.push({
+        display: "@" + reference.name,
+        description: ` ${reference.source.type === "git" ? reference.source.repository : reference.source.path}`,
+        onSelect: () => {
+          insertPart(reference.name, {
+            type: "file",
+            mime: "application/x-directory",
+            filename: reference.name,
+            url: pathToFileURL(reference.path).href,
+            source: {
               type: "file",
-              mime: "application/x-directory",
-              filename: reference.name,
-              url: pathToFileURL(reference.path).href,
-              source: {
-                type: "file",
-                text: { start: 0, end: 0, value: "" },
-                path: reference.name,
-              },
-            })
-          },
-        }),
-      ),
-  )
+              text: { start: 0, end: 0, value: "" },
+              filePath: reference.path,
+            } as any,
+          })
+        },
+      })
+    }
+    return result
+  })
 
   const commands = createMemo((): AutocompleteOption[] => {
     const results: AutocompleteOption[] = [...slashes()]
