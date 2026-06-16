@@ -18,6 +18,7 @@ function footer() {
       commits.push(next)
     },
     idle: () => Promise.resolve(),
+    setReplayMode: () => {},
     close: () => {},
     destroy: () => {},
   }

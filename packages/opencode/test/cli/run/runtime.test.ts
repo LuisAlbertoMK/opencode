@@ -111,6 +111,7 @@ function footer(): FooterApi {
     idle() {
       return Promise.resolve()
     },
+    setReplayMode() {},
     close() {
       if (closed) {
         return

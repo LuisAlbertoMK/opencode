@@ -92,6 +92,10 @@ export class RunScrollbackStream {
   private treeSitterClient: TreeSitterClient | undefined
   private wrote: boolean
   private pendingThemes: RunTheme[] = []
+  /** When true, skip streaming path — historical commits write directly as static entries. */
+  private replay: boolean
+  /** Replay buffer: coalesce per-partID content before flushing as static entry. */
+  private readonly replayBuffer = new Map<string, string>()
 
   constructor(
     private renderer: CliRenderer,
@@ -102,6 +106,8 @@ export class RunScrollbackStream {
       sessionID?: () => string | undefined
       treeSitterClient?: TreeSitterClient
       onThemeRelease?: (theme: RunTheme) => void
+      /** Skip streaming path — commits write as static entries coalesced by partID. */
+      replay?: boolean
     } = {},
   ) {
     this.diffStyle = options.diffStyle
@@ -109,6 +115,7 @@ export class RunScrollbackStream {
     this.treeSitterClient = options.treeSitterClient ?? getTreeSitterClient()
     this.wrote = options.wrote ?? false
     this.onThemeRelease = options.onThemeRelease
+    this.replay = options.replay ?? false
   }
 
   private onThemeRelease: ((theme: RunTheme) => void) | undefined
@@ -387,6 +394,37 @@ export class RunScrollbackStream {
       body.type !== "structured" &&
       (entryCanStream(commit, body) || (commit.kind === "tool" && commit.phase === "final" && body.type === "markdown"))
     ) {
+      // During replay, coalesce per-partID content and write once as static entry.
+      if (this.replay && commit.partID) {
+          const prev = this.replayBuffer.get(commit.partID) ?? ""
+          this.replayBuffer.set(commit.partID, prev + body.content)
+        if (entryDone(commit)) {
+          const text = this.replayBuffer.get(commit.partID) ?? ""
+          this.replayBuffer.delete(commit.partID)
+          if (text) {
+            const finalBody = body.type === "text"
+              ? body
+              : body.type === "code"
+                ? { type: "code" as const, content: text, filetype: body.filetype }
+                : { type: "markdown" as const, content: text }
+            const rows = separatorRows(this.rendered, commit, finalBody)
+            const spaced = rows || (!this.rendered && this.wrote ? 1 : 0)
+            this.writeSpacer(spaced)
+            this.renderer.writeToScrollback(
+              entryWriter({
+                commit: { ...commit, phase: "final" },
+                body: finalBody,
+                theme: this.theme,
+                opts: { diffStyle: this.diffStyle },
+              }),
+            )
+            this.markRendered(commit)
+          }
+        }
+        this.tail = commit
+        return
+      }
+
       await this.writeStreaming(commit, body)
       if (entryDone(commit)) {
         this.markRendered(await this.finishActive(false))
@@ -434,12 +472,21 @@ export class RunScrollbackStream {
     this.markRendered(await this.finishActive(trailingNewline))
   }
 
+  /** Enable/disable replay mode. When true, streaming path is skipped and per-partID content is coalesced. */
+  public setReplayMode(enabled: boolean): void {
+    this.replay = enabled
+    if (!enabled) {
+      this.replayBuffer.clear()
+    }
+  }
+
   public async writeTurnSummary(input: { agent: string; model: string; duration: string }): Promise<void> {
     await this.append(turnSummaryCommit(input))
   }
 
   public destroy(): void {
     this.resetActive()
+    this.replayBuffer.clear()
     this.releasePendingThemes()
   }
 }

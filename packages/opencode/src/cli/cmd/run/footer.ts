@@ -563,6 +563,10 @@ export class RunFooter implements FooterApi {
     })
   }
 
+  public setReplayMode(enabled: boolean): void {
+    this.scrollback.setReplayMode(enabled)
+  }
+
   public idle(): Promise<void> {
     if (this.isGone) {
       return Promise.resolve()

@@ -766,6 +766,7 @@ function createLayer(input: StreamInput) {
 
           if (replay) {
             const activeCommitIDs = new Set([...state.data.part.keys(), ...state.data.tools])
+            input.footer.setReplayMode(true)
             for (const commit of replay.commits) {
               input.trace?.write("ui.commit", commit)
               input.footer.append(commit)
@@ -776,6 +777,7 @@ function createLayer(input: StreamInput) {
 
               yield* Effect.promise(() => input.footer.idle()).pipe(Effect.orElseSucceed(() => undefined))
             }
+            input.footer.setReplayMode(false)
           }
 
           const snapshot = currentSubagentState()
@@ -1090,6 +1092,7 @@ function createLayer(input: StreamInput) {
             seedBlocker(request.id)
           }
 
+          input.footer.setReplayMode(true)
           for (const commit of replayLocalRows(
             messagesList,
             [...snapshot.value.visible.commits, ...snapshot.value.activeCommits],
@@ -1098,6 +1101,7 @@ function createLayer(input: StreamInput) {
             input.trace?.write("ui.commit", commit)
             input.footer.append(commit)
           }
+          input.footer.setReplayMode(false)
 
           syncFooter([], snapshot.value.patch, currentSubagentState())
           const rebuilt = yield* Effect.promise(() => input.footer.idle()).pipe(Effect.exit)

@@ -395,6 +395,7 @@ function footer(fn?: (commit: StreamCommit) => void) {
       idleCalls += 1
       return Promise.resolve()
     },
+    setReplayMode() {},
     close() {
       closed = true
     },

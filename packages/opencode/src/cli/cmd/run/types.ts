@@ -345,6 +345,7 @@ export type FooterApi = {
   event(next: FooterEvent): void
   append(commit: StreamCommit): void
   idle(): Promise<void>
+  setReplayMode(enabled: boolean): void
   close(): void
   destroy(): void
 }
