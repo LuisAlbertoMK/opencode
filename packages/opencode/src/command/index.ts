@@ -45,7 +45,7 @@ export function hints(template: string) {
   const result: string[] = []
   const numbered = template.match(/\$\d+/g)
   if (numbered) {
-    for (const match of [...new Set(numbered)].sort()) result.push(match)
+    const uniq: string[] = []; const seen = new Set<string>(); for (const m of numbered) { if (!seen.has(m)) { seen.add(m); uniq.push(m) } }; for (const match of uniq.sort()) result.push(match)
   }
   if (template.includes("$ARGUMENTS")) result.push("$ARGUMENTS")
   return result

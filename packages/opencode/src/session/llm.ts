@@ -154,7 +154,7 @@ const live: Layer.Layer<
 
         const approvedToolsForSession = new Set<string>()
         workflowModel.approvalHandler = bridge.bind(async (approvalTools) => {
-          const uniqueNames = [...new Set(approvalTools.map((t: { name: string }) => t.name))] as string[]
+          const uniqueNames: string[] = []; const seen = new Set<string>(); for (const t of approvalTools) { if (!seen.has(t.name)) { seen.add(t.name); uniqueNames.push(t.name) } }
           // Auto-approve tools that were already approved in this session
           // (prevents infinite approval loops for server-side MCP tools)
           if (uniqueNames.every((name) => approvedToolsForSession.has(name))) {
@@ -186,7 +186,7 @@ const live: Layer.Layer<
               }
               return t.name
             })
-            const uniquePatterns = [...new Set(toolPatterns)] as string[]
+            const uniquePatterns: string[] = []; const seen2 = new Set<string>(); for (const tp of toolPatterns) { if (!seen2.has(tp)) { seen2.add(tp); uniquePatterns.push(tp) } }
             await bridge.promise(
               perm.ask({
                 id,

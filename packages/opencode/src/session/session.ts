@@ -615,7 +615,7 @@ export const layer: Layer.Layer<
         .limit(input?.limit ?? 100)
         .all()
         .pipe(Effect.orDie)
-      const ids = [...new Set(rows.map((row) => row.project_id))]
+      const ids: Array<typeof rows[number]["project_id"]> = []; const seen = new Set<string>(); for (const row of rows) { if (!seen.has(row.project_id)) { seen.add(row.project_id); ids.push(row.project_id) } }
       const projects = new Map<string, ProjectInfo>()
       if (ids.length > 0) {
         const items = yield* db
@@ -1087,7 +1087,7 @@ export function* listGlobal(input?: {
     return query.orderBy(desc(SessionTable.time_updated), desc(SessionTable.id)).limit(limit).all().pipe(Effect.orDie)
   })
 
-  const ids = [...new Set(rows.map((row) => row.project_id))]
+  const ids: Array<typeof rows[number]["project_id"]> = []; const seen = new Set<string>(); for (const row of rows) { if (!seen.has(row.project_id)) { seen.add(row.project_id); ids.push(row.project_id) } }
   const projects = new Map<string, ProjectInfo>()
 
   if (ids.length > 0) {
