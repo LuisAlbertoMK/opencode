@@ -48,14 +48,18 @@ const markLastTool = (tools: ReadonlyArray<ToolDefinition>, hint: CacheHint): Re
   if (tools.length === 0) return tools
   const last = tools.length - 1
   if (tools[last]!.cache) return tools
-  return tools.map((tool, i) => (i === last ? new ToolDefinition({ ...tool, cache: hint }) : tool))
+  const result = tools.slice()
+  result[last] = new ToolDefinition({ ...tools[last]!, cache: hint })
+  return result
 }
 
 const markLastSystem = (system: LLMRequest["system"], hint: CacheHint): LLMRequest["system"] => {
   if (system.length === 0) return system
   const last = system.length - 1
   if (system[last]!.cache) return system
-  return system.map((part, i) => (i === last ? { ...part, cache: hint } : part))
+  const result = system.slice()
+  result[last] = { ...system[last]!, cache: hint }
+  return result
 }
 
 const lastIndexOfRole = (messages: ReadonlyArray<Message>, role: Message["role"]): number =>
@@ -72,7 +76,8 @@ const markMessageAt = (messages: ReadonlyArray<Message>, index: number, hint: Ca
   const markAt = lastTextIndex >= 0 ? lastTextIndex : target.content.length - 1
   const existing = target.content[markAt]!
   if ("cache" in existing && existing.cache) return messages
-  const nextContent = target.content.map((part, i) => (i === markAt ? ({ ...part, cache: hint } as ContentPart) : part))
+  const nextContent = target.content.slice()
+  nextContent[markAt] = { ...target.content[markAt]!, cache: hint } as ContentPart
   const next = new Message({ ...target, content: nextContent })
   // Single pass over `messages`, substituting the one updated entry. Long
   // conversations call this on every request, so avoid `.map()` here — its
