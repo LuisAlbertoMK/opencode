@@ -21,7 +21,8 @@ export const textDelta = (state: State, events: LLMEvent[], id: string, text: st
     return stepped
   }
   events.push(LLMEvent.textStart({ id }), LLMEvent.textDelta({ id, text }))
-  return { ...stepped, text: new Set([...stepped.text, id]) }
+  ;(stepped.text as Set<string>).add(id)
+  return stepped
 }
 
 export const reasoningStart = (
@@ -33,7 +34,8 @@ export const reasoningStart = (
   if (state.reasoning.has(id)) return state
   const stepped = stepStart(state, events)
   events.push(LLMEvent.reasoningStart({ id, providerMetadata }))
-  return { ...stepped, reasoning: new Set([...stepped.reasoning, id]) }
+  ;(stepped.reasoning as Set<string>).add(id)
+  return stepped
 }
 
 export const reasoningDelta = (
@@ -57,18 +59,16 @@ export const reasoningEnd = (
   if (!state.reasoning.has(id)) return state
   const stepped = stepStart(state, events)
   events.push(LLMEvent.reasoningEnd({ id, providerMetadata }))
-  const reasoning = new Set(stepped.reasoning)
-  reasoning.delete(id)
-  return { ...stepped, reasoning }
+  ;(stepped.reasoning as Set<string>).delete(id)
+  return stepped
 }
 
 export const textEnd = (state: State, events: LLMEvent[], id: string, providerMetadata?: ProviderMetadata): State => {
   if (!state.text.has(id)) return state
   const stepped = stepStart(state, events)
   events.push(LLMEvent.textEnd({ id, providerMetadata }))
-  const text = new Set(stepped.text)
-  text.delete(id)
-  return { ...stepped, text }
+  ;(stepped.text as Set<string>).delete(id)
+  return stepped
 }
 
 const closeOpenBlocks = (state: State, events: LLMEvent[]): State => {
