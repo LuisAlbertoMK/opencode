@@ -29,18 +29,20 @@ export function formatTranscript(
   options: TranscriptOptions,
 ): string {
   const providers = Model.index(options.providers)
-  let transcript = `# ${session.title}\n\n`
-  transcript += `**Session ID:** ${session.id}\n`
-  transcript += `**Created:** ${new Date(session.time.created).toLocaleString()}\n`
-  transcript += `**Updated:** ${new Date(session.time.updated).toLocaleString()}\n\n`
-  transcript += `---\n\n`
+  const parts: string[] = [
+    `# ${session.title}\n\n`,
+    `**Session ID:** ${session.id}\n`,
+    `**Created:** ${new Date(session.time.created).toLocaleString()}\n`,
+    `**Updated:** ${new Date(session.time.updated).toLocaleString()}\n\n`,
+    `---\n\n`,
+  ]
 
   for (const msg of messages) {
-    transcript += formatMessage(msg.info, msg.parts, options, providers)
-    transcript += `---\n\n`
+    parts.push(formatMessage(msg.info, msg.parts, options, providers))
+    parts.push(`---\n\n`)
   }
 
-  return transcript
+  return parts.join("")
 }
 
 export function formatMessage(
@@ -49,19 +51,15 @@ export function formatMessage(
   options: TranscriptOptions,
   providers?: Provider[] | ReadonlyMap<string, Provider>,
 ): string {
-  let result = ""
-
-  if (msg.role === "user") {
-    result += `## User\n\n`
-  } else {
-    result += formatAssistantHeader(msg, options.assistantMetadata, providers ?? options.providers)
-  }
+  const result: string[] = msg.role === "user"
+    ? [`## User\n\n`]
+    : [formatAssistantHeader(msg, options.assistantMetadata, providers ?? options.providers)]
 
   for (const part of parts) {
-    result += formatPart(part, options)
+    result.push(formatPart(part, options))
   }
 
-  return result
+  return result.join("")
 }
 
 export function formatAssistantHeader(

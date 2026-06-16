@@ -17,7 +17,7 @@ export const SystemPart = Object.assign(systemPartSchema, {
   make: makeSystemPart,
   content: (input?: string | SystemPart | ReadonlyArray<SystemPart>) => {
     if (input === undefined) return []
-    return typeof input === "string" ? [makeSystemPart(input)] : Array.isArray(input) ? [...input] : [input]
+    return typeof input === "string" ? [makeSystemPart(input)] : Array.isArray(input) ? input : [input]
   },
 })
 
