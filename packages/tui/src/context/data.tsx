@@ -22,7 +22,7 @@ import type {
 import { createStore, produce } from "solid-js/store"
 import { createSimpleContext } from "./helper"
 import { useSDK } from "./sdk"
-import { createSignal, onMount } from "solid-js"
+import { createSignal, onCleanup, onMount } from "solid-js"
 import { useTuiConfig } from "../config"
 
 
@@ -172,6 +172,8 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
       if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null }
       flushTextDeltas()
     }
+
+    onCleanup(() => { if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null } })
 
     event.subscribe((event, metadata) => {
       switch (event.type) {
