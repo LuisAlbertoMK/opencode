@@ -129,8 +129,10 @@ export const layer = Layer.effect(
 ).pipe(Layer.provideMerge(registryLayer))
 
 function whollyDisabled(action: string, rules: PermissionV2.Ruleset) {
-  const rule = rules.findLast((rule) => Wildcard.match(action, rule.action))
-  return rule?.resource === "*" && rule.effect === "deny"
+  for (let i = rules.length - 1; i >= 0; i--) {
+    if (Wildcard.match(action, rules[i]!.action)) return rules[i]!.resource === "*" && rules[i]!.effect === "deny"
+  }
+  return false
 }
 
 export const defaultLayer = layer.pipe(

@@ -45,14 +45,15 @@ export function evaluate(permission: string, pattern: string, ...rulesets: Permi
   const cached = evaluateCache.get(key)
   if (cached) return cached
 
-  const result =
-    rulesets
-      .flat()
-      .findLast((rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern)) ?? {
-      action: "ask",
-      permission,
-      pattern: "*",
+  const all = rulesets.length === 1 ? rulesets[0] : rulesets.flat()
+  let result: PermissionV1.Rule | undefined
+  for (let i = all.length - 1; i >= 0; i--) {
+    if (Wildcard.match(permission, all[i]!.permission) && Wildcard.match(pattern, all[i]!.pattern)) {
+      result = all[i]
+      break
     }
+  }
+  result ??= { action: "ask", permission, pattern: "*" }
 
   // Simple bounded cache (64 entries) — LRU eviction by Map insertion order.
   if (evaluateCache.size >= 64) {
