@@ -274,11 +274,10 @@ const lowerToolMessages = Effect.fn("OpenAIChat.lowerToolMessages")(function* (m
     for (const item of content) if (item.type === "text") text.push(item.text)
     messages.push({ role: "tool", tool_call_id: part.id, content: text.join("\n") })
     const files = content.filter((item) => item.type === "file")
-    images.push(
-      ...(yield* Effect.forEach(files, (item) =>
-        lowerMedia({ type: "media", mediaType: item.mime, data: item.uri, filename: item.name }),
-      )),
-    )
+    const lowered = yield* Effect.forEach(files, (item) =>
+      lowerMedia({ type: "media", mediaType: item.mime, data: item.uri, filename: item.name }),
+    { concurrency: "unbounded" })
+    images.push(...lowered)
   }
   return { messages, images }
 })

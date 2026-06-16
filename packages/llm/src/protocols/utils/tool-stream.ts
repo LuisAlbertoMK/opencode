@@ -211,7 +211,7 @@ export const finishAll = <K extends StreamKey>(route: string, tools: State<K>) =
             call,
           ]),
         ),
-      ).pipe(Effect.map((events) => events.flat())),
+      { concurrency: "unbounded" }).pipe(Effect.map((events) => events.flat())),
     }
   })
 

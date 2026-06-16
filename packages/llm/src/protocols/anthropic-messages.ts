@@ -345,7 +345,7 @@ const lowerToolResultContent = Effect.fn("AnthropicMessages.lowerToolResultConte
   if (part.result.type !== "content") return ProviderShared.toolResultText(part)
   // Preserve the narrowed array element type when compiled through a consumer package.
   const content: ReadonlyArray<ToolContent> = part.result.value
-  return yield* Effect.forEach(content, lowerToolResultContentItem)
+  return yield* Effect.forEach(content, lowerToolResultContentItem, { concurrency: "unbounded" })
 })
 
 // Mid-conversation system messages are a native Claude API feature only for
