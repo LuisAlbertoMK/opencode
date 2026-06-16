@@ -103,17 +103,21 @@ const content = (value: ModelMessage["content"]) =>
   typeof value === "string" ? [{ type: "text" as const, text: value }] : value.map(contentPart)
 
 const messages = (input: readonly ModelMessage[]) => {
-  const system = input.flatMap((message) => (message.role === "system" ? [SystemPart.make(message.content)] : []))
-  const messages = input.flatMap((message) => {
-    if (message.role === "system") return []
-    return [
-      Message.make({
-        role: message.role,
-        content: content(message.content),
-        native: isRecord(message.providerOptions) ? { providerOptions: message.providerOptions } : undefined,
-      }),
-    ]
-  })
+  const system: SystemPart[] = []
+  const messages: Message[] = []
+  for (const message of input) {
+    if (message.role === "system") {
+      system.push(SystemPart.make(message.content))
+    } else {
+      messages.push(
+        Message.make({
+          role: message.role,
+          content: content(message.content),
+          native: isRecord(message.providerOptions) ? { providerOptions: message.providerOptions } : undefined,
+        }),
+      )
+    }
+  }
   return { system, messages }
 }
 
