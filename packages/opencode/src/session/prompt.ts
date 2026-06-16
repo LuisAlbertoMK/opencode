@@ -1150,9 +1150,15 @@ export const layer = Layer.effect(
 
           if (!lastUser) throw new Error("No user message found in stream. This should never happen.")
 
-          const lastAssistantMsg = msgs.findLast(
-            (msg) => msg.info.role === "assistant" && msg.info.id === lastAssistant?.id,
-          )
+          // Inline findLast to avoid callback allocation — scans from end, O(k) where k ≈ 1
+          let lastAssistantMsg: SessionV1.WithParts | undefined = undefined
+          for (let i = msgs.length - 1; i >= 0; i--) {
+            const msg = msgs[i]
+            if (msg.info.role === "assistant" && msg.info.id === lastAssistant?.id) {
+              lastAssistantMsg = msg
+              break
+            }
+          }
           // Some providers return "stop" even when the assistant message contains
           // tool calls. Keep the loop running so tool results can be sent back to
           // the model, but ignore cleanup-marked interrupted orphans.
@@ -1272,7 +1278,11 @@ export const layer = Layer.effect(
             .pipe(Effect.onInterrupt(() => finalizeInterruptedAssistant))
 
           const outcome: "break" | "continue" = yield* Effect.gen(function* () {
-            const lastUserMsg = msgs.findLast((m) => m.info.role === "user")
+            let lastUserMsg: SessionV1.WithParts | undefined = undefined
+            for (let i = msgs.length - 1; i >= 0; i--) {
+              const m = msgs[i]
+              if (m.info.role === "user") { lastUserMsg = m; break }
+            }
             const bypassAgentCheck = lastUserMsg?.parts.some((p) => p.type === "agent") ?? false
             const promptOps = yield* ops()
 

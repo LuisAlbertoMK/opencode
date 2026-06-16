@@ -303,7 +303,12 @@ export const layer = Layer.effect(
       auto: boolean
       overflow?: boolean
     }) {
-      const parent = input.messages.findLast((m) => m.info.id === input.parentID)
+      // Inline findLast for O(k) scan from end — typically the parent message is recent
+      let parent: SessionV1.WithParts | undefined = undefined
+      for (let i = input.messages.length - 1; i >= 0; i--) {
+        const m = input.messages[i]
+        if (m.info.id === input.parentID) { parent = m; break }
+      }
       if (!parent || parent.info.role !== "user") {
         throw new Error(`Compaction parent must be a user message: ${input.parentID}`)
       }

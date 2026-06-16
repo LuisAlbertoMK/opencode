@@ -317,6 +317,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
       onCleanup(() => {
         closed = true
         if (reconnect) clearTimeout(reconnect)
+        socketCleanup?.abort()
         socket?.close()
       })
     })
