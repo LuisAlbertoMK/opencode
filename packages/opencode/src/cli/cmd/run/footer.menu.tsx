@@ -137,7 +137,7 @@ export function RunFooterMenu(props: {
   const groupedRows = createMemo<RunFooterMenuRow[]>(() => {
     const all: RunFooterMenuRow[] = []
     let category = ""
-    props.items().forEach((item, index) => {
+    for (const [index, item] of props.items().entries()) {
       if (item.category && item.category !== category) {
         if (all.length > 0) {
           all.push({ type: "spacer" })
@@ -148,7 +148,7 @@ export function RunFooterMenu(props: {
       }
 
       all.push({ type: "item", item, index })
-    })
+    }
     return all
   })
 

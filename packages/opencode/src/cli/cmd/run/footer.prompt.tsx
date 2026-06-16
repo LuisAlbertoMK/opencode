@@ -574,7 +574,7 @@ export function createPromptState(input: PromptInput): PromptState {
     }
 
     const box = area
-    parts.forEach((item, idx) => {
+    for (const [idx, item] of parts.entries()) {
       const start = item.type === "agent" ? item.source?.start : item.source?.text.start
       const end = item.type === "agent" ? item.source?.end : item.source?.text.end
       if (start === undefined || end === undefined) {
@@ -588,7 +588,7 @@ export function createPromptState(input: PromptInput): PromptState {
         typeId: type,
       })
       marks.set(id, idx)
-    })
+    }
   }
 
   const restore = (value: RunPrompt, cursor = Bun.stringWidth(value.text)) => {

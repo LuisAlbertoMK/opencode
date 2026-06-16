@@ -148,16 +148,16 @@ function build(key: string, remote: SelectableItem, url: string, prev?: Model): 
   const efforts = remote.capabilities.supports.reasoning_effort
   const variants: NonNullable<Model["variants"]> = {}
   if (!isMsgApi && efforts?.length) {
-    efforts.forEach((effort) => {
+    for (const effort of efforts) {
       variants[effort] = {
         reasoningEffort: effort,
         reasoningSummary: "auto",
         include: ["reasoning.encrypted_content"],
       }
-    })
+    }
   } else {
     if (efforts?.length && remote.capabilities.supports.adaptive_thinking) {
-      efforts.forEach((effort) => {
+      for (const effort of efforts) {
         variants[effort] = {
           thinking: {
             type: "adaptive",
@@ -165,7 +165,7 @@ function build(key: string, remote: SelectableItem, url: string, prev?: Model): 
           },
           effort,
         }
-      })
+      }
     } else if (remote.capabilities.supports.max_thinking_budget) {
       const max = remote.capabilities.supports.max_thinking_budget
       variants["max"] = {
