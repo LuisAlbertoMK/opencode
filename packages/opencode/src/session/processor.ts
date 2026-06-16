@@ -581,8 +581,15 @@ export const layer = Layer.effect(
                   )
                 : Effect.succeed(Exit.succeed<SessionV1.FilePart>(attachment)),
             )
-            const omitted = normalized.filter(Exit.isFailure).length
-            const attachments = normalized.filter(Exit.isSuccess).map((item) => item.value)
+            let omitted = 0
+            const attachments: SessionV1.FilePart[] = []
+            for (const item of normalized) {
+              if (Exit.isSuccess(item)) {
+                attachments.push(item.value)
+              } else {
+                omitted++
+              }
+            }
             const output = {
               ...rawOutput,
               output:

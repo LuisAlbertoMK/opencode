@@ -60,12 +60,13 @@ type CompletedCompaction = {
 }
 
 function summaryText(message: SessionV1.WithParts) {
-  const text = message.parts
-    .filter((part): part is SessionV1.TextPart => part.type === "text")
-    .map((part) => part.text.trim())
-    .filter(Boolean)
-    .join("\n\n")
-    .trim()
+  const parts: string[] = []
+  for (const part of message.parts) {
+    if (part.type !== "text") continue
+    const trimmed = part.text.trim()
+    if (trimmed) parts.push(trimmed)
+  }
+  const text = parts.join("\n\n").trim()
   return text || undefined
 }
 

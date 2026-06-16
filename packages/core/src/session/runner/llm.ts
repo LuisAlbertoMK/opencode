@@ -222,9 +222,7 @@ export const layer = Layer.effect(
       const request = LLM.request({
         model,
         providerOptions: { openai: { promptCacheKey } },
-        system: [agent.info?.system, system.baseline]
-          .filter((part): part is string => part !== undefined && part.length > 0)
-          .map(SystemPart.make),
+        system: buildSystemParts(agent.info?.system, system.baseline),
         messages: toLLMMessages(context, model),
         tools: toolMaterialization.definitions,
       })
@@ -405,5 +403,12 @@ export const layer = Layer.effect(
     })
   }),
 )
+
+function buildSystemParts(agentSystem: string | undefined, baseline: string): SystemPart[] {
+  const parts: SystemPart[] = []
+  if (agentSystem && agentSystem.length > 0) parts.push(SystemPart.make(agentSystem))
+  if (baseline.length > 0) parts.push(SystemPart.make(baseline))
+  return parts
+}
 
 export const defaultLayer = layer

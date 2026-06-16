@@ -143,10 +143,12 @@ const select = (
   entries: readonly Entry[],
   tokens: number,
 ): { readonly head: string; readonly recent: string } | undefined => {
-  const conversation = entries
-    .filter((entry) => entry.message.type !== "compaction")
-    .map((entry) => serialize(entry.message))
-    .filter(Boolean)
+  const conversation: string[] = []
+  for (const entry of entries) {
+    if (entry.message.type === "compaction") continue
+    const serialized = serialize(entry.message)
+    if (serialized) conversation.push(serialized)
+  }
   if (conversation.length === 0) return
   let total = 0
   let split = conversation.length
