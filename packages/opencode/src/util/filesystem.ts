@@ -1,6 +1,6 @@
-import { chmod, mkdir, readFile, stat as statFile, writeFile } from "fs/promises"
+import { access, chmod, mkdir, readFile, stat as statFile, writeFile } from "fs/promises"
 import { Platform } from "@opencode-ai/core/util/platform"
-import { createWriteStream, existsSync, statSync } from "fs"
+import { createWriteStream, statSync } from "fs"
 import { realpathSync } from "fs"
 import { dirname, isAbsolute, join, resolve as pathResolve, win32 } from "path"
 import { Readable } from "stream"
@@ -9,14 +9,18 @@ import { Glob } from "@opencode-ai/core/util/glob"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { fileURLToPath } from "url"
 
-// Fast sync version for metadata checks
 export async function exists(p: string): Promise<boolean> {
-  return existsSync(p)
+  try {
+    await access(p)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export async function isDir(p: string): Promise<boolean> {
   try {
-    return statSync(p).isDirectory()
+    return (await statFile(p)).isDirectory()
   } catch {
     return false
   }
@@ -34,7 +38,7 @@ export async function statAsync(p: string): Promise<ReturnType<typeof statSync> 
 }
 
 export async function size(p: string): Promise<number> {
-  const s = stat(p)?.size ?? 0
+  const s = (await statAsync(p))?.size ?? 0
   return typeof s === "bigint" ? Number(s) : s
 }
 
@@ -90,7 +94,7 @@ export async function writeStream(
   mode?: number,
 ): Promise<void> {
   const dir = dirname(p)
-  if (!existsSync(dir)) {
+  if (!(await exists(dir))) {
     await mkdir(dir, { recursive: true })
   }
 
