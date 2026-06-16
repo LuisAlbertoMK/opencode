@@ -196,7 +196,11 @@ export const TaskTool = Tool.define(
           agent: next.name,
           parts,
         })
-        return result.parts.findLast((item) => item.type === "text")?.text ?? ""
+        for (let i = result.parts.length - 1; i >= 0; i--) {
+          const item = result.parts[i]
+          if (item.type === "text") return item.text
+        }
+        return ""
       })
 
       const inject = Effect.fn("TaskTool.injectBackgroundResult")(function* (

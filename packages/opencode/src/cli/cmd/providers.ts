@@ -428,7 +428,11 @@ export const ProvidersLoginCommand = effectCmd({
       )
     }
 
-    const plugin = hooks.findLast((x) => x.auth?.provider === provider)
+    let plugin
+    for (let i = hooks.length - 1; i >= 0; i--) {
+      const x = hooks[i]
+      if (x.auth?.provider === provider) { plugin = x; break }
+    }
     if (plugin && plugin.auth) {
       const handled = yield* handlePluginAuth({ auth: plugin.auth! }, provider, args.method)
       if (handled) return
@@ -442,7 +446,11 @@ export const ProvidersLoginCommand = effectCmd({
         }),
       )).replace(/^@ai-sdk\//, "")
 
-      const customPlugin = hooks.findLast((x) => x.auth?.provider === provider)
+      let customPlugin
+      for (let i = hooks.length - 1; i >= 0; i--) {
+        const x = hooks[i]
+        if (x.auth?.provider === provider) { customPlugin = x; break }
+      }
       if (customPlugin && customPlugin.auth) {
         const handled = yield* handlePluginAuth({ auth: customPlugin.auth! }, provider, args.method)
         if (handled) return

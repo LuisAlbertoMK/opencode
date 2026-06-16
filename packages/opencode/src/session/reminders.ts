@@ -20,7 +20,11 @@ export const apply = Effect.fn("SessionReminders.apply")(function* (input: {
   const flags = yield* RuntimeFlags.Service
   const fsys = yield* FSUtil.Service
   const sessions = yield* Session.Service
-  const userMessage = input.messages.findLast((msg) => msg.info.role === "user")
+  let userMessage
+  for (let i = input.messages.length - 1; i >= 0; i--) {
+    const msg = input.messages[i]
+    if (msg.info.role === "user") { userMessage = msg; break }
+  }
   if (!userMessage) return input.messages
 
   if (!flags.experimentalPlanMode) {
@@ -48,7 +52,11 @@ export const apply = Effect.fn("SessionReminders.apply")(function* (input: {
     return input.messages
   }
 
-  const assistantMessage = input.messages.findLast((msg) => msg.info.role === "assistant")
+  let assistantMessage
+  for (let i = input.messages.length - 1; i >= 0; i--) {
+    const msg = input.messages[i]
+    if (msg.info.role === "assistant") { assistantMessage = msg; break }
+  }
   if (input.agent.name !== "plan" && assistantMessage?.info.agent === "plan") {
     const ctx = yield* InstanceState.context
     const plan = Session.plan(input.session, ctx)

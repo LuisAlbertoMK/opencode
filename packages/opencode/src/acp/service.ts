@@ -978,9 +978,11 @@ function stableStringify(value: unknown): string {
 }
 
 function restoreFromMessages(messages: readonly MessageInfo[]) {
-  const user = messages.findLast(
-    (message) => message.role === "user" && message.model?.providerID && message.model.modelID,
-  )
+  let user
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]
+    if (message.role === "user" && message.model?.providerID && message.model.modelID) { user = message; break }
+  }
   if (user?.model?.providerID && user.model.modelID) {
     return {
       model: { providerID: user.model.providerID as ProviderV2.ID, modelID: user.model.modelID as ModelV2.ID },
@@ -989,7 +991,11 @@ function restoreFromMessages(messages: readonly MessageInfo[]) {
     }
   }
 
-  const assistant = messages.findLast((message) => message.providerID && message.modelID)
+  let assistant
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]
+    if (message.providerID && message.modelID) { assistant = message; break }
+  }
   if (assistant?.providerID && assistant.modelID) {
     return {
       model: { providerID: assistant.providerID as ProviderV2.ID, modelID: assistant.modelID as ModelV2.ID },

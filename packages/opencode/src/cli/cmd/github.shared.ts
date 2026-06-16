@@ -8,8 +8,10 @@ export { parseGitHubRemote } from "@/util/repository"
  * Throws only for truly empty responses.
  */
 export function extractResponseText(parts: SessionV1.Part[]): string | null {
-  const textPart = parts.findLast((p) => p.type === "text")
-  if (textPart) return textPart.text
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i]
+    if (p.type === "text") return p.text
+  }
 
   // Non-text parts (tools, reasoning, step-start/step-finish, etc.) - signal summary needed
   if (parts.length > 0) return null
