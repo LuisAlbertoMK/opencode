@@ -1325,29 +1325,33 @@ export function Prompt(props: PromptProps) {
     return `Ask anything... "${list()[store.placeholder % list().length]}"`
   })
 
-  const spinnerDef = createMemo(() => {
+  // Separate memo for agent color — stable across streaming ticks when agent identity
+  // doesn't change. Downstream spinnerDef only recreates frames/colors on color change,
+  // avoiding createFrames/createColors array allocations per streaming tick.
+  const spinnerColor = createMemo(() => {
     const agent =
       status().type !== "idle"
         ? (local.agent.list().find((a) => a.name === lastUserMessage()?.agent) ?? local.agent.current())
         : local.agent.current()
-    const color = agent ? local.agent.color(agent.name) : theme.border
-    return {
-      frames: createFrames({
-        color,
-        style: "blocks",
-        inactiveFactor: 0.6,
-        // enableFading: false,
-        minAlpha: 0.3,
-      }),
-      color: createColors({
-        color,
-        style: "blocks",
-        inactiveFactor: 0.6,
-        // enableFading: false,
-        minAlpha: 0.3,
-      }),
-    }
+    return agent ? local.agent.color(agent.name) : theme.border
   })
+
+  const spinnerDef = createMemo(() => ({
+    frames: createFrames({
+      color: spinnerColor(),
+      style: "blocks",
+      inactiveFactor: 0.6,
+      // enableFading: false,
+      minAlpha: 0.3,
+    }),
+    color: createColors({
+      color: spinnerColor(),
+      style: "blocks",
+      inactiveFactor: 0.6,
+      // enableFading: false,
+      minAlpha: 0.3,
+    }),
+  }))
   const maxHeight = createMemo(() => tuiConfig.prompt?.max_height ?? Math.max(6, Math.floor(dimensions().height / 3)))
   const moveLabelWidth = createMemo(() => Math.max(12, Math.min(44, dimensions().width - 48)))
 
