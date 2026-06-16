@@ -468,7 +468,7 @@ export async function CodexAuthPlugin(input: PluginInput, options: CodexAuthPlug
             const headers = new Headers()
             if (init?.headers) {
               if (init.headers instanceof Headers) {
-                init.headers.forEach((value, key) => headers.set(key, value))
+                for (const [key, value] of init.headers) headers.set(key, value)
               } else if (Array.isArray(init.headers)) {
                 for (const [key, value] of init.headers) {
                   if (value !== undefined) headers.set(key, String(value))

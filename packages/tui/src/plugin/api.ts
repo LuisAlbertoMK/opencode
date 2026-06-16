@@ -15,18 +15,18 @@ export function createPluginRoutes() {
   return {
     register(list: TuiRouteDefinition[]) {
       const key = Symbol()
-      list.forEach((item) => routes.set(item.name, [...(routes.get(item.name) ?? []), { key, render: item.render }]))
+      for (const item of list) routes.set(item.name, [...(routes.get(item.name) ?? []), { key, render: item.render }])
       setRevision((value) => value + 1)
 
       return () => {
-        list.forEach((item) => {
+        for (const item of list) {
           const next = routes.get(item.name)?.filter((entry) => entry.key !== key) ?? []
           if (next.length) {
             routes.set(item.name, next)
-            return
+            continue
           }
           routes.delete(item.name)
-        })
+        }
         setRevision((value) => value + 1)
       }
     },

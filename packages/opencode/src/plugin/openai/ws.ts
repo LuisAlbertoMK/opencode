@@ -45,9 +45,7 @@ export function normalizeHeaders(headers: HeadersInit | undefined): Record<strin
   if (!headers) return result
 
   if (headers instanceof Headers) {
-    headers.forEach((value, key) => {
-      result[key.toLowerCase()] = value
-    })
+    for (const [key, value] of headers) result[key.toLowerCase()] = value
     return result
   }
 

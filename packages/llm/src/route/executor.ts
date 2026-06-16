@@ -68,9 +68,9 @@ const redactHeaders = (headers: Headers.Headers, redactedNames: ReadonlyArray<st
 const redactUrl = (value: string) => {
   if (!URL.canParse(value)) return REDACTED
   const url = new URL(value)
-  url.searchParams.forEach((_, key) => {
+  for (const key of url.searchParams.keys()) {
     if (isSensitiveQueryName(key)) url.searchParams.set(key, REDACTED)
-  })
+  }
   return url.toString()
 }
 
@@ -114,22 +114,22 @@ const rateLimitDetails = (headers: Record<string, string>, retryAfter: number | 
   const remaining: Record<string, string> = {}
   const reset: Record<string, string> = {}
 
-  Object.entries(headers).forEach(([name, value]) => {
+  for (const [name, value] of Object.entries(headers)) {
     const openaiLimit = /^x-ratelimit-limit-(.+)$/.exec(name)?.[1]
-    if (openaiLimit) return addRateLimitValue(limit, openaiLimit, value)
+    if (openaiLimit) { addRateLimitValue(limit, openaiLimit, value); continue }
 
     const openaiRemaining = /^x-ratelimit-remaining-(.+)$/.exec(name)?.[1]
-    if (openaiRemaining) return addRateLimitValue(remaining, openaiRemaining, value)
+    if (openaiRemaining) { addRateLimitValue(remaining, openaiRemaining, value); continue }
 
     const openaiReset = /^x-ratelimit-reset-(.+)$/.exec(name)?.[1]
-    if (openaiReset) return addRateLimitValue(reset, openaiReset, value)
+    if (openaiReset) { addRateLimitValue(reset, openaiReset, value); continue }
 
     const anthropic = /^anthropic-ratelimit-(.+)-(limit|remaining|reset)$/.exec(name)
-    if (!anthropic) return
-    if (anthropic[2] === "limit") return addRateLimitValue(limit, anthropic[1], value)
-    if (anthropic[2] === "remaining") return addRateLimitValue(remaining, anthropic[1], value)
-    return addRateLimitValue(reset, anthropic[1], value)
-  })
+    if (!anthropic) continue
+    if (anthropic[2] === "limit") addRateLimitValue(limit, anthropic[1], value)
+    else if (anthropic[2] === "remaining") addRateLimitValue(remaining, anthropic[1], value)
+    else addRateLimitValue(reset, anthropic[1], value)
+  }
 
   if (
     retryAfter === undefined &&
@@ -171,17 +171,17 @@ const secretValues = (request: HttpClientRequest.HttpClientRequest) => {
     values.add(encodeURIComponent(value))
   }
 
-  Object.entries(request.headers).forEach(([name, value]) => {
-    if (!isSensitiveHeaderName(name)) return
+  for (const [name, value] of Object.entries(request.headers)) {
+    if (!isSensitiveHeaderName(name)) continue
     add(value)
     const bearer = /^Bearer\s+(.+)$/i.exec(value)?.[1]
     if (bearer) add(bearer)
-  })
+  }
 
   if (!URL.canParse(request.url)) return values
-  new URL(request.url).searchParams.forEach((value, key) => {
+  for (const [key, value] of new URL(request.url).searchParams) {
     if (isSensitiveQueryName(key)) add(value)
-  })
+  }
   return values
 }
 

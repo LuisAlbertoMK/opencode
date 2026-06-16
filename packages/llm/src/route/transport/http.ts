@@ -24,7 +24,7 @@ export interface HttpPrepared<Frame> {
 const applyQuery = (url: string, query: Record<string, string> | undefined) => {
   if (!query) return url
   const next = new URL(url)
-  Object.entries(query).forEach(([key, value]) => next.searchParams.set(key, value))
+  for (const [key, value] of Object.entries(query)) next.searchParams.set(key, value)
   return next.toString()
 }
 

@@ -36,9 +36,10 @@ export function buildFileTree(files: readonly FileTreeItem[]): FileTree {
   const nodes: FileTreeNode[] = []
   const directoryByPath = new Map<string, number>()
 
-  files.forEach((file, fileIndex) => {
+  let fileIndex = 0
+  for (const file of files) {
     const segments = file.file.split("/").filter(Boolean)
-    if (segments.length === 0) return
+    if (segments.length === 0) { fileIndex++; continue }
 
     const parent = segments.slice(0, -1).reduce(
       (state, segment) => {
@@ -65,11 +66,12 @@ export function buildFileTree(files: readonly FileTreeItem[]): FileTree {
       kind: "file",
       fileIndex,
     })
-  })
+    fileIndex++
+  }
 
   const tree = { roots, nodes }
   tree.roots.sort((left, right) => compareFileTreeNodes(tree, left, right))
-  tree.nodes.forEach((node) => node.children.sort((left, right) => compareFileTreeNodes(tree, left, right)))
+  for (const node of tree.nodes) node.children.sort((left, right) => compareFileTreeNodes(tree, left, right))
   return tree
 }
 
@@ -97,9 +99,9 @@ export function flattenFileTree(tree: FileTree, expanded?: ReadonlySet<number>):
       name: chain.map((item) => item.name).join("/"),
       fileIndex: node.fileIndex,
     })
-    if (!expanded || expanded.has(node.id)) last.children.forEach((child) => visit(child, depth + 1))
+    if (!expanded || expanded.has(node.id)) for (const child of last.children) visit(child, depth + 1)
   }
-  tree.roots.forEach((root) => visit(root, 0))
+  for (const root of tree.roots) visit(root, 0)
   return rows
 }
 

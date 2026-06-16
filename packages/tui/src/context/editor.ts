@@ -244,7 +244,7 @@ export const { use: useEditorContext, provider: EditorContextProvider } = create
 
         const mention = message.method === "at_mentioned" ? decodeEditorMention(message.params) : Option.none()
         if (Option.isSome(mention)) {
-          mentionListeners.forEach((listener) => listener(mention.value))
+          for (const listener of mentionListeners) listener(mention.value)
           return
         }
 

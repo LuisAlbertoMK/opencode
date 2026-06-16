@@ -19,7 +19,8 @@ export function setPreLayoutSiblingMargin(el: BoxRenderable, margin: (previous?:
 
 function previousSiblings(parent: BaseRenderable, frameID: number) {
   const previous = new WeakMap<BaseRenderable, BaseRenderable | undefined>()
-  parent.getChildren().forEach((child, index, children) => previous.set(child, children[index - 1]))
+  const children = parent.getChildren()
+  for (let i = 0; i < children.length; i++) previous.set(children[i]!, children[i - 1])
   previousByParent.set(parent, { frameID, previous })
   return previous
 }
