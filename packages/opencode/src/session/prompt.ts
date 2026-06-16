@@ -1028,51 +1028,47 @@ export const layer = Layer.effect(
 
       yield* sessions.updateMessage(info)
       for (const part of parts) yield* sessions.updatePart(part)
-      const nextPrompt = parts.reduce(
-        (result, part) => {
-          if (part.type === "text") {
-            if (part.synthetic) result.synthetic.push(part.text)
-            else result.text.push(part.text)
-          }
-          if (part.type === "file") {
-            result.files.push(
-              new FileAttachment({
-                uri: part.url,
-                mime: part.mime,
-                name: part.filename,
-                source: part.source
-                  ? new Source({
-                      start: part.source.text.start,
-                      end: part.source.text.end,
-                      text: part.source.text.value,
-                    })
-                  : undefined,
-              }),
-            )
-          }
-          if (part.type === "agent") {
-            result.agents.push(
-              new AgentAttachment({
-                name: part.name,
-                source: part.source
-                  ? new Source({
-                      start: part.source.start,
-                      end: part.source.end,
-                      text: part.source.value,
-                    })
-                  : undefined,
-              }),
-            )
-          }
-          return result
-        },
-        {
-          text: [] as string[],
-          files: [] as FileAttachment[],
-          agents: [] as AgentAttachment[],
-          synthetic: [] as string[],
-        },
-      )
+      const textParts: string[] = []
+      const fileParts: FileAttachment[] = []
+      const agentParts: AgentAttachment[] = []
+      const syntheticParts: string[] = []
+      for (const part of parts) {
+        if (part.type === "text") {
+          if (part.synthetic) syntheticParts.push(part.text)
+          else textParts.push(part.text)
+        }
+        if (part.type === "file") {
+          fileParts.push(
+            new FileAttachment({
+              uri: part.url,
+              mime: part.mime,
+              name: part.filename,
+              source: part.source
+                ? new Source({
+                    start: part.source.text.start,
+                    end: part.source.text.end,
+                    text: part.source.text.value,
+                  })
+                : undefined,
+            }),
+          )
+        }
+        if (part.type === "agent") {
+          agentParts.push(
+            new AgentAttachment({
+              name: part.name,
+              source: part.source
+                ? new Source({
+                    start: part.source.start,
+                    end: part.source.end,
+                    text: part.source.value,
+                  })
+                : undefined,
+            }),
+          )
+        }
+      }
+      const nextPrompt = { text: textParts, files: fileParts, agents: agentParts, synthetic: syntheticParts }
       // TODO(v2): Temporary dual-write while migrating session messages to v2 events.
       if (flags.experimentalEventSystem) {
         yield* events.publish(SessionEvent.Prompted, {
