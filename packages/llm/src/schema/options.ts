@@ -102,23 +102,36 @@ export type GenerationOptionsFields = {
 
 export type GenerationOptionsInput = GenerationOptions | GenerationOptionsFields
 
-const latestGeneration = <Key extends keyof GenerationOptionsFields>(
-  items: ReadonlyArray<GenerationOptionsInput | undefined>,
-  key: Key,
-) => items.findLast((item) => item?.[key] !== undefined)?.[key]
-
 export const mergeGenerationOptions = (...items: ReadonlyArray<GenerationOptionsInput | undefined>) => {
-  const result = new GenerationOptions({
-    maxTokens: latestGeneration(items, "maxTokens"),
-    temperature: latestGeneration(items, "temperature"),
-    topP: latestGeneration(items, "topP"),
-    topK: latestGeneration(items, "topK"),
-    frequencyPenalty: latestGeneration(items, "frequencyPenalty"),
-    presencePenalty: latestGeneration(items, "presencePenalty"),
-    seed: latestGeneration(items, "seed"),
-    stop: latestGeneration(items, "stop"),
-  })
-  return Object.values(result).some((value) => value !== undefined) ? result : undefined
+  let maxTokens: number | undefined
+  let temperature: number | undefined
+  let topP: number | undefined
+  let topK: number | undefined
+  let frequencyPenalty: number | undefined
+  let presencePenalty: number | undefined
+  let seed: number | undefined
+  let stop: ReadonlyArray<string> | undefined
+
+  // Single reverse pass: picks the LAST item that defines each key
+  // Replaces 8x findLast (closure + iteration per key) with one loop
+  for (let i = items.length - 1; i >= 0; i--) {
+    const item = items[i]
+    if (!item) continue
+    if (maxTokens === undefined && item.maxTokens !== undefined) maxTokens = item.maxTokens
+    if (temperature === undefined && item.temperature !== undefined) temperature = item.temperature
+    if (topP === undefined && item.topP !== undefined) topP = item.topP
+    if (topK === undefined && item.topK !== undefined) topK = item.topK
+    if (frequencyPenalty === undefined && item.frequencyPenalty !== undefined) frequencyPenalty = item.frequencyPenalty
+    if (presencePenalty === undefined && item.presencePenalty !== undefined) presencePenalty = item.presencePenalty
+    if (seed === undefined && item.seed !== undefined) seed = item.seed
+    if (stop === undefined && item.stop !== undefined) stop = item.stop
+  }
+
+  const allUndefined = maxTokens === undefined && temperature === undefined && topP === undefined && topK === undefined &&
+    frequencyPenalty === undefined && presencePenalty === undefined && seed === undefined && stop === undefined
+  if (allUndefined) return undefined
+
+  return new GenerationOptions({ maxTokens, temperature, topP, topK, frequencyPenalty, presencePenalty, seed, stop })
 }
 
 export class ModelLimits extends Schema.Class<ModelLimits>("LLM.ModelLimits")({
