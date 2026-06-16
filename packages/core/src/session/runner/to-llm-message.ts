@@ -75,23 +75,25 @@ const assistant = (message: SessionMessage.Assistant, model: Model) => {
   const sameModel =
     String(message.model.providerID) === String(model.provider) && String(message.model.id) === String(model.id)
   const results: Message[] = []
-  const content = message.content.flatMap((item): ContentPart[] => {
-    if (item.type === "text") return [{ type: "text", text: item.text }]
-    if (item.type === "reasoning")
-      return sameModel
-        ? [{ type: "reasoning", text: item.text, providerMetadata: item.providerMetadata }]
-        : item.text.length > 0
-          ? [{ type: "text", text: item.text }]
-          : []
+  const content: ContentPart[] = []
+  for (const item of message.content) {
+    if (item.type === "text") { content.push({ type: "text", text: item.text }); continue }
+    if (item.type === "reasoning") {
+      if (sameModel) content.push({ type: "reasoning", text: item.text, providerMetadata: item.providerMetadata })
+      else if (item.text.length > 0) content.push({ type: "text", text: item.text })
+      continue
+    }
     const call = toolCall(item, sameModel ? item.provider?.metadata : undefined)
     if (item.provider?.executed === true) {
       const result = toolResult(item, sameModel ? (item.provider?.resultMetadata ?? item.provider?.metadata) : undefined)
-      return result ? [call, result] : [call]
+      if (result) { content.push(call, result); continue }
+      content.push(call)
+      continue
     }
     const result = toolResult(item, sameModel ? (item.provider?.resultMetadata ?? item.provider?.metadata) : undefined)
     if (result) results.push(Message.tool(result))
-    return [call]
-  })
+    content.push(call)
+  }
   const msg = Message.make({ id: message.id, role: "assistant", content, metadata: message.metadata })
   results.unshift(msg)
   return results
