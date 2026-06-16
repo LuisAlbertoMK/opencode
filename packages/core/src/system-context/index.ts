@@ -147,20 +147,19 @@ export function make<A>(source: Source<A>): SystemContext {
               text: requireText(source.key, "baseline", source.baseline(value)),
               snapshot: snapshot(),
             }),
-            compare: (previous): Compared =>
-              Option.match(decode(previous), {
-                onNone: (): Compared => ({ _tag: "Incompatible" }),
-                onSome: (decoded): Compared =>
-                  equivalent(decoded, value)
-                    ? { _tag: "Unchanged" }
-                    : {
-                        _tag: "Updated",
-                        render: () => ({
-                          text: requireText(source.key, "update", source.update(decoded, value)),
-                          snapshot: snapshot(),
-                        }),
-                      },
-              }),
+            compare: (previous): Compared => {
+              const decoded = decode(previous)
+              if (Option.isNone(decoded)) return { _tag: "Incompatible" }
+              const val = decoded.value
+              if (equivalent(val, value)) return { _tag: "Unchanged" }
+              return {
+                _tag: "Updated",
+                render: () => ({
+                  text: requireText(source.key, "update", source.update(val, value)),
+                  snapshot: snapshot(),
+                }),
+              }
+            },
           }
         }),
       ),

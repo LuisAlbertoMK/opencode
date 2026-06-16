@@ -1,0 +1,7 @@
+{
+  "lruCacheGets": 10000,
+  "lruCacheSets": 10000,
+  "lineEndingNormalization": 10000,
+  "deltaCoalescing": 1000,
+  "writeOverheadPercent": 0
+}

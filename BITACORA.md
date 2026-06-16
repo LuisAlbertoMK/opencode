@@ -619,6 +619,26 @@ Hallazgos de los 3 delegados de exploración:
 
 ---
 
+## Ronda 16 — Resource Baseline Protocol + AGENTS.md v2.6 (2026-06-15)
+
+**Objetivo**: Revisar el sistema de auto-mejora para alinear con ≥10% reducción de recursos (RAM/CPU/VRAM/GPU) por ciclo.
+
+| Cambio | Archivo | Impacto |
+|--------|---------|---------|
+| AGENTS.md v2.6: Resource Baseline Protocol, Self-Improvement Commits, 7-dim learning loop | `~/.config/opencode/AGENTS.md` | Metodología completa de medición de recursos |
+| METRICAS.md: metodología de baseline de recursos | `METRICAS.md` | Target ≥10%/ciclo, 50% acumulado, baseline files |
+
+### Detalle
+- **Resource Baseline Protocol**: define medición pre/post (RAM: `process.memoryUsage`, CPU: `process.cpuUsage`, GPU: `nvidia-smi`)
+- **Self-Improvement Commits**: no pedir permiso para auto-mejora (typecheck + Δ medible + 0 regresiones)
+- **Learning Loop**: 6→7 dimensiones (agregado resource)
+- **Self-Evaluation Gate**: recurso como dimensión #5 con Δ≥10%
+- **Karpathy Loop**: METRIC step exige baseline si hay impacto esperado en recursos
+
+**Pre-push**: typecheck 23/23 ✅, push fork/dev ✅
+
+---
+
 ## Ronda 13 — compactDetail guard: reducir GC pressure en streaming (2026-06-14)
 
 | # | Cambio | Archivo | Impacto | Verificado |

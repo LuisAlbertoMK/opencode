@@ -91,7 +91,8 @@ const isTimeout = (error: AppProcess.AppProcessError) =>
 // TODO: Revisit binary output handling if stdout/stderr decoding is text-only.
 // TODO: Stream full shell output into managed storage while retaining only a bounded in-memory preview.
 
-const shellTokens = (command: string) => command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) ?? []
+const SHELL_TOKEN_RE = /(?:[^\s"']+|"[^"]*"|'[^']*')+/g
+const shellTokens = (command: string) => command.match(SHELL_TOKEN_RE) ?? []
 const unquote = (value: string) => value.replace(/^(['"])(.*)\1$/, "$2")
 const externalCommandDirectories = (command: string, cwd: string) => {
   const directories = new Set<string>()

@@ -66,24 +66,45 @@ const takeSuffix = (input: string, maximumBytes: number) => {
 }
 
 const preview = (text: string, maxLines: number, maxBytes: number) => {
-  const lines = text.split("\n")
   const headLines = Math.ceil(maxLines / 2)
   const tailLines = Math.floor(maxLines / 2)
-  const sampled =
-    lines.length <= maxLines
-      ? text
-      : [
-          lines.slice(0, headLines).join("\n"),
-          ...(tailLines > 0 ? [lines.slice(lines.length - tailLines).join("\n")] : []),
-        ].join("\n")
-  if (Buffer.byteLength(sampled, "utf-8") <= maxBytes) {
-    return lines.length <= maxLines
-      ? { head: sampled, tail: "" }
-      : {
-          head: lines.slice(0, headLines).join("\n"),
-          tail: tailLines > 0 ? lines.slice(lines.length - tailLines).join("\n") : "",
-        }
+
+  // Count newlines up to maxLines — if fewer, text fits within limit
+  let nlCount = 0
+  let pos = -1
+  while (nlCount < maxLines) {
+    pos = text.indexOf("\n", pos + 1)
+    if (pos === -1) break
+    nlCount++
   }
+  // nlCount newlines found, pos is last found position or -1
+  // Text fits if fewer than maxLines newlines were found
+  const exceeds = nlCount >= maxLines && pos !== -1
+  if (!exceeds) {
+    if (Buffer.byteLength(text, "utf-8") <= maxBytes) return { head: text, tail: "" }
+    const half = Math.ceil(maxBytes / 2)
+    return { head: takePrefix(text, half), tail: takeSuffix(text, Math.floor(maxBytes / 2)) }
+  }
+
+  // Extract first headLines lines via indexOf scanning
+  let headEnd = 0
+  for (let i = 0; i < headLines; i++) {
+    const nl = text.indexOf("\n", headEnd)
+    if (nl === -1) { headEnd = text.length; break }
+    headEnd = nl + 1
+  }
+  const head = text.slice(0, headEnd > 0 ? headEnd - 1 : 0)
+
+  // Extract last tailLines lines via lastIndexOf scanning
+  let tailStart = text.length
+  for (let i = 0; i < tailLines; i++) {
+    tailStart = text.lastIndexOf("\n", tailStart - 1)
+    if (tailStart === -1) { tailStart = 0; break }
+  }
+  const tail = text.slice(tailStart > 0 ? tailStart + 1 : 0)
+
+  const sampled = tail ? `${head}\n${tail}` : head
+  if (Buffer.byteLength(sampled, "utf-8") <= maxBytes) return { head, tail }
   const headBytes = Math.ceil(maxBytes / 2)
   const tailBytes = Math.floor(maxBytes / 2)
   return { head: takePrefix(sampled, headBytes), tail: takeSuffix(sampled, tailBytes) }
@@ -97,11 +118,7 @@ const boundedPreview = (text: string, marker: string, maxLines: number, maxBytes
   return bounded.tail ? `${bounded.head}\n\n${marker}\n\n${bounded.tail}` : `${bounded.head}\n\n${marker}`
 }
 
-const lineCount = (text: string) => {
-  let count = 1
-  for (const char of text) if (char === "\n") count++
-  return count
-}
+const lineCount = (text: string) => (text.match(/\n/g)?.length ?? 0) + 1
 
 export const layer = Layer.effect(
   Service,
