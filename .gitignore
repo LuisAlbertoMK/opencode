@@ -27,6 +27,10 @@ target
 .scripts
 .direnv/
 
+# Windows reserved device names
+nul
+NUL
+
 # Local dev files
 opencode-dev
 UPCOMING_CHANGELOG.md

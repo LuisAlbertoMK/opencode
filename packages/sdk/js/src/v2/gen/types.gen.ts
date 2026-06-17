@@ -2044,6 +2044,11 @@ export type Config = {
     continue_loop_on_deny?: boolean
     mcp_timeout?: number
     policies?: Array<ConfigV2ExperimentalPolicy>
+    tui_fps?: number
+    tool_concurrency?: number
+    lru_cache_size?: number
+    lru_cache_ttl_ms?: number
+    delta_coalesce_ms?: number
   }
 }
 
