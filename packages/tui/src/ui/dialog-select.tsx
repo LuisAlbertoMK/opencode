@@ -110,6 +110,57 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     requestAnimationFrame(() => { mouseFramePending = false; setStore("input", "mouse"); setFocusedAction(undefined) })
   }
 
+  const filtered = createMemo(() => {
+    if (props.skipFilter || props.renderFilter === false) return props.options.filter((x) => x.disabled !== true)
+    const needle = debouncedFilter().toLowerCase()
+    const options = pipe(
+      props.options,
+      filter((x) => x.disabled !== true),
+    )
+    if (!needle) return options
+    // Skip fuzzysort for very short queries (<3 chars) to reduce CPU on fast typing
+    if (needle.length < 3) return options
+
+    // prioritize title matches (weight: 2) over category matches (weight: 1).
+    // users typically search by the item name, and not its category.
+    const result = fuzzysort
+      .go(needle, options, {
+        keys: ["title", "category"],
+        scoreFn: (r) => r[0].score * 2 + r[1].score,
+      })
+      .map((x) => x.obj)
+
+    return result
+  })
+
+  // When the filter changes due to how TUI works, the mousemove might still be triggered
+  // via a synthetic event as the layout moves underneath the cursor. This is a workaround to make sure the input mode remains keyboard
+  // that the mouseover event doesn't trigger when filtering.
+  createEffect(() => {
+    filtered()
+    setStore("input", "keyboard")
+    setFocusedAction(undefined)
+  })
+
+  const flatten = createMemo(() => props.flat && store.filter.length > 0)
+
+  const grouped = createMemo<[string, DialogSelectOption<T>[]][]>(() => {
+    if (flatten()) return [["", filtered()]]
+    const result = pipe(
+      filtered(),
+      groupBy((x) => x.category ?? ""),
+      entries(),
+    )
+    return result
+  })
+
+  const flat = createMemo(() => {
+    return pipe(
+      grouped(),
+      flatMap(([_, options]) => options),
+    )
+  })
+
   createEffect(
     on(
       () => props.current,
@@ -168,58 +219,6 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     const all = flat()
     for (let i = 0; i < all.length; i++) map.set(all[i].value, i)
     return map
-  })
-
-  const filtered = createMemo(() => {
-    if (props.skipFilter || props.renderFilter === false) return props.options.filter((x) => x.disabled !== true)
-    const needle = debouncedFilter().toLowerCase()
-    const options = pipe(
-      props.options,
-      filter((x) => x.disabled !== true),
-    )
-    if (!needle) return options
-    // Skip fuzzysort for very short queries (<3 chars) to reduce CPU on fast typing
-    if (needle.length < 3) return options
-
-    // prioritize title matches (weight: 2) over category matches (weight: 1).
-    // users typically search by the item name, and not its category.
-    const result = fuzzysort
-      .go(needle, options, {
-        keys: ["title", "category"],
-        scoreFn: (r) => r[0].score * 2 + r[1].score,
-      })
-      .map((x) => x.obj)
-
-    return result
-  })
-
-  // When the filter changes due to how TUI works, the mousemove might still be triggered
-  // via a synthetic event as the layout moves underneath the cursor. This is a workaround to make sure the input mode remains keyboard
-  // that the mouseover event doesn't trigger when filtering.
-  createEffect(() => {
-    filtered()
-    setStore("input", "keyboard")
-    setFocusedAction(undefined)
-  })
-
-  const flatten = createMemo(() => props.flat && store.filter.length > 0)
-
-  const grouped = createMemo<[string, DialogSelectOption<T>[]][]>(() => {
-    if (flatten()) return [["", filtered()]]
-    const result = pipe(
-      filtered(),
-      groupBy((x) => x.category ?? ""),
-      // mapValues((x) => x.sort((a, b) => a.title.localeCompare(b.title))),
-      entries(),
-    )
-    return result
-  })
-
-  const flat = createMemo(() => {
-    return pipe(
-      grouped(),
-      flatMap(([_, options]) => options),
-    )
   })
 
   const rows = createMemo(() => {
