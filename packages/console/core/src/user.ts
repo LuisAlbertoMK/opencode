@@ -143,13 +143,12 @@ export namespace User {
           to: email,
           subject: `You've been invited to join the ${emailInfo.workspaceName} workspace on OpenCode`,
           body: render(
-            // @ts-ignore
             InviteEmail({
               inviter: emailInfo.inviterEmail,
               assetsUrl: `https://opencode.ai/email`,
               workspaceID: workspaceID,
               workspaceName: emailInfo.workspaceName,
-            }),
+            }) as any,
           ),
         })
       } catch (e) {
