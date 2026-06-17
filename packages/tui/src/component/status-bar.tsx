@@ -5,18 +5,10 @@ import { useSync } from "../context/sync"
 
 // ── Helpers ──────────────────────────────────────────────
 
-type CpuSample = { user: number; system: number; time: number }
-let prevCpu: CpuSample | null = null
-
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
 })
-
-function rss(bytes: number): string {
-  if (bytes > 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(1) + "G"
-  return Math.round(bytes / (1024 * 1024)) + "M"
-}
 
 function short(n: number): string {
   if (n > 1_000_000) return (n / 1_000_000).toFixed(1) + "M"
@@ -39,8 +31,6 @@ export function StatusBar() {
   const { theme } = useTheme()
   const route = useRoute()
   const sync = useSync()
-  const [mem, setMem] = createSignal(0)
-  const [cpu, setCpu] = createSignal(0)
   const [elapsed, setElapsed] = createSignal(0)
   const startTime = performance.now()
 
@@ -53,38 +43,15 @@ export function StatusBar() {
   const tokens = createMemo(() => session()?.tokens)
   const model = createMemo(() => session()?.model)
 
-  const tick = () => {
-    try {
-      // Memory
-      setMem(process.memoryUsage().rss)
-      // CPU (delta between samples)
-      const now = process.cpuUsage()
-      const wall = performance.now()
-      if (prevCpu) {
-        const userDelta = now.user - prevCpu.user
-        const sysDelta = now.system - prevCpu.system
-        const totalDelta = (userDelta + sysDelta) / 1000 // μs → ms
-        const dt = wall - prevCpu.time // ms
-        if (dt > 0) setCpu(Math.min(999, Math.round((totalDelta / dt) * 100)))
-      }
-      prevCpu = { user: now.user, system: now.system, time: wall }
-      // Uptime
-      setElapsed(wall - startTime)
-    } catch {
-      // process API unavailable
-    }
-  }
-
   onMount(() => {
-    tick()
-    const timer = setInterval(tick, 3000)
+    const timer = setInterval(() => setElapsed(performance.now() - startTime), 3000)
     onCleanup(() => clearInterval(timer))
   })
 
   return (
     <box flexShrink={0} paddingLeft={1} paddingRight={1}>
       <text fg={theme.textMuted}>
-        RAM {rss(mem())} · CPU {cpu()}% · {fmtUptime(elapsed())}
+        {fmtUptime(elapsed())}
         <Show when={model()}>
           {" · "}
           {model()!.providerID}/{model()!.id}
