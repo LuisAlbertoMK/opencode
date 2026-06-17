@@ -9,12 +9,16 @@ import { Link } from "../ui/link"
 import { useTheme } from "../context/theme"
 import { TextAttributes } from "@opentui/core"
 import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@opencode-ai/sdk/v2"
-import { DialogModel } from "./dialog-model"
 import { useToast } from "../ui/toast"
 import { isConsoleManagedProvider } from "../util/provider-origin"
 import { useConnected } from "./use-connected"
 import { useBindings } from "../keymap"
 import { useClipboard } from "../context/clipboard"
+// Dynamic import: DialogModel is loaded lazily to break the circular dependency
+// with dialog-model.tsx. dialog-model.tsx imports createDialogProviderOptions and
+// DialogProvider from this file → static import of DialogModel here would create a
+// module cycle, causing Bun to convert `export function` → `const` → TDZ crash.
+const loadDialogModel = () => import("./dialog-model").then((m) => m.DialogModel)
 
 const PROVIDER_PRIORITY: Record<string, number> = {
   opencode: 0,
@@ -280,6 +284,7 @@ function AutoMethod(props: AutoMethodProps) {
     }
     await sdk.client.instance.dispose()
     await sync.bootstrap()
+    const DialogModel = await loadDialogModel()
     dialog.replace(() => <DialogModel providerID={props.providerID} />)
   })
 
@@ -331,6 +336,7 @@ function CodeMethod(props: CodeMethodProps) {
         if (!error) {
           await sdk.client.instance.dispose()
           await sync.bootstrap()
+          const DialogModel = await loadDialogModel()
           dialog.replace(() => <DialogModel providerID={props.providerID} />)
           return
         }
@@ -412,6 +418,7 @@ function ApiMethod(props: ApiMethodProps) {
           dialog.clear()
           return
         }
+        const DialogModel = await loadDialogModel()
         dialog.replace(() => <DialogModel providerID={props.providerID} />)
       }}
     />
