@@ -22,6 +22,7 @@ function command(command: string, args: string[] = [], input?: string) {
 
 function writeOsc52(text: string) {
   if (!process.stdout.isTTY) return
+  if (platform() === "win32") return  // Windows Terminal handles copy natively; OSC 52 can corrupt TUI
   const sequence = `\x1b]52;c;${Buffer.from(text).toString("base64")}\x07`
   process.stdout.write(process.env.TMUX || process.env.STY ? `\x1bPtmux;\x1b${sequence}\x1b\\` : sequence)
 }

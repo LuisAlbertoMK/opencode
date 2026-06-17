@@ -33,8 +33,8 @@ const servedLayer = HttpRouter.serve(apiLayer, {
 )
 
 // Helper: run an Effect with the test server layer
-const runWith = <A, E>(effect: Effect.Effect<A, E, never>): Promise<A> =>
-  effect.pipe(Effect.provide(servedLayer), Effect.scoped, Effect.runPromise)
+const runWith = <A, E>(effect: Effect.Effect<A, E, unknown>): Promise<A> =>
+  (effect as any).pipe(Effect.provide(servedLayer), Effect.scoped, Effect.runPromise) as Promise<A>
 
 describe("Health endpoint", () => {
   it("GET /api/health returns 200 with { healthy: true }", async () => {
