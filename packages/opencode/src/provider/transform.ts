@@ -1248,7 +1248,7 @@ const SLUG_OVERRIDES: Record<string, string> = {
   amazon: "bedrock",
 }
 
-export function providerOptions(model: Provider.Model, options: { [x: string]: any }) {
+export function providerOptions(model: Provider.Model, options: Record<string, unknown>) {
   if (model.api.npm === "@ai-sdk/gateway") {
     // Gateway providerOptions are split across two namespaces:
     // - `gateway`: gateway-native routing/caching controls (order, only, byok, etc.)
@@ -1467,7 +1467,7 @@ export function schema(model: Provider.Model, schema: JSONSchema7): JSONSchema7 
       ].some((key) => key in node)
     }
 
-    const sanitizeGemini = (obj: any): any => {
+    const sanitizeGemini = (obj: unknown): unknown => {
       if (obj === null || typeof obj !== "object") {
         return obj
       }
@@ -1534,7 +1534,7 @@ export function schema(model: Provider.Model, schema: JSONSchema7): JSONSchema7 
       return result
     }
 
-    schema = sanitizeGemini(schema)
+    schema = sanitizeGemini(schema) as JSONSchema7
   }
 
   return schema
