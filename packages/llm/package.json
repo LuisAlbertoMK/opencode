@@ -8,6 +8,7 @@
   "scripts": {
     "setup:recording-env": "bun run script/setup-recording-env.ts",
     "test": "bun test --timeout 30000 --only-failures",
+    "test:coverage": "bun test --timeout 30000 --coverage",
     "typecheck": "tsgo --noEmit"
   },
   "exports": {

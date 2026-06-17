@@ -19,6 +19,7 @@
     "serve": "vite preview",
     "test": "bun run test:unit",
     "test:unit": "bun test --only-failures --preload ./happydom.ts ./src",
+    "test:coverage": "bun test --coverage --preload ./happydom.ts ./src",
     "test:unit:watch": "bun test --watch --preload ./happydom.ts ./src",
     "test:e2e": "playwright test",
     "test:e2e:local": "playwright test",

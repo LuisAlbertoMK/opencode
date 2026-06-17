@@ -9,7 +9,9 @@
     "./*": "./src/*.ts"
   },
   "scripts": {
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "test": "bun test --timeout 30000 --only-failures",
+    "test:coverage": "bun test --timeout 60000 --only-failures --coverage"
   },
   "dependencies": {
     "@opencode-ai/core": "workspace:*",
@@ -17,6 +19,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@effect/platform-node": "catalog:",
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
     "@typescript/native-preview": "catalog:"
