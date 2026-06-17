@@ -14,7 +14,7 @@ export const AzurePlugin = PluginV2.define({
   id: PluginV2.ID.make("azure"),
   effect: Effect.gen(function* () {
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("AzurePlugin.catalogTransform")(function* (evt) {
         for (const item of evt.provider.list()) {
           if (item.provider.api.type !== "aisdk") continue
           if (item.provider.api.package !== "@ai-sdk/azure") continue
@@ -27,7 +27,7 @@ export const AzurePlugin = PluginV2.define({
           })
         }
       }),
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("AzurePlugin.aisdkSdk")(function* (evt) {
         if (evt.package !== "@ai-sdk/azure") return
         if (evt.model.providerID === ProviderV2.ID.azure) {
           if (
@@ -43,7 +43,7 @@ export const AzurePlugin = PluginV2.define({
         const mod = yield* Effect.promise(() => import("@ai-sdk/azure"))
         evt.sdk = mod.createAzure(evt.options)
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("AzurePlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.azure) return
         evt.language = selectLanguage(evt.sdk, evt.model.api.id, Boolean(evt.options.useCompletionUrls))
       }),
@@ -55,7 +55,7 @@ export const AzureCognitiveServicesPlugin = PluginV2.define({
   id: PluginV2.ID.make("azure-cognitive-services"),
   effect: Effect.gen(function* () {
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("AzureCognitiveServicesPlugin.catalogTransform")(function* (evt) {
         const resourceName = process.env.AZURE_COGNITIVE_SERVICES_RESOURCE_NAME
         if (!resourceName) return
         for (const item of evt.provider.list()) {
@@ -67,7 +67,7 @@ export const AzureCognitiveServicesPlugin = PluginV2.define({
           })
         }
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("AzureCognitiveServicesPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.make("azure-cognitive-services")) return
         evt.language = selectLanguage(evt.sdk, evt.model.api.id, Boolean(evt.options.useCompletionUrls))
       }),

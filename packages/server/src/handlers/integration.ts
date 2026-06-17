@@ -21,21 +21,21 @@ export const IntegrationHandler = HttpApiBuilder.group(Api, "server.integration"
     return handlers
       .handle(
         "integration.list",
-        Effect.fn(function* () {
+        Effect.fn("IntegrationHandler.list")(function* () {
           const service = yield* Integration.Service
           return yield* response(service.list())
         }),
       )
       .handle(
         "integration.get",
-        Effect.fn(function* (ctx) {
+        Effect.fn("IntegrationHandler.get")(function* (ctx) {
           const service = yield* Integration.Service
           return yield* response(service.get(ctx.params.integrationID))
         }),
       )
       .handle(
         "integration.connect.key",
-        Effect.fn(function* (ctx) {
+        Effect.fn("IntegrationHandler.connectKey")(function* (ctx) {
           const service = yield* Integration.Service
           yield* authorize(
             service.connection.key({
@@ -49,7 +49,7 @@ export const IntegrationHandler = HttpApiBuilder.group(Api, "server.integration"
       )
       .handle(
         "integration.connect.oauth",
-        Effect.fn(function* (ctx) {
+        Effect.fn("IntegrationHandler.connectOauth")(function* (ctx) {
           const service = yield* Integration.Service
           return yield* response(
             authorize(
@@ -65,14 +65,14 @@ export const IntegrationHandler = HttpApiBuilder.group(Api, "server.integration"
       )
       .handle(
         "integration.attempt.status",
-        Effect.fn(function* (ctx) {
+        Effect.fn("IntegrationHandler.attemptStatus")(function* (ctx) {
           const service = yield* Integration.Service
           return yield* response(service.attempt.status(ctx.params.attemptID))
         }),
       )
       .handle(
         "integration.attempt.complete",
-        Effect.fn(function* (ctx) {
+        Effect.fn("IntegrationHandler.attemptComplete")(function* (ctx) {
           const service = yield* Integration.Service
           yield* service.attempt.complete({ attemptID: ctx.params.attemptID, code: ctx.payload.code }).pipe(
             Effect.mapError(
@@ -94,7 +94,7 @@ export const IntegrationHandler = HttpApiBuilder.group(Api, "server.integration"
       )
       .handle(
         "integration.attempt.cancel",
-        Effect.fn(function* (ctx) {
+        Effect.fn("IntegrationHandler.attemptCancel")(function* (ctx) {
           const service = yield* Integration.Service
           yield* service.attempt.cancel(ctx.params.attemptID)
           return HttpApiSchema.NoContent.make()

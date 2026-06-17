@@ -30,7 +30,7 @@ export const MessageHandler = HttpApiBuilder.group(Api, "server.message", (handl
 
     return handlers.handle(
       "session.messages",
-      Effect.fn(function* (ctx) {
+      Effect.fn("MessageHandler.messages")(function* (ctx) {
         if (ctx.query.cursor && ctx.query.order !== undefined)
           return yield* new InvalidCursorError({ message: "Cursor cannot be combined with order" })
         const decoded = yield* Effect.try({

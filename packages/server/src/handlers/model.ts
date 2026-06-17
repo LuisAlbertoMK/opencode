@@ -15,7 +15,7 @@ export const ModelHandler = HttpApiBuilder.group(Api, "server.model", (handlers)
   Effect.gen(function* () {
     return handlers.handle(
       "model.list",
-      Effect.fn(function* () {
+      Effect.fn("ModelHandler.list")(function* () {
         const catalog = yield* Catalog.Service
         const pluginBoot = yield* PluginBoot.Service
         yield* pluginBoot.wait().pipe(Effect.catchDefect(() => Effect.fail(catalogUnavailable)))

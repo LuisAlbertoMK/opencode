@@ -16,20 +16,20 @@ export const PermissionHandler = HttpApiBuilder.group(Api, "server.permission", 
     return handlers
       .handle(
         "permission.request.list",
-        Effect.fn(function* () {
+        Effect.fn("PermissionHandler.requestList")(function* () {
           return yield* response((yield* PermissionV2.Service).list())
         }),
       )
       .handle(
         "session.permission.list",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PermissionHandler.permissionList")(function* (ctx) {
           const permission = yield* PermissionV2.Service
           return { data: yield* permission.forSession(ctx.params.sessionID) }
         }),
       )
       .handle(
         "session.permission.reply",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PermissionHandler.permissionReply")(function* (ctx) {
           const permission = yield* PermissionV2.Service
           const request = yield* permission.get(ctx.params.requestID)
           if (!request || request.sessionID !== ctx.params.sessionID) return yield* missingRequest(ctx.params.requestID)
@@ -41,7 +41,7 @@ export const PermissionHandler = HttpApiBuilder.group(Api, "server.permission", 
       )
       .handle(
         "permission.saved.list",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PermissionHandler.savedList")(function* (ctx) {
           const location = yield* Location.Service
           return {
             data: yield* (yield* PermissionSaved.Service).list({
@@ -52,7 +52,7 @@ export const PermissionHandler = HttpApiBuilder.group(Api, "server.permission", 
       )
       .handle(
         "permission.saved.remove",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PermissionHandler.savedRemove")(function* (ctx) {
           yield* (yield* PermissionSaved.Service).remove(ctx.params.id)
           return HttpApiSchema.NoContent.make()
         }),

@@ -8,7 +8,7 @@ export const DynamicProviderPlugin = PluginV2.define({
   effect: Effect.gen(function* () {
     const npm = yield* Npm.Service
     return {
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("DynamicProviderPlugin.aisdkSdk")(function* (evt) {
         if (evt.sdk) return
 
         const installedPath = evt.package.startsWith("file://")

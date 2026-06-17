@@ -7,7 +7,7 @@ export const CloudflareAIGatewayPlugin = PluginV2.define({
   id: PluginV2.ID.make("cloudflare-ai-gateway"),
   effect: Effect.gen(function* () {
     return {
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("CloudflareAIGatewayPlugin.aisdkSdk")(function* (evt) {
         if (evt.package !== "ai-gateway-provider") return
         if (evt.options.baseURL) return
 

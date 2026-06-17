@@ -58,7 +58,7 @@ export const GoogleVertexPlugin = PluginV2.define({
   id: PluginV2.ID.make("google-vertex"),
   effect: Effect.gen(function* () {
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("GoogleVertexPlugin.catalogTransform")(function* (evt) {
         for (const item of evt.provider.list()) {
           if (item.provider.api.type !== "aisdk") continue
           if (
@@ -83,7 +83,7 @@ export const GoogleVertexPlugin = PluginV2.define({
           })
         }
       }),
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("GoogleVertexPlugin.aisdkSdk")(function* (evt) {
         if (evt.model.providerID === ProviderV2.ID.googleVertex && evt.package.includes("@ai-sdk/openai-compatible")) {
           evt.options.fetch = authFetch(evt.options.fetch)
           return
@@ -100,7 +100,7 @@ export const GoogleVertexPlugin = PluginV2.define({
           location,
         })
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("GoogleVertexPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.googleVertex) return
         evt.language = evt.sdk.languageModel(String(evt.model.api.id).trim())
       }),
@@ -112,7 +112,7 @@ export const GoogleVertexAnthropicPlugin = PluginV2.define({
   id: PluginV2.ID.make("google-vertex-anthropic"),
   effect: Effect.gen(function* () {
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("GoogleVertexAnthropicPlugin.catalogTransform")(function* (evt) {
         for (const item of evt.provider.list()) {
           if (item.provider.api.type !== "aisdk") continue
           if (item.provider.api.package !== "@ai-sdk/google-vertex/anthropic") continue
@@ -132,7 +132,7 @@ export const GoogleVertexAnthropicPlugin = PluginV2.define({
           })
         }
       }),
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("GoogleVertexAnthropicPlugin.aisdkSdk")(function* (evt) {
         if (evt.package !== "@ai-sdk/google-vertex/anthropic") return
         const mod = yield* Effect.promise(() => import("@ai-sdk/google-vertex/anthropic"))
         const project =
@@ -156,7 +156,7 @@ export const GoogleVertexAnthropicPlugin = PluginV2.define({
             : {}),
         })
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("GoogleVertexAnthropicPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.make("google-vertex-anthropic")) return
         evt.language = evt.sdk.languageModel(String(evt.model.api.id).trim())
       }),

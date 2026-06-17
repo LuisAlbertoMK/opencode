@@ -15,12 +15,12 @@ export const GithubCopilotPlugin = PluginV2.define({
   id: PluginV2.ID.make("github-copilot"),
   effect: Effect.gen(function* () {
     return {
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("GithubCopilotPlugin.aisdkSdk")(function* (evt) {
         if (evt.package !== "@ai-sdk/github-copilot") return
         const mod = yield* Effect.promise(() => import("../../github-copilot/copilot-provider"))
         evt.sdk = mod.createOpenaiCompatible(evt.options)
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("GithubCopilotPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.githubCopilot) return
         if (evt.sdk.responses === undefined && evt.sdk.chat === undefined) {
           evt.language = evt.sdk.languageModel(evt.model.api.id)
@@ -30,7 +30,7 @@ export const GithubCopilotPlugin = PluginV2.define({
           ? evt.sdk.responses(evt.model.api.id)
           : evt.sdk.chat(evt.model.api.id)
       }),
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("GithubCopilotPlugin.catalogTransform")(function* (evt) {
         const item = evt.provider.get(ProviderV2.ID.githubCopilot)
         if (!item || !item.models.has(ModelV2.ID.make("gpt-5-chat-latest"))) return
         evt.model.update(item.provider.id, ModelV2.ID.make("gpt-5-chat-latest"), (model) => {

@@ -7,7 +7,7 @@ export const LLMGatewayPlugin = PluginV2.define({
   effect: Effect.gen(function* () {
     const integrations = yield* Integration.Service
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("LLMGatewayPlugin.catalogTransform")(function* (evt) {
         for (const item of evt.provider.list()) {
           if (item.provider.disabled) continue
           if (!(yield* integrations.get(Integration.ID.make(item.provider.id)))) continue

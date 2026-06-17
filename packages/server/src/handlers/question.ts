@@ -25,20 +25,20 @@ export const QuestionHandler = HttpApiBuilder.group(Api, "server.question", (han
     return handlers
       .handle(
         "question.request.list",
-        Effect.fn(function* () {
+        Effect.fn("QuestionHandler.requestList")(function* () {
           return yield* response((yield* QuestionV2.Service).list())
         }),
       )
       .handle(
         "session.question.list",
-        Effect.fn(function* (ctx) {
+        Effect.fn("QuestionHandler.questionList")(function* (ctx) {
           const requests = yield* (yield* QuestionV2.Service).list()
           return { data: requests.filter((request) => request.sessionID === ctx.params.sessionID) }
         }),
       )
       .handle(
         "session.question.reply",
-        Effect.fn(function* (ctx) {
+        Effect.fn("QuestionHandler.questionReply")(function* (ctx) {
           yield* withOwnedQuestion(ctx.params.sessionID, ctx.params.requestID, (question) =>
             question
               .reply({ requestID: ctx.params.requestID, answers: ctx.payload.answers })
@@ -49,7 +49,7 @@ export const QuestionHandler = HttpApiBuilder.group(Api, "server.question", (han
       )
       .handle(
         "session.question.reject",
-        Effect.fn(function* (ctx) {
+        Effect.fn("QuestionHandler.questionReject")(function* (ctx) {
           yield* withOwnedQuestion(ctx.params.sessionID, ctx.params.requestID, (question) =>
             question
               .reject(ctx.params.requestID)

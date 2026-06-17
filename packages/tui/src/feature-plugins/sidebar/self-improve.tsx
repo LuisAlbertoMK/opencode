@@ -1,7 +1,7 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
-import { createMemo, Show } from "solid-js"
-import { readFileSync } from "fs"
+import { createEffect, createMemo, Show } from "solid-js"
+import { readFileSync, writeFileSync } from "fs"
 import path from "path"
 
 const id = "internal:sidebar-self-improve"
@@ -15,6 +15,36 @@ type ProjectScore = {
   }
 }
 
+function defaultScore(): ProjectScore {
+  return {
+    score: {
+      current: 5,
+      dimensions: {
+        correctness: 5,
+        tokens: 5,
+        errorPrevention: 5,
+        skill: 5,
+        speed: 5,
+        breadth: 5,
+      },
+      lastUpdated: new Date().toISOString(),
+      trend: "stable",
+    },
+  }
+}
+
+function ensureScoreFile(wt: string): ProjectScore {
+  const p = path.join(wt, ".project.json")
+  try {
+    const raw = readFileSync(p, "utf-8")
+    return JSON.parse(raw) as ProjectScore
+  } catch {
+    const seed = defaultScore()
+    writeFileSync(p, JSON.stringify(seed, null, 2), "utf-8")
+    return seed
+  }
+}
+
 function View(props: { api: TuiPluginApi; session_id: string }) {
   const theme = () => props.api.theme.current
   const worktree = () => props.api.state.path.worktree
@@ -23,8 +53,7 @@ function View(props: { api: TuiPluginApi; session_id: string }) {
     const wt = worktree()
     if (!wt) return undefined
     try {
-      const raw = readFileSync(path.join(wt, ".project.json"), "utf-8")
-      return (JSON.parse(raw) as ProjectScore).score
+      return ensureScoreFile(wt).score
     } catch {
       return undefined
     }

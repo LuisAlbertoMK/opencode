@@ -9,7 +9,7 @@ export const SapAICorePlugin = PluginV2.define({
   effect: Effect.gen(function* () {
     const npm = yield* Npm.Service
     return {
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("SapAICorePlugin.aisdkSdk")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.make("sap-ai-core")) return
         const serviceKey =
           process.env.AICORE_SERVICE_KEY ??
@@ -35,7 +35,7 @@ export const SapAICorePlugin = PluginV2.define({
             : {},
         )
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("SapAICorePlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.make("sap-ai-core")) return
         evt.language = evt.sdk(evt.model.api.id)
       }),

@@ -14,16 +14,16 @@ export const OpenAIPlugin = PluginV2.define({
       editor.method.update(headless)
     })
     return {
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("OpenAIPlugin.aisdkSdk")(function* (evt) {
         if (evt.package !== "@ai-sdk/openai") return
         const mod = yield* Effect.promise(() => import("@ai-sdk/openai"))
         evt.sdk = mod.createOpenAI(evt.options)
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("OpenAIPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.openai) return
         evt.language = evt.sdk.responses(evt.model.api.id)
       }),
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("OpenAIPlugin.catalogTransform")(function* (evt) {
         for (const item of evt.provider.list()) {
           if (item.provider.api.type !== "aisdk") continue
           if (item.provider.api.package !== "@ai-sdk/openai") continue

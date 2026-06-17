@@ -68,7 +68,7 @@ export const SnowflakeCortexPlugin = PluginV2.define({
   id: PluginV2.ID.make("snowflake-cortex"),
   effect: Effect.gen(function* () {
     return {
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("SnowflakeCortexPlugin.aisdkSdk")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.make("snowflake-cortex")) return
         const token =
           process.env.SNOWFLAKE_CORTEX_TOKEN ??

@@ -7,14 +7,14 @@ export const CredentialHandler = HttpApiBuilder.group(Api, "server.credential", 
   handlers
     .handle(
       "credential.update",
-      Effect.fn(function* (ctx) {
+      Effect.fn("CredentialHandler.update")(function* (ctx) {
         yield* (yield* Integration.Service).connection.update(ctx.params.credentialID, { label: ctx.payload.label })
         return HttpApiSchema.NoContent.make()
       }),
     )
     .handle(
       "credential.remove",
-      Effect.fn(function* (ctx) {
+      Effect.fn("CredentialHandler.remove")(function* (ctx) {
         yield* (yield* Integration.Service).connection.remove(ctx.params.credentialID)
         return HttpApiSchema.NoContent.make()
       }),

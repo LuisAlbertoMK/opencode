@@ -17,7 +17,7 @@ export const ProviderHandler = HttpApiBuilder.group(Api, "server.provider", (han
     return handlers
       .handle(
         "provider.list",
-        Effect.fn(function* () {
+        Effect.fn("ProviderHandler.list")(function* () {
           const catalog = yield* Catalog.Service
           const pluginBoot = yield* PluginBoot.Service
           yield* pluginBoot.wait().pipe(Effect.catchDefect(() => Effect.fail(catalogUnavailable)))
@@ -26,7 +26,7 @@ export const ProviderHandler = HttpApiBuilder.group(Api, "server.provider", (han
       )
       .handle(
         "provider.get",
-        Effect.fn(function* (ctx) {
+        Effect.fn("ProviderHandler.get")(function* (ctx) {
           const catalog = yield* Catalog.Service
           const pluginBoot = yield* PluginBoot.Service
           yield* pluginBoot.wait().pipe(Effect.catchDefect(() => Effect.fail(catalogUnavailable)))

@@ -27,13 +27,13 @@ export const PtyHandler = HttpApiBuilder.group(Api, "server.pty", (handlers) =>
     return handlers
       .handle(
         "pty.list",
-        Effect.fn(function* () {
+        Effect.fn("PtyHandler.list")(function* () {
           return yield* response((yield* Pty.Service).list())
         }),
       )
       .handle(
         "pty.create",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PtyHandler.create")(function* (ctx) {
           const pty = yield* Pty.Service
           const location = yield* Location.Service
           const cwd = ctx.payload.cwd || location.directory
@@ -52,7 +52,7 @@ export const PtyHandler = HttpApiBuilder.group(Api, "server.pty", (handlers) =>
       )
       .handle(
         "pty.get",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PtyHandler.get")(function* (ctx) {
           const pty = yield* Pty.Service
           return yield* response(
             pty.get(ctx.params.ptyID).pipe(
@@ -70,7 +70,7 @@ export const PtyHandler = HttpApiBuilder.group(Api, "server.pty", (handlers) =>
       )
       .handle(
         "pty.update",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PtyHandler.update")(function* (ctx) {
           const pty = yield* Pty.Service
           return yield* response(
             pty
@@ -93,7 +93,7 @@ export const PtyHandler = HttpApiBuilder.group(Api, "server.pty", (handlers) =>
       )
       .handle(
         "pty.remove",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PtyHandler.remove")(function* (ctx) {
           const pty = yield* Pty.Service
           yield* pty.remove(ctx.params.ptyID).pipe(
             Effect.catchTag(
@@ -110,7 +110,7 @@ export const PtyHandler = HttpApiBuilder.group(Api, "server.pty", (handlers) =>
       )
       .handle(
         "pty.connectToken",
-        Effect.fn(function* (ctx) {
+        Effect.fn("PtyHandler.connectToken")(function* (ctx) {
           const request = yield* HttpServerRequest.HttpServerRequest
           // The custom header forces a CORS preflight, so cross-origin browser pages cannot
           // mint tickets without passing the server's origin policy.

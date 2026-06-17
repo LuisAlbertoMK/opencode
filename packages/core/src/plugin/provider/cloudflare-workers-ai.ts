@@ -10,7 +10,7 @@ export const CloudflareWorkersAIPlugin = PluginV2.define({
   id: PluginV2.ID.make("cloudflare-workers-ai"),
   effect: Effect.gen(function* () {
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("CloudflareWorkersAIPlugin.catalogTransform")(function* (evt) {
         const item = evt.provider.get(providerID)
         if (!item) return
         evt.provider.update(item.provider.id, (provider) => {
@@ -20,7 +20,7 @@ export const CloudflareWorkersAIPlugin = PluginV2.define({
           if (accountId) provider.api.url = workersEndpoint(accountId)
         })
       }),
-      "aisdk.sdk": Effect.fn(function* (evt) {
+      "aisdk.sdk": Effect.fn("CloudflareWorkersAIPlugin.aisdkSdk")(function* (evt) {
         if (evt.model.providerID !== providerID) return
         if (evt.package !== "@ai-sdk/openai-compatible") return
 
@@ -34,7 +34,7 @@ export const CloudflareWorkersAIPlugin = PluginV2.define({
           }) as any,
         )
       }),
-      "aisdk.language": Effect.fn(function* (evt) {
+      "aisdk.language": Effect.fn("CloudflareWorkersAIPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== providerID) return
         evt.language = evt.sdk.languageModel(evt.model.api.id)
       }),

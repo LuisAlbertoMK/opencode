@@ -9,7 +9,7 @@ export const OpencodePlugin = PluginV2.define({
     const integrations = yield* Integration.Service
     let hasKey = false
     return {
-      "catalog.transform": Effect.fn(function* (evt) {
+      "catalog.transform": Effect.fn("OpencodePlugin.catalogTransform")(function* (evt) {
         const item = evt.provider.get(ProviderV2.ID.opencode)
         if (!item) return
         const integration = yield* integrations.get(Integration.ID.make(item.provider.id))
