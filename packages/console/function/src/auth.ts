@@ -98,7 +98,6 @@ export default {
         //        }),
       },
       storage: CloudflareStorage({
-        // @ts-ignore
         namespace: env.AuthStorage,
       }),
       subjects,

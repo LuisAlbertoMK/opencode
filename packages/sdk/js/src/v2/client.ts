@@ -50,7 +50,6 @@ function rewrite(request: Request, values: { directory?: string; workspace?: str
 export function createOpencodeClient(config?: Config & { directory?: string; experimental_workspaceID?: string }) {
   if (!config?.fetch) {
     const customFetch: any = (req: any) => {
-      // @ts-ignore
       req.timeout = false
       return fetch(req)
     }

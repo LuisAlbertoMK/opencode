@@ -1,6 +1,6 @@
 export * as Watcher from "./watcher"
 
-// @ts-ignore
+// @ts-expect-error @parcel/watcher/wrapper has no types
 import { createWrapper } from "@parcel/watcher/wrapper"
 import { Platform } from "@/util/platform"
 import type ParcelWatcher from "@parcel/watcher"

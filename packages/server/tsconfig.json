@@ -7,5 +7,6 @@
     "paths": {
       "@/*": ["./src/*", "../core/src/*"]
     }
-  }
+  },
+  "include": ["./src/**/*", "../core/src/**/*.d.ts"]
 }

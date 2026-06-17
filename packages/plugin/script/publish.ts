@@ -22,7 +22,7 @@ if (await published(pkg.name, pkg.version)) {
 } else {
   for (const [key, value] of Object.entries(pkg.exports)) {
     const file = value.replace("./src/", "./dist/").replace(".ts", "")
-    // @ts-ignore
+    // @ts-expect-error PackageJson exports type is strict
     pkg.exports[key] = {
       import: file + ".js",
       types: file + ".d.ts",

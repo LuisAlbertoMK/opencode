@@ -13,18 +13,15 @@ export const Resource = new Proxy(
       const value = ResourceBase[prop]
       const secrets = ResourceBase as unknown as Record<string, { value: string }>
       if ("type" in value) {
-        // @ts-ignore
         if (value.type === "sst.cloudflare.Bucket") {
           return {
             put: async () => {},
           }
         }
-        // @ts-ignore
         if (value.type === "sst.cloudflare.Kv") {
           const client = new Cloudflare({
             apiToken: secrets.CLOUDFLARE_API_TOKEN.value,
           })
-          // @ts-ignore
           const namespaceId = value.namespaceId
           const accountId = secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID.value
           return {
