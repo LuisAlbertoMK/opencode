@@ -48,20 +48,22 @@ export const make = Effect.gen(function* () {
           maxBytes: limits.maxBase64Bytes,
         })
       const scale = Math.min(1, limits.maxWidth / width, limits.maxHeight / height)
-      const sizes = Array.from({ length: 32 }).reduce<Array<{ width: number; height: number }>>((acc) => {
-        const previous = acc.at(-1) ?? {
+      const sizes: Array<{ width: number; height: number }> = []
+      for (let i = 0; i < 32; i++) {
+        const previous = sizes.at(-1) ?? {
           width: Math.max(1, Math.round(width * scale)),
           height: Math.max(1, Math.round(height * scale)),
         }
         const next =
-          acc.length === 0
+          i === 0
             ? previous
             : {
                 width: previous.width === 1 ? 1 : Math.max(1, Math.floor(previous.width * 0.75)),
                 height: previous.height === 1 ? 1 : Math.max(1, Math.floor(previous.height * 0.75)),
               }
-        return acc.some((item) => item.width === next.width && item.height === next.height) ? acc : [...acc, next]
-      }, [])
+        if (sizes.some((item) => item.width === next.width && item.height === next.height)) break
+        sizes.push(next)
+      }
       for (const size of sizes) {
         const resized = photon.resize(decoded, size.width, size.height, photon.SamplingFilter.Lanczos3)
         try {

@@ -109,20 +109,23 @@ export const layer = Layer.effect(
           })
 
         const scale = Math.min(1, info.maxWidth / originalWidth, info.maxHeight / originalHeight)
-        for (const size of Array.from({ length: 32 }).reduce<Array<{ width: number; height: number }>>((acc) => {
-          const previous = acc.at(-1) ?? {
+        const sizes: Array<{ width: number; height: number }> = []
+        for (let i = 0; i < 32; i++) {
+          const previous = sizes.at(-1) ?? {
             width: Math.max(1, Math.round(originalWidth * scale)),
             height: Math.max(1, Math.round(originalHeight * scale)),
           }
           const next =
-            acc.length === 0
+            i === 0
               ? previous
               : {
                   width: previous.width === 1 ? 1 : Math.max(1, Math.floor(previous.width * 0.75)),
                   height: previous.height === 1 ? 1 : Math.max(1, Math.floor(previous.height * 0.75)),
                 }
-          return acc.some((item) => item.width === next.width && item.height === next.height) ? acc : [...acc, next]
-        }, [])) {
+          if (sizes.some((item) => item.width === next.width && item.height === next.height)) break
+          sizes.push(next)
+        }
+        for (const size of sizes) {
           const resized = photon.resize(decoded, size.width, size.height, photon.SamplingFilter.Lanczos3)
           const candidate = [
             { data: Buffer.from(resized.get_bytes()).toString("base64"), mime: "image/png" },
@@ -130,9 +133,7 @@ export const layer = Layer.effect(
               data: Buffer.from(resized.get_bytes_jpeg(quality)).toString("base64"),
               mime: "image/jpeg",
             })),
-          ]
-            .map((item) => ({ ...item, bytes: Buffer.byteLength(item.data, "utf8") }))
-            .find((item) => item.bytes <= info.maxBase64Bytes)
+          ].find((item) => Buffer.byteLength(item.data, "utf8") <= info.maxBase64Bytes)
           resized.free()
 
           if (candidate) {
