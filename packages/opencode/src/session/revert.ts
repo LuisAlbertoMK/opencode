@@ -78,11 +78,14 @@ export const layer = Layer.effect(
       yield* sessions.setRevert({
         sessionID: input.sessionID,
         revert: rev,
-        summary: {
-          additions: diffs.reduce((sum, x) => sum + x.additions, 0),
-          deletions: diffs.reduce((sum, x) => sum + x.deletions, 0),
-          files: diffs.length,
-        },
+        summary: (() => {
+          let additions = 0, deletions = 0
+          for (let i = 0; i < diffs.length; i++) {
+            additions += diffs[i].additions
+            deletions += diffs[i].deletions
+          }
+          return { additions, deletions, files: diffs.length }
+        })(),
       })
       return yield* sessions.get(input.sessionID).pipe(Effect.orDie)
     })

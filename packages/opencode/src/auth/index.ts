@@ -77,7 +77,8 @@ export const layer = Layer.effect(
       }
 
       const raw = yield* readFileDecrypt()
-      const data = JSON.parse(raw) as Record<string, unknown>
+      let data: Record<string, unknown>
+      try { data = JSON.parse(raw) as Record<string, unknown> } catch { return {} }
       return Record.filterMap(data, (value) => Result.fromOption(decode(value), () => undefined))
     })
 

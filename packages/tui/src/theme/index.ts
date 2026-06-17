@@ -561,7 +561,11 @@ export function generateSubtleSyntax(theme: Theme, overrides?: SyntaxStyleOverri
   const rules = getSyntaxRules(theme)
   return SyntaxStyle.fromTheme(
     rules.map((rule) => {
-      const override = rule.scope.reduce((acc, scope) => ({ ...acc, ...overrides?.[scope] }), {})
+      const override: Record<string, unknown> = {}
+      for (const scope of rule.scope) {
+        const o = overrides?.[scope]
+        if (o) Object.assign(override, o)
+      }
       if (rule.style.foreground) {
         const fg = rule.style.foreground
         return {

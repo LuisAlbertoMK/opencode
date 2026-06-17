@@ -87,7 +87,8 @@ function prepareOptions(model: ModelV2.Info, pkg: string) {
       opts.body &&
       opts.method === "POST"
     ) {
-      const body = JSON.parse(opts.body as string)
+      let body: Record<string, unknown>
+      try { body = JSON.parse(opts.body as string) } catch { return }
       if (body.store !== true && Array.isArray(body.input)) {
         for (const item of body.input) {
           if ("id" in item) delete item.id
