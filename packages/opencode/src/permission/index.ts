@@ -36,32 +36,14 @@ interface State {
   approved: PermissionV1.Rule[]
 }
 
-// LRU cache for evaluate() — repeated (permission, pattern) lookups are common
-// across tool calls within the same provider turn (same permissions checked multiple times).
-const evaluateCache = new Map<string, PermissionV1.Rule>()
-
 export function evaluate(permission: string, pattern: string, ...rulesets: PermissionV1.Ruleset[]): PermissionV1.Rule {
-  const key = `${permission}|${pattern}`
-  const cached = evaluateCache.get(key)
-  if (cached) return cached
-
   const all = rulesets.length === 1 ? rulesets[0] : rulesets.flat()
-  let result: PermissionV1.Rule | undefined
   for (let i = all.length - 1; i >= 0; i--) {
     if (Wildcard.match(permission, all[i]!.permission) && Wildcard.match(pattern, all[i]!.pattern)) {
-      result = all[i]
-      break
+      return all[i]!
     }
   }
-  result ??= { action: "ask", permission, pattern: "*" }
-
-  // Simple bounded cache (64 entries) — LRU eviction by Map insertion order.
-  if (evaluateCache.size >= 64) {
-    const first = evaluateCache.keys().next()
-    if (!first.done) evaluateCache.delete(first.value)
-  }
-  evaluateCache.set(key, result)
-  return result
+  return { action: "ask", permission, pattern: "*" }
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Permission") {}
