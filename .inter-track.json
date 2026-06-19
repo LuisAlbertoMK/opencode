@@ -1,0 +1,40 @@
+﻿{
+    "inter":  7,
+    "log":  [
+                {
+                    "msg":  "Fix 1: Config optimizada .opencode/opencode.jsonc — compaction/prune/experimental/images/model-limits",
+                    "n":  1,
+                    "ts":  "2026-06-18 18:23:27"
+                },
+                {
+                    "msg":  "Fix 2+3: Optimización sistema + power plan High Performance + prioridad High",
+                    "n":  2,
+                    "ts":  "2026-06-18 18:24:42"
+                },
+                {
+                    "msg":  "E2 verify: power plan High Performance active, opencode-vMK priority High",
+                    "n":  3,
+                    "ts":  "2026-06-18 18:24:42"
+                },
+                {
+                    "msg":  "Análisis: feature history panel TUI con copy — sidebar plugin viable",
+                    "n":  4,
+                    "ts":  "2026-06-18 18:27:12"
+                },
+                {
+                    "msg":  "Fix 5: Kill PID 2540 (npm opencode duplicado) - liberados ~888MB RAM",
+                    "n":  5,
+                    "ts":  "2026-06-18 18:48:48"
+                },
+                {
+                    "msg":  "Fix 6: Analisis rebuild vMK - minify (-40MB), --skip-embed-web-ui disponible",
+                    "n":  6,
+                    "ts":  "2026-06-18 18:49:27"
+                },
+                {
+                    "msg":  "Fix 7: Memory tuning + temp cleanup, audit final",
+                    "n":  7,
+                    "ts":  "2026-06-18 18:51:56"
+                }
+            ]
+}
