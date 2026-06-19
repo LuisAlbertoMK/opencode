@@ -2,13 +2,15 @@ param(
   [switch]$Minify,
   [switch]$Baseline,
   [switch]$NoWebUi,
-  [switch]$DryRun
+  [switch]$DryRun,
+  [string]$Channel = "vMK-dev"
 )
 
 $scriptDir = "D:\opencode\packages\opencode\script"
 
 Write-Output "=== REBUILD OPENCODE-VMK OPTIMIZADO ==="
 Write-Output "Target: vMK fork binary"
+Write-Output "Channel: $Channel"
 Write-Output ""
 
 if (-not (Test-Path "$scriptDir\build.ts")) {
@@ -40,15 +42,22 @@ $currentSize = (Get-Item "D:\opencode\packages\opencode\dist\opencode-windows-x6
 Write-Output ""
 Write-Output "Tamano actual: $([math]::Round($currentSize/1MB,1))MB"
 
+$env:OPENCODE_CHANNEL = $Channel
+
 if ($DryRun) {
   Write-Output ""
   Write-Output "--- Dry Run: comandos que se ejecutarian ---"
   $cmds = @("cd packages/opencode")
+  $cmds += '$env:OPENCODE_CHANNEL="' + $Channel + '"'
   if ($NoWebUi) { $cmds += "bun run build -- --skip-embed-web-ui" }
   else { $cmds += "bun run build" }
   $cmds | ForEach-Object { "  $ $_" }
+  Write-Output ""
+  Write-Output "Env var OPENCODE_CHANNEL=$Channel (solo afecta este proceso)"
+  Write-Output "Resultado esperado: channel=$Channel, version=0.0.0-$Channel-{timestamp}"
 }
 
 Write-Output ""
 Write-Output "Para rebuild con todas las optimizaciones:"
+Write-Output "  `$env:OPENCODE_CHANNEL='$Channel'"
 Write-Output '  bun run --cwd packages/opencode build -- --skip-embed-web-ui'
