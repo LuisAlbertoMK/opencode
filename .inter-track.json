@@ -1,5 +1,5 @@
 ﻿{
-    "inter":  7,
+    "inter":  15,
     "log":  [
                 {
                     "msg":  "Fix 1: Config optimizada .opencode/opencode.jsonc — compaction/prune/experimental/images/model-limits",
@@ -35,6 +35,46 @@
                     "msg":  "Fix 7: Memory tuning + temp cleanup, audit final",
                     "n":  7,
                     "ts":  "2026-06-18 18:51:56"
+                },
+                {
+                    "msg":  "",
+                    "n":  8,
+                    "ts":  "2026-06-19 23:45:49"
+                },
+                {
+                    "ts":  "2026-06-19 23:50:33",
+                    "msg":  "Fix: Removed 9 SDD stubs (60 skills ahora) + power plan GUID fallback + CYCLE.md baselines actualizados",
+                    "n":  9
+                },
+                {
+                    "ts":  "2026-06-19 23:58:34",
+                    "msg":  "Fix: LSP false + snapshot false + env vars en vmk.cmd + memory-tune.ps1 status mejorado + compaction agresivo",
+                    "n":  10
+                },
+                {
+                    "msg":  "",
+                    "n":  11,
+                    "ts":  "2026-06-20 00:04:18"
+                },
+                {
+                    "msg":  "",
+                    "n":  12,
+                    "ts":  "2026-06-20 19:35:20"
+                },
+                {
+                    "msg":  "",
+                    "n":  13,
+                    "ts":  "2026-06-20 20:11:30"
+                },
+                {
+                    "msg":  "",
+                    "n":  14,
+                    "ts":  "2026-06-20 20:14:40"
+                },
+                {
+                    "msg":  "",
+                    "n":  15,
+                    "ts":  "2026-06-20 20:20:37"
                 }
             ]
 }

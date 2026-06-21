@@ -7,11 +7,11 @@
 
 | Métrica | Línea Base | Target | Instrumento |
 |---------|-----------|--------|-------------|
-| RAM opencode-vMK | ~708 MB | <500 MB | `Get-Process` |
+| RAM opencode-vMK | ~920 MB | <500 MB | `Get-Process` |
 | CPU (sesión nueva 30min) | Medir baseline | -30% | `Get-Process CPU(s)` |
-| Tamaño binario | Medir baseline | -20% | `Get-Item .exe` |
-| # Skills cargados | 65 | <40 | `skill-graph.ps1` |
-| Score general | 7.0 | >8.0 | `.project.json` |
+| Tamaño binario | ~143.5 MB | -20% (~115 MB) | `Get-Item .exe` |
+| # Skills registrados | 60 | <40 | `skill-graph.ps1` (sparse load) |
+| Score general | 7.5 | >8.0 | `.project.json` |
 
 ## Dificultad → Verify
 
@@ -39,12 +39,12 @@
 ## Línea Base (capturada)
 
 ```
-RAM total sistema: 13.9 GB
-RAM opencode:      ~773 MB
-RAM opencode-vMK:  ~708 MB
-CPU: AMD Ryzen 7 3700U (4C/8T) @ 24% load
+RAM total sistema: 14.3 GB (13.9 GB usable)
+RAM opencode-vMK:  ~920 MB (2 procesos: 919.7 + 929.1)
+CPU: AMD Ryzen 7 3700U (4C/8T, lógicos: 8)
 GPU: AMD Radeon RX Vega 10 (2GB VRAM)
-Disk D:\: 195 GB free
-opencode skills:   65 registrados
-Score actual:      7.0/10
+Disk D:\: 195.5 GB free
+Binario vMK:       143.5 MB (150508032 bytes)
+opencode skills:   60 registrados (9 SDD stubs removidos)
+Score actual:      7.5/10
 ```
