@@ -1,5 +1,5 @@
 ﻿{
-    "inter":  15,
+    "inter":  16,
     "log":  [
                 {
                     "msg":  "Fix 1: Config optimizada .opencode/opencode.jsonc — compaction/prune/experimental/images/model-limits",
@@ -75,6 +75,11 @@
                     "msg":  "",
                     "n":  15,
                     "ts":  "2026-06-20 20:20:37"
+                },
+                {
+                    "msg":  "",
+                    "n":  16,
+                    "ts":  "2026-06-20 20:22:33"
                 }
             ]
 }

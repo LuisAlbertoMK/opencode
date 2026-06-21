@@ -3,6 +3,7 @@
 2026-06-20 - Session close
 2026-06-20 - Session close
 2026-06-20 - Session close
+2026-06-20 - Session close
 2026-06-19 - Analysis gaps/syntax/deadcode/perf/security + 7 fixes applied + !sync drift check
 # BitÃ¡cora de Correcciones â€” opencode fork
 
@@ -656,6 +657,7 @@ Hallazgos de los 3 delegados de exploraciÃ³n:
 - **Fix**: mismo patrÃ³n que `limitFrames()` (lÃ­nea 370-372) â€” guard que retorna early si `ids.size <= 96` y `role.size <= 32`.
 - **Ganancia estimada**: durante el 90% del tiempo de streaming (cuando los datos estÃ¡n dentro de lÃ­mites), se evita la copia completa de SessionData.
 - **VerificaciÃ³n**: typecheck PASSED, 0 regresiones
+
 
 
 
