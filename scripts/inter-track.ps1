@@ -5,6 +5,7 @@
   [string]$Message = ""
 )
 
+$ErrorActionPreference = "Stop"
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $trackFile = Join-Path $repoRoot ".inter-track.json"
 if (-not (Test-Path $trackFile)) {

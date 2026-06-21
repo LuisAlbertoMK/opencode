@@ -837,7 +837,8 @@ function installDetail(err: unknown) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-  const errs = lines.filter((line) => line.startsWith("error:")).map((line) => line.replace(/^error:\s*/, ""))
+  const errs: string[] = []
+  for (const line of lines) { if (line.startsWith("error:")) errs.push(line.replace(/^error:\s*/, "")) }
   return {
     message: errs[0] ?? lines.at(-1) ?? errorMessage(hit),
     missing: lines.some((line) => line.includes("No version matching")),

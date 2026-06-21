@@ -234,5 +234,7 @@ acceptable.reset = () => {
 
 export async function list(): Promise<Item[]> {
   const shells = Platform.isWindows ? win() : await unix()
-  return shells.filter((s) => resolve(s)).map(info)
+  const result: Item[] = []
+  for (const s of shells) { if (resolve(s)) result.push(info(s)) }
+  return result
 }

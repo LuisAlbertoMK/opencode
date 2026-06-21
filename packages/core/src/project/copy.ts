@@ -258,7 +258,8 @@ export const layer = Layer.effect(
       ).pipe(
         Effect.map((sets) => new Map(sets.flat(2).map((item) => [item.directory, item] as const)).values().toArray()),
       )
-      const removed = checked.filter((item) => !item.exists).map((item) => item.directory)
+      const removed: AbsolutePath[] = []
+      for (const item of checked) { if (!item.exists) removed.push(item.directory) }
       const result = yield* db
         .transaction((tx) =>
           Effect.all({
@@ -279,7 +280,7 @@ export const layer = Layer.effect(
           }),
         )
         .pipe(Effect.orDie)
-      const changes = {
+      const changes: RefreshResult = {
         updated: discovered.filter((_, index) => result.updated[index]).map((item) => item.directory),
         removed: removed.filter((_, index) => result.removed[index]),
       }

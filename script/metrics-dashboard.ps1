@@ -11,8 +11,8 @@
 #>
 
 param(
-  [string]$MetricsPath = "D:\opencode\METRICAS.md",
-  [string]$BitacoraPath = "D:\opencode\BITACORA.md",
+  [string]$MetricsPath = (Join-Path (Split-Path $PSScriptRoot -Parent) "METRICAS.md"),
+  [string]$BitacoraPath = (Join-Path (Split-Path $PSScriptRoot -Parent) "BITACORA.md"),
   [string]$OutputPath = ""
 )
 

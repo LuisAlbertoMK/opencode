@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { $ } from "bun"
-import fs from "fs"
+import fs, { statSync } from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
 import { createSolidTransformPlugin } from "@opentui/solid/bun-plugin"
@@ -24,11 +24,36 @@ const sourcemapsFlag = process.argv.includes("--sourcemaps")
 const plugin = createSolidTransformPlugin()
 const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
 
+const CACHE_HASH_FILE = path.join(dir, "dist", ".webui-hash")
+
+async function hashDir(dir: string, exclude: string[]): Promise<string> {
+  const entries: string[] = []
+  for await (const entry of new Bun.Glob("**/*").scan({ cwd: dir, dot: true, absolute: false })) {
+    if (exclude.some((e) => entry.startsWith(e))) continue
+    try {
+      const stat = statSync(path.join(dir, entry))
+      if (stat.isFile()) entries.push(`${entry}:${stat.mtimeMs}`)
+    } catch { /* skip */ }
+  }
+  entries.sort()
+  return Bun.hash(entries.join("\n")).toString(36)
+}
+
 const createEmbeddedWebUIBundle = async () => {
-  console.log(`Building Web UI to embed in the binary`)
   const appDir = path.join(import.meta.dirname, "../../app")
   const dist = path.join(appDir, "dist")
-  await $`OPENCODE_CHANNEL=${Script.channel} bun run --cwd ${appDir} build`
+
+  // Cache: skip rebuild if app/ files haven't changed
+  const hash = await hashDir(appDir, ["node_modules", "dist"])
+  const prevHash = await Bun.file(CACHE_HASH_FILE).text().catch(() => "")
+  if (prevHash === hash) {
+    console.log(`Web UI unchanged — using cached build`)
+  } else {
+    console.log(`Building Web UI to embed in the binary`)
+    await $`OPENCODE_CHANNEL=${Script.channel} bun run --cwd ${appDir} build`
+    await Bun.write(CACHE_HASH_FILE, hash)
+  }
+
   const files = (await Array.fromAsync(new Bun.Glob("**/*").scan({ cwd: dist })))
     .map((file) => file.replaceAll("\\", "/"))
     .filter((file) => !file.endsWith(".map"))
@@ -134,13 +159,17 @@ const targets = singleFlag
     })
   : allTargets
 
-await $`rm -rf dist`
+// Windows: dist may be locked by antivirus — skip rm, build will overwrite
+// fs.rmSync("dist", { recursive: true, force: true })
+// rm works fine on non-Windows platforms
+if (process.platform !== "win32") await $`rm -rf dist`
 
 const binaries: Record<string, string> = {}
 if (!skipInstall) {
-  await $`bun install --os="*" --cpu="*" @opentui/core@${pkg.dependencies["@opentui/core"]}`
-  await $`bun install --os="*" --cpu="*" @parcel/watcher@${pkg.dependencies["@parcel/watcher"]}`
-  await $`bun install --os="*" --cpu="*" @ff-labs/fff-bun@${pkg.dependencies["@ff-labs/fff-bun"]}`
+  const cross = singleFlag ? "" : `--os="*" --cpu="*"`
+  await $`bun install ${cross} @opentui/core@${pkg.dependencies["@opentui/core"]}`
+  await $`bun install ${cross} @parcel/watcher@${pkg.dependencies["@parcel/watcher"]}`
+  await $`bun install ${cross} @ff-labs/fff-bun@${pkg.dependencies["@ff-labs/fff-bun"]}`
 }
 for (const item of targets) {
   const name = [
@@ -171,7 +200,7 @@ for (const item of targets) {
     plugins: [plugin],
     external: ["node-gyp"],
     format: "esm",
-    minify: false,
+    minify: true,
     sourcemap: sourcemapsFlag ? "linked" : "none",
     splitting: true,
     compile: {
@@ -211,7 +240,8 @@ for (const item of targets) {
     }
   }
 
-  await $`rm -rf ./dist/${name}/bin/tui`
+  // Windows safety: rm via Git Bash fails on locked binaries
+  try { fs.rmSync(`./dist/${name}/bin/tui`, { recursive: true, force: true }) } catch {}
   await Bun.file(`dist/${name}/package.json`).write(
     JSON.stringify(
       {

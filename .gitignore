@@ -37,3 +37,6 @@ UPCOMING_CHANGELOG.md
 logs/
 *.bun-build
 tsconfig.tsbuildinfo
+
+# Project scoring — binary is READ-ONLY, never modified by the binary
+.project.json

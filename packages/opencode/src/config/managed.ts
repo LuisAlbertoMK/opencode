@@ -29,7 +29,8 @@ export function managedConfigDir() {
 }
 
 export function parseManagedPlist(json: string): string {
-  const raw = JSON.parse(json)
+  let raw: Record<string, unknown>
+  try { raw = JSON.parse(json) } catch { return "{}" }
   for (const key of Object.keys(raw)) {
     if (PLIST_META.has(key)) delete raw[key]
   }

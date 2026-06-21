@@ -31,7 +31,11 @@ if ($Audit -or $Auto) {
 
 if ($Cleanup -or $Auto) {
   Write-Output "=== LIMPIEZA ==="
-  $npm = Get-CimInstance Win32_Process -Filter "Name='opencode.exe'" | Where-Object { $_.CommandLine -match 'AppData.*npm' }
+  # Reuse audit query if available, otherwise query fresh
+  if (-not $all) {
+    $all = Get-CimInstance Win32_Process -Filter "Name LIKE '%opencode%' OR Name LIKE '%engram%'" | Select-Object ProcessId, Name, @{N='RAM(MB)';E={[math]::Round($_.WorkingSetSize/1MB,1)}}, @{N='CPU(s)';E={[math]::Round($_.KernelModeTime/10000000,1)}}, CommandLine
+  }
+  $npm = $all | Where-Object { $_.CommandLine -match 'AppData.*npm' -and $_.Name -eq 'opencode.exe' }
   foreach ($p in $npm) {
     $processPid = $p.ProcessId
     $ram = [math]::Round($p.WorkingSetSize/1MB,1)

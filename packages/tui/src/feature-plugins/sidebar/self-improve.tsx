@@ -1,7 +1,7 @@
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui"
 import type { BuiltinTuiPlugin } from "../builtins"
 import { createMemo, Show } from "solid-js"
-import { readFileSync, writeFileSync } from "fs"
+import { readFileSync } from "fs"
 import path from "path"
 
 const id = "internal:sidebar-self-improve"
@@ -48,9 +48,7 @@ function ensureScoreFile(wt: string): ProjectScore {
     const raw = readFileSync(p, "utf-8")
     return JSON.parse(raw) as ProjectScore
   } catch {
-    const seed = defaultScore()
-    writeFileSync(p, JSON.stringify(seed, null, 2), "utf-8")
-    return seed
+    return defaultScore()
   }
 }
 

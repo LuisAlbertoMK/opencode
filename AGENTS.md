@@ -115,6 +115,12 @@ function requireConfig(input: unknown) {
 - Prefer Effect schema helpers such as `Schema.UnknownFromJsonString` and `Schema.decodeUnknownOption` over manual `JSON.parse` wrapped in `Effect.try` when parsing untrusted JSON strings.
 - Add comments for non-obvious constraints and surprising behavior, not for obvious assignments or control flow.
 
+## Project Score
+
+- `.project.json` is **read-only** for the binary and all scripts. The binary MUST NOT write to it.
+- The agent reads `.project.json` to report the score but never creates or modifies it.
+- If `.project.json` doesn't exist, no score is reported — do NOT create it.
+
 ### Schema Definitions (Drizzle)
 
 Use snake_case for field names so column names don't need to be redefined as strings.

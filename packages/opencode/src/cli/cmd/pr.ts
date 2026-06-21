@@ -52,7 +52,8 @@ export const PrCommand = effectCmd({
     let sessionId: string | undefined
 
     if (prInfoResult.code === 0 && prInfoResult.text.trim()) {
-      const prInfo = JSON.parse(prInfoResult.text)
+      let prInfo: any
+      try { prInfo = JSON.parse(prInfoResult.text) } catch { prInfo = undefined }
 
       if (prInfo?.isCrossRepository && prInfo.headRepository && prInfo.headRepositoryOwner) {
         const forkOwner = prInfo.headRepositoryOwner.login

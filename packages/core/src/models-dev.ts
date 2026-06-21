@@ -209,7 +209,12 @@ export const layer = Layer.effect(
           return yield* fetchAndWrite()
         }),
       )
-      return JSON.parse(text) as Record<string, Provider>
+      try {
+        return JSON.parse(text) as Record<string, Provider>
+      } catch (err) {
+        console.error("[models-dev] failed to parse fetched models:", err)
+        return {}
+      }
     }).pipe(Effect.withSpan("ModelsDev.populate"), Effect.orDie)
 
     const [cachedGet, invalidate] = yield* Effect.cachedInvalidateWithTTL(populate, Duration.infinity)

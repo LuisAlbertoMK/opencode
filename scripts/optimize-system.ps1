@@ -3,6 +3,20 @@
   [switch]$Revert
 )
 
+# Resolves power plan GUID by name as fallback (portable across locales)
+function Get-PowerPlanGuid {
+  param([string]$Name)
+  $plans = powercfg /LIST
+  foreach ($line in $plans) {
+    if ($line -match "GUID de plan de energía:\s+(\S+)\s+\($Name\)") { return $matches[1] }
+    if ($line -match "Power Scheme GUID:\s+(\S+)\s+\($Name\)") { return $matches[1] }
+  }
+  return $null
+}
+
+$GUID_HIGH_PERF = (Get-PowerPlanGuid "Alto rendimiento"), (Get-PowerPlanGuid "High performance"), "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" | Where-Object { $_ } | Select-Object -First 1
+$GUID_BALANCED  = (Get-PowerPlanGuid "Equilibrado"), (Get-PowerPlanGuid "Balanced"), "381b4222-f694-41f0-9685-ff5bb260df2e" | Where-Object { $_ } | Select-Object -First 1
+
 if (-not $Apply -and -not $Revert) {
   Write-Output "Uso: .\scripts\optimize-system.ps1 -Apply | -Revert"
   Write-Output ""
@@ -35,12 +49,16 @@ if ($Apply) {
     try { $p2.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::High; Write-Output "✅ opencode (session) → High priority" } catch { Write-Output "⚠️ No se pudo cambiar prioridad opencode: $_" }
   }
 
-  # 3. High performance power plan
-  try {
-    powercfg /SETACTIVE "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" | Out-Null
-    Write-Output "✅ Power plan → High Performance"
-  } catch {
-    Write-Output "⚠️ No se pudo cambiar power plan (admin required)"
+  # 3. High performance power plan (resolved by name for portability)
+  if ($GUID_HIGH_PERF) {
+    try {
+      powercfg /SETACTIVE $GUID_HIGH_PERF | Out-Null
+      Write-Output "✅ Power plan → High Performance ($GUID_HIGH_PERF)"
+    } catch {
+      Write-Output "⚠️ No se pudo cambiar power plan (admin required)"
+    }
+  } else {
+    Write-Output "⚠️ No se encontró plan High Performance en el sistema"
   }
 
   # 4. CPU min/max 100%
@@ -72,10 +90,14 @@ if ($Revert) {
   if ($p) { $p.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::Normal; Write-Output "✅ opencode-vMK → Normal priority" }
   $p2 = Get-Process -Name "opencode" -ErrorAction SilentlyContinue
   if ($p2) { $p2.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::Normal }
-  try {
-    powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e" | Out-Null
-    Write-Output "✅ Power plan → Balanced"
-  } catch { Write-Output "⚠️ No se pudo revertir power plan" }
+  if ($GUID_BALANCED) {
+    try {
+      powercfg /SETACTIVE $GUID_BALANCED | Out-Null
+      Write-Output "✅ Power plan → Balanced ($GUID_BALANCED)"
+    } catch { Write-Output "⚠️ No se pudo revertir power plan" }
+  } else {
+    Write-Output "⚠️ No se encontró plan Balanced en el sistema"
+  }
   try {
     Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" -Name "VisualFXSetting" -Value 1 -ErrorAction SilentlyContinue
   } catch { Write-Output "⚠️ No se pudo revertir efectos visuales" }

@@ -53,7 +53,9 @@ export function isNewCommand(input: string): boolean {
 }
 
 export function createPromptHistory(items?: RunPrompt[]): PromptHistoryState {
-  const list = (items ?? []).filter((item) => item.text.trim().length > 0).map(promptCopy)
+  const arr = items ?? []
+  const list: ReturnType<typeof promptCopy>[] = []
+  for (const item of arr) { if (item.text.trim().length > 0) list.push(promptCopy(item)) }
   const next: RunPrompt[] = []
   for (const item of list) {
     if (next.length > 0 && promptSame(next[next.length - 1], item)) {

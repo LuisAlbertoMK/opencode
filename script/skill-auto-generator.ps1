@@ -16,7 +16,7 @@
 #>
 
 param(
-  [string]$BitacoraPath = "D:\opencode\BITACORA.md",
+  [string]$BitacoraPath = (Join-Path (Split-Path $PSScriptRoot -Parent) "BITACORA.md"),
   [string]$OutputDir = "$env:USERPROFILE\.config\opencode\skills",
   [int]$MinFrequency = 2,
   [switch]$DryRun

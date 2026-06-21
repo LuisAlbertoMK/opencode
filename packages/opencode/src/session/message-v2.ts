@@ -84,7 +84,11 @@ export const cursor = {
     return Buffer.from(JSON.stringify(input)).toString("base64url")
   },
   decode(input: string) {
-    return decodeCursor(JSON.parse(Buffer.from(input, "base64url").toString("utf8")))
+    try {
+      return decodeCursor(JSON.parse(Buffer.from(input, "base64url").toString("utf8")))
+    } catch {
+      return undefined as never
+    }
   },
 }
 

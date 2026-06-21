@@ -47,7 +47,8 @@ export async function readText(p: string): Promise<string> {
 }
 
 export async function readJson<T = unknown>(p: string): Promise<T> {
-  return JSON.parse(await readFile(p, "utf-8"))
+  const text = await readFile(p, "utf-8")
+  try { return JSON.parse(text) as T } catch { throw new SyntaxError(`Invalid JSON in ${p}`) }
 }
 
 export async function readBytes(p: string): Promise<Buffer> {

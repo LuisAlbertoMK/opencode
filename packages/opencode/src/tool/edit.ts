@@ -251,8 +251,8 @@ function levenshtein(a: string, b: string): number {
   // Ensure b is the shorter string to minimize memory
   if (a.length < b.length)[a, b] = [b, a]
   const m = b.length
-  let prev = new Array(m + 1)
-  let curr = new Array(m + 1)
+  let prev: number[] = Array.from({ length: m + 1 }, () => 0)
+  let curr: number[] = Array.from({ length: m + 1 }, () => 0)
   for (let i = 0; i <= m; i++) prev[i] = i
   for (let i = 1; i <= a.length; i++) {
     curr[0] = i

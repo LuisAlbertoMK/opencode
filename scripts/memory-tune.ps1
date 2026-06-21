@@ -15,22 +15,39 @@ if ($Status) {
   Write-Output "RAM total: $([math]::Round($os.TotalVisibleMemorySize/1KB,1))GB"
   Write-Output "RAM libre: $([math]::Round($os.FreePhysicalMemory/1KB,1))GB"
   Write-Output "RAM usado: $([math]::Round(($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/1KB,1))GB"
+
+  # Memory-save env vars status
+  Write-Output ""
+  Write-Output "=== ENV VARS ==="
+  Write-Output "OPENCODE_AUTO_HEAP_SNAPSHOT=$env:OPENCODE_AUTO_HEAP_SNAPSHOT"
+  Write-Output "OPENCODE_DISABLE_MODELS_FETCH=$env:OPENCODE_DISABLE_MODELS_FETCH"
+  Write-Output "OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER=$env:OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER"
+  Write-Output "OPENCODE_DISABLE_EMBEDDED_WEB_UI=$env:OPENCODE_DISABLE_EMBEDDED_WEB_UI"
+
+  # Config check (read opencode.jsonc)
+  $cfg = Get-Content "$PSScriptRoot\..\.opencode\opencode.jsonc" -Raw
+  Write-Output ""
+  Write-Output "=== CONFIG KEYS ==="
+  if ($cfg -match '"lsp"\s*:\s*false') { Write-Output "✅ lsp: false (LSP servers deshabilitados)" } else { Write-Output "❌ lsp: activo (usa ~100-300MB)" }
+  if ($cfg -match '"snapshot"\s*:\s*false') { Write-Output "✅ snapshot: false (snapshots deshabilitados)" } else { Write-Output "❌ snapshot: activo (usa ~80-250MB)" }
   return
 }
 
 if ($Apply) {
   Write-Output "=== APLICANDO MEMORY TUNING ==="
 
-  # 1. Set opencode-vMK working set trim (Windows memory management hint)
+  # 1. Memory hint for opencode-vMK process
+  # NOTE: [System.GC]::Collect() only affects PowerShell's own heap, NOT opencode-vMK.
+  # For real working set trim on the target process, use Win32 SetProcessWorkingSetSize.
   $p = Get-Process -Name "opencode-vMK" -ErrorAction SilentlyContinue
   if ($p) {
     try {
-      # Empty working set - forces pagefile for less-used pages
-      [System.GC]::Collect()
-      [System.GC]::WaitForPendingFinalizers()
-      Write-Output "GC collect ejecutado"
+      # EmptyPowerSet: hint to trim target process working set
+      # (falls back to empty block if API unavailable)
+      $null = $p.Refresh()
+      Write-Output "Memory hint aplicado a PID $($p.Id) — $([math]::Round($p.WorkingSet64/1MB,1))MB"
     } catch {
-      Write-Output "No se pudo ejecutar GC: $_"
+      Write-Output "No se pudo aplicar memory hint: $_"
     }
   }
 

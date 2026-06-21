@@ -121,7 +121,7 @@ function isShellSyntheticAssistant(message: SessionMessages[number], shellParent
 }
 
 function summaryMessageIDs(messages: SessionMessages): ReadonlySet<string> {
-  const shellParents = new Set(messages.filter(isShellSyntheticUser).map((message) => message.info.id))
+  const shellParents = new Set(messages.reduce<string[]>((acc, m) => { if (isShellSyntheticUser(m)) acc.push(m.info.id); return acc }, []))
   const parents = new Set<string>()
   const summaries = new Set<string>()
 

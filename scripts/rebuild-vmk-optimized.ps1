@@ -6,7 +6,7 @@ param(
   [string]$Channel = "vMK-dev"
 )
 
-$scriptDir = "D:\opencode\packages\opencode\script"
+$scriptDir = Join-Path (Split-Path $PSScriptRoot -Parent) "packages\opencode\script"
 
 Write-Output "=== REBUILD OPENCODE-VMK OPTIMIZADO ==="
 Write-Output "Target: vMK fork binary"
@@ -38,9 +38,15 @@ if ($NoWebUi) {
   Write-Output "  Accion: bun run build -- --skip-embed-web-ui"
 }
 
-$currentSize = (Get-Item "D:\opencode\packages\opencode\dist\opencode-windows-x64\bin\opencode-vMK.exe" -ErrorAction SilentlyContinue).Length
+$binaryPath = Join-Path (Split-Path $PSScriptRoot -Parent) "packages\opencode\dist\opencode-windows-x64\bin\opencode-vMK.exe"
+$currentItem = Get-Item $binaryPath -ErrorAction SilentlyContinue
+$currentSize = if ($currentItem) { $currentItem.Length } else { $null }
 Write-Output ""
-Write-Output "Tamano actual: $([math]::Round($currentSize/1MB,1))MB"
+if ($currentSize) {
+  Write-Output "Tamano actual: $([math]::Round($currentSize/1MB,1))MB"
+} else {
+  Write-Output "Tamano actual: NO ENCONTRADO (ejecutar build primero)"
+}
 
 $env:OPENCODE_CHANNEL = $Channel
 

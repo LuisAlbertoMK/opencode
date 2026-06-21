@@ -239,7 +239,11 @@ export async function get(
 
   return {
     models: result,
-    pickerEnabled: new Set([...remote].filter(([, item]) => item.model_picker_enabled).map(([id]) => id)),
+    pickerEnabled: (() => {
+      const ids: string[] = []
+      for (const [id, item] of remote) { if (item.model_picker_enabled) ids.push(id) }
+      return new Set(ids)
+    })(),
   }
 }
 
