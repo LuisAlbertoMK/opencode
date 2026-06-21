@@ -19,10 +19,9 @@ A partir de AGENTS.md v2.6, toda mejora de rendimiento requiere **baseline medib
 
 **Target por ciclo**: ≥10% reducción en al menos una dimensión de recursos (RAM, CPU, VRAM). **Target acumulado**: 50%.
 
-### Baseline files
-Cada ciclo genera un archivo `docs/metricas/baseline-{cycle-name}.md` con raw numbers, para comparación exacta entre rondas.
-
 ---
+
+Historical session metrics — for full history see git log or BITACORA.md
 
 
 

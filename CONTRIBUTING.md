@@ -1,5 +1,7 @@
 # Contributing to OpenCode
 
+> **vMK fork note**: This is a personal fork of [opencode](https://github.com/anomalyco/opencode). The upstream contributing guide is preserved below for reference — most processes (vouch system, issue templates, maintainer policies) apply to the upstream repo only. For this fork, open an issue or PR directly on the vMK repo.
+
 We want to make it easy for you to contribute to OpenCode. Here are the most common type of changes that get merged:
 
 - Bug fixes
