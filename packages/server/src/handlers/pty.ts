@@ -172,7 +172,9 @@ export const PtyHandler = HttpApiBuilder.group(Api, "server.pty", (handlers) =>
           // Outbound frames flow through one queue drained by a single writer so replay, live
           // output, and the close frame keep their order.
           // TODO: Integrate graceful-shutdown socket tracking before clients migrate to this route.
-          const outbox = yield* Queue.unbounded<string | Uint8Array | Socket.CloseEvent>()
+          // ponytail: sliding(1024) prevents slow WebSocket consumer from leaking memory.
+          // PTY output is real-time — stale frames can be dropped safely.
+          const outbox = yield* Queue.bounded<string | Uint8Array | Socket.CloseEvent>(1024)
           const attachment = yield* pty
             .attach(ctx.params.ptyID, {
               cursor,

@@ -455,7 +455,17 @@ function createLayer(input: StreamInput) {
         let replaying = false
         let replayDisabled = false
         let replayPending: SessionResizeReplayInput | undefined
+        // ponytail: 10K cap on buffered events prevents unbounded growth from
+        // untracked session events (e.g. booting, inactive tabs). Oldest dropped first.
+        // ponytail: 10K cap prevents unbounded growth from untracked session events.
+        const MAX_BUFFERED = 10_000
         const buffered: Event[] = []
+        const pushBuffered = (event: Event) => {
+          if (buffered.length >= MAX_BUFFERED) {
+            buffered.shift() // drop oldest
+          }
+          buffered.push(event)
+        }
         const replayedParts = new Set<string>()
         const recovering = new Set<string>()
         const tracked = (sessionID: string | undefined) =>
@@ -954,7 +964,8 @@ function createLayer(input: StreamInput) {
 
         const drainBuffered = Effect.fn("RunStreamTransport.drainBuffered")(function* () {
           let pending = buffered.splice(0)
-          while (pending.length > 0) {
+          let retries = 0
+          while (pending.length > 0 && retries < 5) {
             const next: Event[] = []
             let changed = false
             for (const event of pending) {
@@ -969,11 +980,16 @@ function createLayer(input: StreamInput) {
 
             const arrived = buffered.splice(0)
             if (!changed && arrived.length === 0) {
+              // Untracked events: retry up to 5 times, then drop to prevent O(n) re-buffering
+              retries++
+              if (retries >= 5) return
               buffered.push(...next)
               return
             }
 
-            pending = [...next, ...arrived]
+            retries = 0
+            pending.length = 0
+            pending.push(...next, ...arrived)
           }
         })
 
@@ -1155,7 +1171,7 @@ function createLayer(input: StreamInput) {
                 if (booting || replaying) {
                   if (sessionID) {
                     input.trace?.write("recv.event", event)
-                    buffered.push(event)
+                    pushBuffered(event)
                   }
                   return
                 }
@@ -1163,7 +1179,7 @@ function createLayer(input: StreamInput) {
                 if (!tracked(sessionID)) {
                   if (sessionID) {
                     input.trace?.write("recv.event", event)
-                    buffered.push(event)
+                    pushBuffered(event)
                   }
                   return
                 }

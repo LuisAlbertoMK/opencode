@@ -69,9 +69,25 @@ export const make = (
         db.exec("PRAGMA journal_mode = WAL;")
       }
 
+      // ponytail: Simple LRU cache (64 entries) avoids re-compiling hot queries.
+      const stmtCache = new Map<string, ReturnType<DatabaseSync["prepare"]>>()
+      const MAX_CACHED = 64
+      const getCachedStmt = (sql: string) => {
+        let stmt = stmtCache.get(sql)
+        if (!stmt) {
+          stmt = db.prepare(sql)
+          if (stmtCache.size >= MAX_CACHED) {
+            const first = stmtCache.keys().next().value
+            stmtCache.delete(first!)
+          }
+          stmtCache.set(sql, stmt)
+        }
+        return stmt
+      }
+
       const run = (sql: string, params: ReadonlyArray<unknown> = []) =>
         Effect.withFiber<Array<Record<string, unknown>>, SqlError>((fiber) => {
-          const statement = db.prepare(sql)
+          const statement = getCachedStmt(sql)
           statement.setReadBigInts(Context.get(fiber.context, Client.SafeIntegers))
           try {
             return Effect.succeed(statement.all(...(params as SQLInputValue[])) as Array<Record<string, unknown>>)
@@ -86,7 +102,7 @@ export const make = (
 
       const runValues = (sql: string, params: ReadonlyArray<unknown> = []) =>
         Effect.withFiber<ReadonlyArray<ReadonlyArray<unknown>>, SqlError>((fiber) => {
-          const statement = db.prepare(sql)
+          const statement = getCachedStmt(sql)
           statement.setReadBigInts(Context.get(fiber.context, Client.SafeIntegers))
           statement.setReturnArrays(true)
           try {

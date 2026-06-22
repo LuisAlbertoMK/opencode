@@ -400,28 +400,42 @@ export const layer = Layer.effect(
     )
     const cfgSvc = yield* Config.Service
 
-    const descendants = Effect.fnUntraced(
+    const killProcessTree = Effect.fnUntraced(
       function* (pid: number) {
-        if (Platform.isWindows) return [] as number[]
-        const pids: number[] = []
-        const queue = [pid]
-        for (let index = 0; index < queue.length; index++) {
-          const current = queue[index]
-          const handle = yield* spawner.spawn(ChildProcess.make("pgrep", ["-P", String(current)], { stdin: "ignore" }))
-          const text = yield* Stream.mkString(Stream.decodeText(handle.stdout))
-          yield* handle.exitCode
-          for (const tok of text.split("\n")) {
-            const cpid = parseInt(tok, 10)
-            if (!isNaN(cpid) && !pids.includes(cpid)) {
-              pids.push(cpid)
-              queue.push(cpid)
+        if (Platform.isWindows) {
+          // Windows: taskkill /T kills the entire process tree
+          yield* Effect.promise(() =>
+            import("child_process").then(
+              (cp) => new Promise<void>((resolve) => cp.exec(`taskkill /T /F /PID ${pid}`, () => resolve())),
+            ),
+          ).pipe(Effect.ignore)
+        } else {
+          const pids: number[] = []
+          const queue = [pid]
+          for (let index = 0; index < queue.length; index++) {
+            const current = queue[index]
+            const handle = yield* spawner.spawn(
+              ChildProcess.make("pgrep", ["-P", String(current)], { stdin: "ignore" }),
+            )
+            const text = yield* Stream.mkString(Stream.decodeText(handle.stdout))
+            yield* handle.exitCode
+            for (const tok of text.split("\n")) {
+              const cpid = parseInt(tok, 10)
+              if (!isNaN(cpid) && !pids.includes(cpid)) {
+                pids.push(cpid)
+                queue.push(cpid)
+              }
             }
           }
+          for (const dpid of pids) {
+            try {
+              process.kill(dpid, "SIGTERM")
+            } catch {}
+          }
         }
-        return pids
       },
       Effect.scoped,
-      Effect.catch(() => Effect.succeed([] as number[])),
+      Effect.catch(() => Effect.void),
     )
 
     function watch(s: State, name: string, client: MCPClient, bridge: EffectBridge.Shape, timeout?: number) {
@@ -521,12 +535,7 @@ export const layer = Layer.effect(
                 Effect.gen(function* () {
                   const pid = client.transport instanceof StdioClientTransport ? client.transport.pid : null
                   if (typeof pid === "number") {
-                    const pids = yield* descendants(pid)
-                    for (const dpid of pids) {
-                      try {
-                        process.kill(dpid, "SIGTERM")
-                      } catch {}
-                    }
+                    yield* killProcessTree(pid)
                   }
                   yield* Effect.tryPromise(() => client.close()).pipe(Effect.ignore)
                 }),

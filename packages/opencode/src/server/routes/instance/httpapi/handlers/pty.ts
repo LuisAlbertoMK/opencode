@@ -222,7 +222,8 @@ export const ptyConnectHandlers = HttpApiBuilder.group(PtyConnectApi, "pty-conne
 
         // Outbound frames flow through one queue drained by a single writer so replay, live
         // output, and the close frame keep their order.
-        const outbox = yield* Queue.unbounded<string | Uint8Array | Socket.CloseEvent>()
+        // ponytail: sliding(1024) prevents slow consumer from leaking PTY output memory.
+        const outbox = yield* Queue.bounded<string | Uint8Array | Socket.CloseEvent>(1024)
         const attachment = yield* pty(
           Pty.Service.use((service) =>
             service.attach(ctx.params.ptyID, {

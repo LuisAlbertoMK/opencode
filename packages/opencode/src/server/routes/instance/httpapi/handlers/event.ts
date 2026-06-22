@@ -28,7 +28,9 @@ function eventResponse(events: EventV2.Interface) {
     const workspaceID = yield* InstanceState.workspaceID
     // Listener registration is eager, so events published after this point cannot
     // be lost while the HTTP body fiber is starting or emitting server.connected.
-    const queue = yield* Queue.unbounded<EventV2.Payload>()
+    // Bounded sliding queue prevents slow SSE consumers from leaking memory.
+    // When full, drops oldest events — SSE is real-time, stale events aren't valuable.
+    const queue = yield* Queue.bounded<EventV2.Payload>(1024)
     const unsubscribe = yield* events.listen((event) => Effect.sync(() => Queue.offerUnsafe(queue, event)))
     yield* Effect.addFinalizer(() => unsubscribe)
     const stream = Stream.fromQueue(queue).pipe(

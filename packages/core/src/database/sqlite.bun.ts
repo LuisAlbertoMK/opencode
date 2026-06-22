@@ -53,9 +53,26 @@ const make = (options: Config) =>
       ? Statement.defaultTransforms(options.transformResultNames).array
       : undefined
 
+    // ponytail: Simple LRU cache (64 entries) avoids re-compiling hot queries.
+    // Uses Map insertion order for eviction — fine for <1K distinct query patterns.
+    const stmtCache = new Map<string, ReturnType<Database["query"]>>()
+    const MAX_CACHED = 64
+    const getCachedStmt = (query: string) => {
+      let stmt = stmtCache.get(query)
+      if (!stmt) {
+        stmt = native.query(query)
+        if (stmtCache.size >= MAX_CACHED) {
+          const first = stmtCache.keys().next().value
+          stmtCache.delete(first!)
+        }
+        stmtCache.set(query, stmt)
+      }
+      return stmt
+    }
+
     const run = (query: string, params: ReadonlyArray<unknown> = []) =>
       Effect.withFiber<Array<Record<string, unknown>>, SqlError>((fiber) => {
-        const statement = native.query(query)
+        const statement = getCachedStmt(query)
         // @ts-expect-error bun-types missing safeIntegers method, fixed in https://github.com/oven-sh/bun/pull/26627
         statement.safeIntegers(Context.get(fiber.context, Client.SafeIntegers))
         try {
@@ -71,7 +88,7 @@ const make = (options: Config) =>
 
     const runValues = (query: string, params: ReadonlyArray<unknown> = []) =>
       Effect.withFiber<Array<unknown[]>, SqlError>((fiber) => {
-        const statement = native.query(query)
+        const statement = getCachedStmt(query)
         // @ts-expect-error bun-types missing safeIntegers method, fixed in https://github.com/oven-sh/bun/pull/26627
         statement.safeIntegers(Context.get(fiber.context, Client.SafeIntegers))
         try {

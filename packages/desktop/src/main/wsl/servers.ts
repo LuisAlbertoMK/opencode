@@ -376,7 +376,7 @@ export function createWslServersController(
 
     async removeServer(id: string) {
       const distro = state.servers.find((item) => item.config.id === id)?.config.distro
-      invalidateStartAttempt(id)
+      startAttempts.delete(id)
       await stopServerInternal(id)
       const remaining = readServers().filter((item) => item.id !== id)
       persistServers(remaining)

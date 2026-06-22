@@ -53,9 +53,25 @@ const make = (options: Config) =>
       ? Statement.defaultTransforms(options.transformResultNames).array
       : undefined
 
+    // ponytail: Simple LRU cache (64 entries) avoids re-compiling hot queries.
+    const stmtCache = new Map<string, ReturnType<DatabaseSync["prepare"]>>()
+    const MAX_CACHED = 64
+    const getCachedStmt = (query: string) => {
+      let stmt = stmtCache.get(query)
+      if (!stmt) {
+        stmt = native.prepare(query)
+        if (stmtCache.size >= MAX_CACHED) {
+          const first = stmtCache.keys().next().value
+          stmtCache.delete(first!)
+        }
+        stmtCache.set(query, stmt)
+      }
+      return stmt
+    }
+
     const run = (query: string, params: ReadonlyArray<unknown> = []) =>
       Effect.withFiber<Array<Record<string, unknown>>, SqlError>((fiber) => {
-        const statement = native.prepare(query)
+        const statement = getCachedStmt(query)
         statement.setReadBigInts(Context.get(fiber.context, Client.SafeIntegers))
         try {
           return Effect.succeed(statement.all(...(params as SQLInputValue[])) as Array<Record<string, unknown>>)
@@ -70,7 +86,7 @@ const make = (options: Config) =>
 
     const runValues = (query: string, params: ReadonlyArray<unknown> = []) =>
       Effect.withFiber<ReadonlyArray<ReadonlyArray<unknown>>, SqlError>((fiber) => {
-        const statement = native.prepare(query)
+        const statement = getCachedStmt(query)
         statement.setReadBigInts(Context.get(fiber.context, Client.SafeIntegers))
         statement.setReturnArrays(true)
         try {

@@ -104,7 +104,8 @@ export function stream(input: StreamInput): StreamResult {
     Stream.unwrap(
       Effect.gen(function* () {
         const settlements = yield* FiberSet.make<void>()
-        const results = yield* Queue.unbounded<LLMEvent, Cause.Done>()
+        // ponytail: bounded(4096) prevents unbounded LLM event accumulation under backpressure.
+        const results = yield* Queue.bounded<LLMEvent, Cause.Done<void>>(4096)
         const provider = input.llmClient
           .stream(
             LLMRequest.update(request, {

@@ -177,6 +177,13 @@ const main = Effect.gen(function* () {
   ensureLoopbackNoProxy()
   useEnvProxy()
   app.commandLine.appendSwitch("proxy-bypass-list", "<-loopback>")
+
+  // GPU/VRAM management: disable software rasterizer to prevent excessive GPU mem
+  // in containers/CI, and enable GPU-only rendering when available.
+  if (process.env.OPENCODE_DISABLE_GPU) {
+    app.disableHardwareAcceleration()
+  }
+
   const features = app.commandLine.getSwitchValue("enable-features")
   app.commandLine.appendSwitch("enable-features", features ? `${jsCallStackFeature},${features}` : jsCallStackFeature)
   if (!app.isPackaged) app.commandLine.appendSwitch("remote-debugging-port", "9222")

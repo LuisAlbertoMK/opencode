@@ -182,7 +182,8 @@ export const layerWith = (options?: LayerOptions) =>
   Layer.effect(
     Service,
     Effect.gen(function* () {
-      const all = yield* PubSub.unbounded<Payload>()
+      // ponytail: sliding(4096) cap on global event bus — prevents slow projector memory leak.
+      const all = yield* PubSub.sliding<Payload>(4096)
       const synchronized = new Map<string, Set<PubSub.PubSub<void>>>()
       const typed = new Map<string, PubSub.PubSub<Payload>>()
       const projectors = new Map<string, AnyProjector[]>()
@@ -195,7 +196,8 @@ export const layerWith = (options?: LayerOptions) =>
         Effect.gen(function* () {
           const existing = typed.get(definition.type)
           if (existing) return existing
-          const pubsub = yield* PubSub.unbounded<Payload>()
+          // ponytail: sliding(1024) per-type — prevents per-event-type memory leak.
+          const pubsub = yield* PubSub.sliding<Payload>(1024)
           typed.set(definition.type, pubsub)
           return pubsub
         })

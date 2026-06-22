@@ -148,12 +148,15 @@ export async function spawnLocalServer(
     })
 
     const ready = async () => {
+      let delay = 100
+      const maxDelay = 2000
       while (true) {
-        await new Promise((resolve) => setTimeout(resolve, 100))
+        await new Promise((resolve) => setTimeout(resolve, delay))
         if (await checkHealth(url, password)) {
           healthy = true
           return
         }
+        delay = Math.min(delay * 2, maxDelay)
       }
     }
 
