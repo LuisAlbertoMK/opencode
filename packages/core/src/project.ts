@@ -88,7 +88,7 @@ export const layer = Layer.effect(
         return parts(parsed.hostname, parsed.pathname)
       } catch {
         const scp = value.match(/^([^@/:]+@)?([^/:]+):(.+)$/)
-        if (scp) return parts(scp[2], scp[3])
+        if (scp) return parts(scp[2]!, scp[3]!)
         return undefined
       }
     }

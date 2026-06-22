@@ -177,7 +177,7 @@ export class SQLiteEffectDeleteBase<
     if (typeof columns[0] === "function") {
       const orderBy = columns[0](
         new Proxy(
-          getTableColumnsRuntime(this.config.table),
+          getTableColumnsRuntime(this.config.table)!,
           new SelectionProxyHandler({ sqlAliasedBehavior: "alias", sqlBehavior: "sql" }),
         ) as any,
       )
@@ -200,7 +200,7 @@ export class SQLiteEffectDeleteBase<
     fields: TSelectedFields,
   ): SQLiteEffectDeleteReturning<this, TDynamic, TSelectedFields>
   returning(
-    fields: SelectedFieldsFlat = getTableColumnsRuntime(this.table),
+    fields: SelectedFieldsFlat = getTableColumnsRuntime(this.table)!,
   ): SQLiteEffectDeleteReturning<this, TDynamic, any> | SQLiteEffectDeleteReturningAll<this, TDynamic> {
     this.config.returning = orderSelectedFields<SQLiteColumn>(fields)
     return this as any

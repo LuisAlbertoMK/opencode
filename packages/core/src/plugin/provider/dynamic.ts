@@ -24,7 +24,7 @@ export const DynamicProviderPlugin = PluginV2.define({
         const match = Object.keys(mod).find((name) => name.startsWith("create"))
         if (!match) throw new Error(`Package ${evt.package} has no provider factory export`)
 
-        evt.sdk = mod[match](evt.options)
+        evt.sdk = mod[match]!(evt.options)
       }),
     }
   }),

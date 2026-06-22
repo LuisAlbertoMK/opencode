@@ -18,7 +18,7 @@ function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms))
 }
 
-const msg: Msg = JSON.parse(process.argv[2])
+const msg: Msg = JSON.parse(process.argv[2] ?? "{}")
 
 const testGlobal = Global.layerWith({
   home: os.homedir(),

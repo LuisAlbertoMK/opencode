@@ -21,7 +21,7 @@ describe("pty protocol", () => {
     const big = "x".repeat(PtyProtocol.REPLAY_CHUNK + 1)
     const frames = PtyProtocol.chunks(big)
     expect(frames.length).toBe(2)
-    expect(frames[0].length).toBe(PtyProtocol.REPLAY_CHUNK)
+    expect(frames[0]!.length).toBe(PtyProtocol.REPLAY_CHUNK)
     expect(frames.join("")).toBe(big)
   })
 })

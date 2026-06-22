@@ -162,7 +162,7 @@ function renderStatements(sql: string) {
 
 function renderRun(statement: string) {
   const lines = statement.replaceAll("\t", "  ").split("\n")
-  if (lines.length === 1) return `      yield* tx.run(\`${escapeTemplate(lines[0])}\`)`
+  if (lines.length === 1) return `      yield* tx.run(\`${escapeTemplate(lines[0]!)}\`)`
   return `      yield* tx.run(\`\n${lines.map((line) => `        ${escapeTemplate(line)}`).join("\n")}\n      \`)`
 }
 

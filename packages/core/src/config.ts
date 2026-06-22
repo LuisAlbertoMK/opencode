@@ -120,7 +120,7 @@ export type Entry = Document | Directory
 
 export function latest<K extends keyof Info>(entries: readonly Entry[], key: K): Info[K] | undefined {
   for (let i = entries.length - 1; i >= 0; i--) {
-    const entry = entries[i]
+    const entry = entries[i]!
     if (entry.type === "document" && entry.info[key] !== undefined) return entry.info[key]
   }
 }

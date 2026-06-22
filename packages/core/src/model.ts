@@ -119,7 +119,7 @@ export class Info extends Schema.Class<Info>("ModelV2.Info")({
 export function parse(input: string): { providerID: ProviderV2.ID; modelID: ID } {
   const [providerID, ...modelID] = input.split("/")
   return {
-    providerID: ProviderV2.ID.make(providerID),
+    providerID: ProviderV2.ID.make(providerID!),
     modelID: ID.make(modelID.join("/")),
   }
 }

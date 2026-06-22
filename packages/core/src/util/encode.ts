@@ -2,7 +2,7 @@ export function base64Encode(value: string) {
   const bytes = new TextEncoder().encode(value)
   // Single-pass: avoid intermediate Array from + join
   let binary = ""
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!)
   return btoa(binary).replace(/[+/=]/g, (c) => (c === "+" ? "-" : c === "/" ? "_" : ""))
 }
 

@@ -726,7 +726,7 @@ const onReasoningSummaryPartAdded = (state: ParserState, event: OpenAIResponsesE
           summaryParts: (() => {
             const parts: Record<string, (typeof item.summaryParts)[number]> = {}
             for (const key of Object.keys(item.summaryParts)) {
-              const val = item.summaryParts[Number(key)]
+              const val = item.summaryParts[Number(key)]!
               parts[key] = val === "can-conclude" ? "concluded" as const : val
             }
             parts[event.summary_index] = "active"

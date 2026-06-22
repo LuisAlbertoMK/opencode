@@ -32,7 +32,7 @@ describe("SystemContext", () => {
         removed: () => "Date removed",
       })
 
-      expect((yield* SystemContext.initialize(context)).snapshot["core/date"].value).toBe("2026-06-03T12:00:00.000Z")
+      expect((yield* SystemContext.initialize(context)).snapshot["core/date"]!.value).toBe("2026-06-03T12:00:00.000Z")
     }),
   )
 

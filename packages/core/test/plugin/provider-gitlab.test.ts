@@ -64,15 +64,15 @@ describe("GitLabPlugin", () => {
             {},
           )
           expect(gitlabSDKOptions).toHaveLength(1)
-          expect(gitlabSDKOptions[0].instanceUrl).toBe("https://gitlab.com")
-          expect(gitlabSDKOptions[0].apiKey).toBe("env-token")
-          expect(gitlabSDKOptions[0].aiGatewayHeaders).toMatchObject({
+          expect(gitlabSDKOptions[0]!.instanceUrl).toBe("https://gitlab.com")
+          expect(gitlabSDKOptions[0]!.apiKey).toBe("env-token")
+          expect(gitlabSDKOptions[0]!.aiGatewayHeaders).toMatchObject({
             "anthropic-beta": "context-1m-2025-08-07",
           })
-          expect(String((gitlabSDKOptions[0].aiGatewayHeaders as Record<string, string>)["User-Agent"])).toContain(
+          expect(String((gitlabSDKOptions[0]!.aiGatewayHeaders as Record<string, string>)["User-Agent"])).toContain(
             "gitlab-ai-provider/test-version",
           )
-          expect(gitlabSDKOptions[0].featureFlags).toEqual({
+          expect(gitlabSDKOptions[0]!.featureFlags).toEqual({
             duo_agent_platform_agentic_chat: true,
             duo_agent_platform: true,
           })
@@ -96,7 +96,7 @@ describe("GitLabPlugin", () => {
             { model: model("gitlab", "claude"), package: "gitlab-ai-provider", options: { name: "gitlab" } },
             {},
           )
-          expect(gitlabSDKOptions[0].instanceUrl).toBe("https://env.gitlab.example")
+          expect(gitlabSDKOptions[0]!.instanceUrl).toBe("https://env.gitlab.example")
         }),
     ),
   )
@@ -133,13 +133,13 @@ describe("GitLabPlugin", () => {
             },
             {},
           )
-          expect(gitlabSDKOptions[0].instanceUrl).toBe("https://configured.gitlab.example")
-          expect(gitlabSDKOptions[0].apiKey).toBe("configured-token")
-          expect(gitlabSDKOptions[0].aiGatewayHeaders).toMatchObject({
+          expect(gitlabSDKOptions[0]!.instanceUrl).toBe("https://configured.gitlab.example")
+          expect(gitlabSDKOptions[0]!.apiKey).toBe("configured-token")
+          expect(gitlabSDKOptions[0]!.aiGatewayHeaders).toMatchObject({
             "anthropic-beta": "configured-beta",
             "x-gitlab-test": "1",
           })
-          expect(gitlabSDKOptions[0].featureFlags).toEqual({
+          expect(gitlabSDKOptions[0]!.featureFlags).toEqual({
             duo_agent_platform_agentic_chat: true,
             duo_agent_platform: false,
             custom_flag: true,
@@ -191,7 +191,7 @@ describe("GitLabPlugin", () => {
             },
             {},
           )
-          expect(gitlabSDKOptions[0].apiKey).toBe("account-token")
+          expect(gitlabSDKOptions[0]!.apiKey).toBe("account-token")
         }),
     ),
   )
@@ -230,7 +230,7 @@ describe("GitLabPlugin", () => {
             },
             {},
           )
-          expect(gitlabSDKOptions[0].apiKey).toBe("account-oauth-token")
+          expect(gitlabSDKOptions[0]!.apiKey).toBe("account-oauth-token")
         }),
     ),
   )

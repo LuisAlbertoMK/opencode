@@ -1441,10 +1441,10 @@ describe("SessionRunnerLLM", () => {
       yield* session.resume(sessionID)
 
       expect(requests).toHaveLength(2)
-      expect(userTexts(requests[0])[0]).toContain("## Goal")
-      expect(userTexts(requests[1])).toHaveLength(1)
-      expect(userTexts(requests[1])[0]).toContain("<summary>\n## Goal\n- Preserve the task\n</summary>")
-      expect(userTexts(requests[1])[0]).toContain(`[User]: ${"Recent exact request ".repeat(180)}`)
+      expect(userTexts(requests[0]!)[0]).toContain("## Goal")
+      expect(userTexts(requests[1]!)).toHaveLength(1)
+      expect(userTexts(requests[1]!)[0]).toContain("<summary>\n## Goal\n- Preserve the task\n</summary>")
+      expect(userTexts(requests[1]!)[0]).toContain(`[User]: ${"Recent exact request ".repeat(180)}`)
 
       const context = yield* (yield* SessionStore.Service).context(sessionID)
       expect(context.map((message) => message.type)).toEqual(["compaction", "assistant"])
@@ -1466,10 +1466,10 @@ describe("SessionRunnerLLM", () => {
       yield* session.resume(sessionID)
 
       expect(requests).toHaveLength(2)
-      expect(userTexts(requests[0])[0]).toContain(
+      expect(userTexts(requests[0]!)[0]).toContain(
         "<previous-summary>\n## Goal\n- Preserve the task\n</previous-summary>",
       )
-      expect(userTexts(requests[0])[0]).toContain("Recent exact request")
+      expect(userTexts(requests[0]!)[0]).toContain("Recent exact request")
       expect((yield* (yield* SessionStore.Service).context(sessionID))[0]).toMatchObject({
         type: "compaction",
         summary: "## Goal\n- Preserve the updated task",
@@ -1492,8 +1492,8 @@ describe("SessionRunnerLLM", () => {
       yield* session.resume(sessionID)
 
       expect(requests).toHaveLength(3)
-      expect(userTexts(requests[1])[0]).toContain("## Goal")
-      expect(userTexts(requests[2])[0]).toContain("<summary>\n## Goal\n- Recover overflow\n</summary>")
+      expect(userTexts(requests[1]!)[0]).toContain("## Goal")
+      expect(userTexts(requests[2]!)[0]).toContain("<summary>\n## Goal\n- Recover overflow\n</summary>")
       expect(yield* session.context(sessionID)).toMatchObject([
         { type: "compaction", summary: "## Goal\n- Recover overflow" },
         { type: "assistant", finish: "stop" },

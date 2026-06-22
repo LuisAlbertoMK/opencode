@@ -95,8 +95,8 @@ describe("SkillDiscovery.pull", () => {
       expect(result.requests.toSorted()).toEqual(
         [`${base}index.json`, `${base}deploy/SKILL.md`, `${base}deploy/references/guide.md`].toSorted(),
       )
-      expect(await fs.readFile(path.join(result.directories[0], "SKILL.md"), "utf8")).toBe("# Deploy")
-      expect(await fs.readFile(path.join(result.directories[0], "references", "guide.md"), "utf8")).toBe("# Guide")
+      expect(await fs.readFile(path.join(result.directories[0]!, "SKILL.md"), "utf8")).toBe("# Deploy")
+      expect(await fs.readFile(path.join(result.directories[0]!, "references", "guide.md"), "utf8")).toBe("# Guide")
     } finally {
       await result.tmp[Symbol.asyncDispose]()
     }

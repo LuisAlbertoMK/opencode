@@ -10,7 +10,7 @@ const headers = Flag.OTEL_EXPORTER_OTLP_HEADERS
   ? Flag.OTEL_EXPORTER_OTLP_HEADERS.split(",").reduce(
       (acc, entry) => {
         const [key, ...value] = entry.split("=")
-        acc[key] = value.join("=")
+        acc[key!] = value.join("=")
         return acc
       },
       {} as Record<string, string>,

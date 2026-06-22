@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "noUncheckedIndexedAccess": false,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "plugins": [
       {
         "name": "@effect/language-service",

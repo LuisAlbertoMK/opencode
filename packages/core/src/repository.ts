@@ -59,14 +59,14 @@ export function parse(input: string): Reference | undefined {
   if (!cleaned) return
 
   const githubPrefixed = cleaned.match(/^github:([^/\s]+)\/([^/\s]+)$/)
-  if (githubPrefixed) return buildRemote({ host: "github.com", segments: [githubPrefixed[1], githubPrefixed[2]] })
+  if (githubPrefixed) return buildRemote({ host: "github.com", segments: [githubPrefixed[1]!, githubPrefixed[2]!] })
 
   if (!cleaned.includes("://")) {
     const scp = cleaned.match(/^(?:[^@/\s]+@)?([^:/\s]+):(.+)$/)
-    if (scp) return buildRemote({ host: scp[1], segments: parts(scp[2]), remote: cleaned })
+    if (scp) return buildRemote({ host: scp[1]!, segments: parts(scp[2]!), remote: cleaned })
 
     const direct = parts(cleaned)
-    if (direct.length >= 2 && hostLike(direct[0])) return buildRemote({ host: direct[0], segments: direct.slice(1) })
+    if (direct.length >= 2 && hostLike(direct[0]!)) return buildRemote({ host: direct[0]!, segments: direct.slice(1) })
     if (direct.length === 2) return buildRemote({ host: "github.com", segments: direct })
   }
 
@@ -181,7 +181,7 @@ function buildRemote(input: { host: string; segments: string[]; remote?: string;
     path: repositoryPath,
     segments,
     owner: segments.length === 2 ? segments[0] : undefined,
-    repo: segments[segments.length - 1],
+    repo: segments[segments.length - 1]!,
     remote:
       input.remote ?? (host === "github.com" ? githubRemote(repositoryPath) : `https://${host}/${repositoryPath}.git`),
     label: host === "github.com" && segments.length === 2 ? repositoryPath : `${host}/${repositoryPath}`,
@@ -198,7 +198,7 @@ function buildFile(input: { url: URL; remote: string }) {
     path: filePath,
     segments: segments.map((segment) => segment.replace(/:$/, "")),
     owner: undefined,
-    repo: trimGitSuffix(segments[segments.length - 1]),
+    repo: trimGitSuffix(segments[segments.length - 1]!),
     remote: input.remote,
     label: filePath,
     protocol: "file:",

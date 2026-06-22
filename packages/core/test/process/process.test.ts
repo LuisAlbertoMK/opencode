@@ -268,7 +268,7 @@ describe("AppProcess", () => {
         const result = yield* svc.run(command, { stdin: "ok" })
         expect(result.exitCode).toBe(0)
         const [cwd, stdin] = result.stdout.toString("utf8").split("|")
-        expect(realpathSync(cwd)).toBe(dir)
+        expect(realpathSync(cwd!)).toBe(dir)
         expect(stdin).toBe("ok")
       }),
     )

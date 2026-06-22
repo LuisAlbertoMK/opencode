@@ -27,7 +27,7 @@ export function memory(state: MemoryState): Adapter {
     shellIndex.clear()
     latestAssistantIdx = -1
     for (let i = 0; i < state.messages.length; i++) {
-      const msg = state.messages[i]
+      const msg = state.messages[i]!
       messageIndex.set(msg.id, i)
       if (msg.type === "shell") shellIndex.set(msg.callID, i)
       if (msg.type === "assistant") latestAssistantIdx = i
@@ -240,7 +240,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.text.delta": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const item = draft.content[i]
+            const item = draft.content[i]!
             if (item.type === "text" && item.id === event.data.textID) { item.text += event.data.delta; break }
           }
         })
@@ -248,7 +248,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.text.ended": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const item = draft.content[i]
+            const item = draft.content[i]!
             if (item.type === "text" && item.id === event.data.textID) { item.text = event.data.text; break }
           }
         })
@@ -272,7 +272,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.tool.input.ended": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const item = draft.content[i]
+            const item = draft.content[i]!
             if (item.type === "tool" && item.id === event.data.callID && item.state.status === "pending") {
               item.state.input = event.data.text; break
             }
@@ -282,7 +282,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.tool.called": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const match = draft.content[i]
+            const match = draft.content[i]!
             if (match.type !== "tool" || match.id !== event.data.callID) continue
             match.provider = event.data.provider
             match.time.ran = event.data.timestamp
@@ -301,7 +301,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.tool.progress": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const match = draft.content[i]
+            const match = draft.content[i]!
             if (match.type === "tool" && match.id === event.data.callID && match.state.status === "running") {
               match.state.structured = event.data.structured
               match.state.content = [...event.data.content]
@@ -313,7 +313,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.tool.success": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const match = draft.content[i]
+            const match = draft.content[i]!
             if (match.type !== "tool" || match.id !== event.data.callID || match.state.status !== "running") continue
             match.provider = {
               executed: event.data.provider.executed || match.provider?.executed === true,
@@ -338,7 +338,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.tool.failed": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const match = draft.content[i]
+            const match = draft.content[i]!
             if (
               match.type !== "tool" || match.id !== event.data.callID ||
               (match.state.status !== "pending" && match.state.status !== "running")
@@ -380,7 +380,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.reasoning.delta": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const item = draft.content[i]
+            const item = draft.content[i]!
             if (item.type === "reasoning" && item.id === event.data.reasoningID) { item.text += event.data.delta; break }
           }
         })
@@ -388,7 +388,7 @@ export function update(adapter: Adapter, event: SessionEvent.Event) {
       "session.next.reasoning.ended": (event) => {
         return updateOwnedAssistant(event.data.assistantMessageID, (draft) => {
           for (let i = draft.content.length - 1; i >= 0; i--) {
-            const item = draft.content[i]
+            const item = draft.content[i]!
             if (item.type !== "reasoning" || item.id !== event.data.reasoningID) continue
             item.text = event.data.text
             if (event.data.providerMetadata !== undefined) item.providerMetadata = event.data.providerMetadata

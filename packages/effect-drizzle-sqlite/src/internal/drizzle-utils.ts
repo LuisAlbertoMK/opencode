@@ -19,11 +19,11 @@ const TableSymbol = (
 ).Symbol
 
 export function getTableColumnsRuntime(table: SQLiteTable) {
-  return (table as unknown as Record<symbol, Record<string, Column>>)[TableSymbol.Columns]
+  return (table as unknown as Record<symbol, Record<string, Column>>)[TableSymbol.Columns]!
 }
 
 export function getViewSelectedFieldsRuntime(view: SQLiteViewBase) {
-  return (view as unknown as Record<symbol, { selectedFields: Record<string, unknown>; name: string }>)[ViewBaseConfig]
+  return (view as unknown as Record<symbol, { selectedFields: Record<string, unknown>; name: string }>)[ViewBaseConfig]!
 }
 
 export function jitCompatCheck(isEnabled: boolean | undefined) {
@@ -56,7 +56,7 @@ export function mapUpdateSet<TTable extends SQLiteTable>(table: TTable, values: 
   return Object.fromEntries(
     entries.map(([key, value]) => [
       key,
-      is(value, SQL) || is(value, Column) ? value : new Param(value, getTableColumnsRuntime(table)[key]),
+      is(value, SQL) || is(value, Column) ? value : new Param(value, getTableColumnsRuntime(table)![key]),
     ]),
   ) as UpdateSet
 }
@@ -115,7 +115,7 @@ export function mapResultRow(
 
 export function getTableLikeName(table: SQLiteTable | Subquery | SQLiteViewBase | SQL) {
   if (is(table, Subquery)) return table._.alias
-  if (is(table, SQLiteViewBase)) return getViewSelectedFieldsRuntime(table).name
+  if (is(table, SQLiteViewBase)) return getViewSelectedFieldsRuntime(table)!.name
   if (is(table, SQL)) return undefined
   return (table as unknown as Record<symbol, string | boolean>)[
     (table as unknown as Record<symbol, string | boolean>)[TableSymbol.IsAlias]

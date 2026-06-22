@@ -208,7 +208,7 @@ export const layer = Layer.effect(
         if (Option.isSome(pkgJson)) {
           const parsed = pkgJson.value as { bin?: string | Record<string, string> }
           if (parsed?.bin) {
-            const unscoped = pkg.startsWith("@") ? pkg.split("/")[1] : pkg
+            const unscoped = pkg.startsWith("@") ? pkg.split("/")[1]! : pkg
             const parsedBin = parsed.bin
             if (typeof parsedBin === "string") return Option.some(unscoped)
             const keys = Object.keys(parsedBin)
@@ -223,7 +223,7 @@ export const layer = Layer.effect(
       return yield* Effect.gen(function* () {
         const bin = yield* pick()
         if (Option.isSome(bin)) {
-          return Option.some(path.join(binDir, bin.value))
+          return Option.some(path.join(binDir, bin.value!))
         }
 
         yield* fs.remove(path.join(dir, "package-lock.json")).pipe(Effect.orElseSucceed(() => {}))
@@ -232,7 +232,7 @@ export const layer = Layer.effect(
 
         const resolved = yield* pick()
         if (Option.isNone(resolved)) return Option.none<string>()
-        return Option.some(path.join(binDir, resolved.value))
+        return Option.some(path.join(binDir, resolved.value!))
       }).pipe(
         Effect.scoped,
         Effect.orElseSucceed(() => Option.none<string>()),

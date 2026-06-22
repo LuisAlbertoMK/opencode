@@ -139,8 +139,8 @@ describe("GoogleVertexPlugin", () => {
             package: "@ai-sdk/openai-compatible",
             url: "https://europe-west4-aiplatform.googleapis.com/v1/projects/vertex-project/locations/europe-west4",
           })
-          expect(vertexOptions[0].project).toBe("vertex-project")
-          expect(vertexOptions[0].location).toBe("europe-west4")
+          expect(vertexOptions[0]!.project).toBe("vertex-project")
+          expect(vertexOptions[0]!.location).toBe("europe-west4")
         }),
     ),
   )
@@ -262,9 +262,9 @@ describe("GoogleVertexPlugin", () => {
             {},
           )
           expect(vertexOptions).toHaveLength(1)
-          expect(vertexOptions[0].project).toBe("env-project")
-          expect(vertexOptions[0].location).toBe("env-location")
-          expect(vertexOptions[0].fetch).toBeUndefined()
+          expect(vertexOptions[0]!.project).toBe("env-project")
+          expect(vertexOptions[0]!.location).toBe("env-location")
+          expect(vertexOptions[0]!.fetch).toBeUndefined()
         }),
     ),
   )
@@ -318,9 +318,9 @@ describe("GoogleVertexPlugin", () => {
       )
       expect(fetchCalls).toHaveLength(1)
       expect(googleAuthOptions).toEqual([{ scopes: ["https://www.googleapis.com/auth/cloud-platform"] }])
-      expect(fetchCalls[0].input).toBe("https://vertex.example")
-      expect(new Headers(fetchCalls[0].init?.headers).get("authorization")).toBe("Bearer vertex-token")
-      expect(new Headers(fetchCalls[0].init?.headers).get("x-test")).toBe("1")
+      expect(fetchCalls[0]!.input).toBe("https://vertex.example")
+      expect(new Headers(fetchCalls[0]!.init?.headers).get("authorization")).toBe("Bearer vertex-token")
+      expect(new Headers(fetchCalls[0]!.init?.headers).get("x-test")).toBe("1")
     }),
   )
 

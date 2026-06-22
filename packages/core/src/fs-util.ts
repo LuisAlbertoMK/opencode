@@ -220,7 +220,7 @@ export namespace FSUtil {
     if (p === "*") return p
     const match = p.match(/^(.*)[\\/]\*$/)
     if (!match) return normalizePath(p)
-    const dir = /^[A-Za-z]:$/.test(match[1]) ? match[1] + "\\" : match[1]
+    const dir = /^[A-Za-z]:$/.test(match[1]!) ? match[1]! + "\\" : match[1]!
     return join(normalizePath(dir), "*")
   }
 

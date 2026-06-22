@@ -100,7 +100,7 @@ export class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()("Per
 export type Error = DeniedError | RejectedError | CorrectedError
 
 export function evaluate(action: string, resource: string, ...rulesets: Ruleset[]): Rule {
-  const all = rulesets.length === 1 ? rulesets[0] : rulesets.flat()
+  const all = rulesets.length === 1 ? rulesets[0]! : rulesets.flat()
   let result: Rule | undefined
   for (let i = all.length - 1; i >= 0; i--) {
     if (Wildcard.match(action, all[i]!.action) && Wildcard.match(resource, all[i]!.resource)) {

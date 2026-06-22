@@ -270,11 +270,11 @@ export class SQLiteEffectUpdateBase<
       if (typeof on === "function") {
         const from = this.config.from
           ? is(table, SQLiteTable)
-            ? getTableColumnsRuntime(table)
+            ? getTableColumnsRuntime(table)!
             : is(table, Subquery)
               ? table._.selectedFields
               : is(table, SQLiteViewBase)
-                ? getViewSelectedFieldsRuntime(table).selectedFields
+                ? getViewSelectedFieldsRuntime(table)!.selectedFields
                 : undefined
           : undefined
         on = on(
@@ -318,7 +318,7 @@ export class SQLiteEffectUpdateBase<
     if (typeof columns[0] === "function") {
       const orderBy = columns[0](
         new Proxy(
-          getTableColumnsRuntime(this.config.table),
+          getTableColumnsRuntime(this.config.table)!,
           new SelectionProxyHandler({ sqlAliasedBehavior: "alias", sqlBehavior: "sql" }),
         ) as any,
       )
@@ -341,7 +341,7 @@ export class SQLiteEffectUpdateBase<
     fields: TSelectedFields,
   ): SQLiteEffectUpdateReturning<this, TDynamic, TSelectedFields>
   returning(
-    fields: SelectedFields = getTableColumnsRuntime(this.config.table),
+    fields: SelectedFields = getTableColumnsRuntime(this.config.table)!,
   ): SQLiteEffectUpdateWithout<AnySQLiteEffectUpdate, TDynamic, "returning"> {
     this.config.returning = orderSelectedFields<SQLiteColumn>(fields)
     return this as any

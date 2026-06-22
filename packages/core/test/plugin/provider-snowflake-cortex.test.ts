@@ -157,7 +157,7 @@ describe("cortexFetch", () => {
       method: "POST",
       body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1024 }),
     })
-    const body = JSON.parse(captured[0].body as string)
+    const body = JSON.parse(captured[0]!.body as string)
     expect(body.max_completion_tokens).toBe(1024)
     expect(body.max_tokens).toBeUndefined()
   })
@@ -170,7 +170,7 @@ describe("cortexFetch", () => {
     }
     const original = JSON.stringify({ model: "claude-sonnet-4-6", temperature: 0.7 })
     await cortexFetch(upstream)("https://test", { method: "POST", body: original })
-    expect(captured[0].body).toBe(original)
+    expect(captured[0]!.body).toBe(original)
   })
 
   bun_it("treats 400 'conversation complete' as a stop response", async () => {
@@ -182,7 +182,7 @@ describe("cortexFetch", () => {
     const response = await cortexFetch(upstream)("https://test", {})
     expect(response.status).toBe(200)
     const data = (await response.json()) as { choices: { finish_reason: string }[] }
-    expect(data.choices[0].finish_reason).toBe("stop")
+    expect(data.choices[0]!.finish_reason).toBe("stop")
   })
 
   bun_it("passes through other 400 errors unchanged", async () => {
@@ -209,7 +209,7 @@ describe("cortexFetch", () => {
     }
     const invalidBody = "{ not json }"
     await cortexFetch(upstream)("https://test", { method: "POST", body: invalidBody })
-    expect(captured[0].body).toBe(invalidBody)
+    expect(captured[0]!.body).toBe(invalidBody)
   })
 
   bun_it("rewrites role:'' to role:'assistant' in streaming SSE chunks", async () => {
