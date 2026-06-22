@@ -5,7 +5,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "test": "OPENCODE_STORAGE_ADAPTER=memory bun test test --timeout 30000 --only-failures",
+    "test": "OPENCODE_STORAGE_ADAPTER=memory bun test test --timeout 30000",
+    "test:failed": "OPENCODE_STORAGE_ADAPTER=memory bun test test --timeout 30000 --only-failures",
     "typecheck": "tsgo --noEmit",
     "dev": "vite dev",
     "build": "vite build",

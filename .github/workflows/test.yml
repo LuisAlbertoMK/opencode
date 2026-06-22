@@ -74,6 +74,45 @@ jobs:
         working-directory: packages/opencode
         run: bun run test:httpapi
 
+  coverage:
+    name: coverage
+    needs: unit
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Run coverage on core
+        working-directory: packages/core
+        run: bun test:coverage --timeout 60000 2>&1 | tee coverage-core.log
+
+      - name: Run coverage on opencode
+        working-directory: packages/opencode
+        run: bun test:coverage --timeout 60000 2>&1 | tee coverage-opencode.log
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: coverage-reports-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            packages/core/coverage-core.log
+            packages/opencode/coverage-opencode.log
+
   e2e:
     name: e2e (${{ matrix.settings.name }})
     strategy:

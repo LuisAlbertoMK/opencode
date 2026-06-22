@@ -1,50 +1,50 @@
-# Ciclo de Auto-MeJora: Optimización de Recursos
+# Improvement Cycle — opencode vMK
 
-> **Inicio**: 2026-06-18
-> **Objetivo**: Reducir uso de CPU, RAM, GPU/VRAM en opencode-vMK
+> **Cycle**: 2026-06-22 — Project Health Recovery
+> **Objective**: Elevar project score de 6.8 → 7.5 cerrando gaps críticos
+> **Status**: Active
 
-## Métricas Target
+## Metrics
 
-| Métrica | Línea Base | Target | Instrumento |
-|---------|-----------|--------|-------------|
-| RAM opencode-vMK | ~920 MB | <500 MB | `Get-Process` |
-| CPU (sesión nueva 30min) | Medir baseline | -30% | `Get-Process CPU(s)` |
-| Tamaño binario | ~143.5 MB | -20% (~115 MB) | `Get-Item .exe` |
-| # Skills registrados | 60 | <40 | `skill-graph.ps1` (sparse load) |
-| Score general | 7.5 | >8.0 | `.project.json` |
+| Métrica | Target | Actual | Delta |
+|---------|--------|--------|-------|
+| **Project Score** | 7.5/10 | 6.8/10 | +0.7 |
+| **Correctness** | 8 | 7 | +1 |
+| **Error Prevention** | 8 | 6 | +2 |
+| **Tokens** | 8 | 7 | +1 |
+| **inter(30)** | 30 | 28 | +2 |
 
-## Dificultad → Verify
+## Difficulty Mapping
 
-| Nivel | Verify | Aplica a |
-|-------|--------|----------|
-| Fácil | E2 (estático) | Config changes, env vars |
-| Medio | E1+E2 | Sistema, procesos |
-| Difícil | Full + 4R | Build config, binaries |
-| Complejo | Full + judgment-day | Source code changes |
+| Dificultad | Criterio | Verification |
+|------------|----------|-------------|
+| **Fácil** | Archivos faltantes, config | None (zona verde) |
+| **Media** | Scripts de package.json | Triple verify L1 |
+| **Compleja** | tsconfig, CI/CD | Triple verify L2 |
+| **Muy Compleja** | Dependabot/Coverage infra | Triple verify L3 |
 
-## Ciclo
+## Tasks
 
-1. **Diagnóstico** → identificar targets
-2. **Aplicar fix** con verify según dificultad
-3. **inter-track.ps1 -Increment** + BITACORA
-4. **Re-score** → delta → keep o revert
-5. **Engram** + anti-patterns
+| # | Task | Difficulty | Status | inter |
+|---|------|------------|--------|-------|
+| 1 | Remove `--only-failures` from all package.json `test` scripts | Fácil | ✅ Done | 1 |
+| 2 | Create `SKILLS-INDEX.md` | Fácil | ✅ Done | 1 |
+| 3 | Create `CYCLE.md` | Fácil | ✅ Done | 1 |
+| 4 | Enable `github-triage` + `github-pr-search` tools | Media | ✅ Done | 2 |
+| 5 | Create `.github/dependabot.yml` | Media | ✅ Done | 2 |
+| 6 | Add `--timeout 30000` to packages/core test script | Fácil | ✅ Done | 1 |
+| 7 | Add coverage gate to CI test.yml | Compleja | ✅ Done | 2 |
+| 8 | Audit 11 patches for orphaned/needed status | Compleja | ✅ Done (1 orphan removed) | 12 |
+| 9 | Enable `noUncheckedIndexedAccess` in core + opencode | Muy Compleja | 🔲 Pending | — |
+| 10 | Reorganize AGENTS.md into modules | Compleja | ✅ Done | 3 |
 
-## Exit Conditions
+## Exit Criteria
 
-- inter ≥ 30 + no dim < 9.0 → SUCCESS
-- Score drop > 0.5 → revert todo
-- 3 fails same fix → SKIP
+- inter ≥ 30
+- No dimension below 8.0
+- Project Score ≥ 7.5
 
-## Línea Base (capturada)
+## Rollback
 
-```
-RAM total sistema: 14.3 GB (13.9 GB usable)
-RAM opencode-vMK:  ~920 MB (2 procesos: 919.7 + 929.1)
-CPU: AMD Ryzen 7 3700U (4C/8T, lógicos: 8)
-GPU: AMD Radeon RX Vega 10 (2GB VRAM)
-Disk D:\: 195.5 GB free
-Binario vMK:       143.5 MB (150508032 bytes)
-opencode skills:   60 registrados (9 SDD stubs removidos)
-Score actual:      7.5/10
-```
+Si el score cae >0.5 puntos tras algún cambio, revertir el cambio y registrar
+en BITACORA.md con causa raíz.

@@ -6,7 +6,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "test": "bun test --timeout 30000 --only-failures",
+    "test": "bun test --timeout 30000",
+    "test:failed": "bun test --timeout 30000 --only-failures",
     "test:coverage": "bun test --timeout 30000 --coverage",
     "typecheck": "tsgo --noEmit"
   },

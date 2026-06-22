@@ -1,41 +1,34 @@
-# Project Score: opencode-vMK
+# Project Score: opencode (vMK)
+**Current**: 6.8/10
+**Last updated**: 2026-06-22
+**Trend**: improving
 
-**Current**: 9.0/10
-**Last updated**: 2026-06-21
-**Trend**: improving ↑ (7.5 → 9.0)
+## Dimensions
+| Dimension | Score | Cambio |
+|-----------|-------|--------|
+| correctness | 7 | ▲ +1 |
+| tokens | 7 | — |
+| errorPrevention | 6 | ▲ +1 |
+| skill | 7 | ▲ +1 |
+| speed | 7 | — |
+| breadth | 7 | ▲ +1 |
 
-## Dimensions (score-auto)
-| Dimension | Score | Notes |
-|-----------|:-----:|-------|
-| Project Artifacts | **10** | Cross-ref, 69 skills, changelog, readme, roadmap |
-| Security | **10** | No secrets, no weak crypto |
-| Dead Code | **10** | No orphans, no dead junctions |
-| Clean Code | **9.9** | 36/36 with help, 35/36 with params, 36/36 strict mode |
-| Best Practices | **9.7** | 35/36 param coverage, 25/36 try/catch |
-| Orthography | **10** | 0/70 corrupted files |
-| Bitacora | **10** | BITACORA.md active |
-| Metrics | **10** | metrics dir, error tracking, reports |
-| Script Performance | **9** | 36 scripts, avg 6.3KB |
-| Skill Effectiveness | **10** | 69 skills, avg 1.7KB |
-| Cycle Activity | **10** | inter: 50/30 — target exceeded |
+## Strengths
+- Arquitectura hexagonal/domain-driven sólida con Effect v4
+- CI/CD completo: tests Linux+Windows, typecheck, build multi-plataforma (12+ targets)
+- Sin barrel files — module design tree-shaking-aware
+- Smoke test post-build automático
 
-## Ciclo: Auto-mejora CPU/RAM/VRAM/Stability (2026-06-21)
+## Weaknesses
+- `noUncheckedIndexedAccess: false` — acceso a arrays/dicts inseguro
+- 9 dependencias parcheadas → riesgo de drift en upgrades
+- 95+ runtime deps → árbol pesado
+- `any` type suelto en versioning script y aiskd.ts
+- Sin Dependabot/Renovate
+- Tests usan `--only-failures` por defecto — puede ocultar regresiones
+- Documentación casi inexistente para la complejidad del proyecto
 
-### Applied (10 fixes)
-- ✅ MCP zombie kill en Windows — `taskkill /T /F /PID` reemplaza `descendants()` inefectivo
-- ✅ Sidecar health check exponential backoff (100ms→2s max) — reduce 300+ HTTP health checks
-- ✅ `startAttempts.Map` leak — `delete(id)` en cleanup
-- ✅ SSE event queue bounded (1024) — `Queue.bounded` + sliding
-- ✅ GPU flags para Electron — `OPENCODE_DISABLE_GPU` env var
-- ✅ PTY WebSocket queue bounded (1024) en server + opencode handlers
-- ✅ LLM native-runtime queue bounded (4096) — evita acumulación de LLMEvents
-- ✅ PubSub sliding bounded (4096/1024) — event bus global
-- ✅ Prepared statement LRU cache (64) en 3 SQLite clients (bun, node, effect-sqlite-node)
-- ✅ buffered[] array capped (10K) + retry limit (5) en stream.transport.ts
-
-### Type verification
-- ✅ Typecheck clean: core, opencode, server, desktop, effect-sqlite-node
-- ✅ 4 type errors fixed (3 LRU null assertion, 1 Queue.Done<void> type param)
-
-### Tipo Fix y Pending
-- 🔲 Preload SolidJS → REVERTED por riesgo de imports estáticos (P2)
+## Findings Clave
+- 523 test files en 25 packages
+- Versionado dinámico: `0.0.0-dev-{timestamp}` en preview channels
+- Fork vMK con build name `opencode-vMK` ya configurado

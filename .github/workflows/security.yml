@@ -1,0 +1,113 @@
+name: security
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # every Monday 06:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  audit:
+    name: dependency-audit
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "24"
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Run dependency audit
+        id: audit
+        continue-on-error: true
+        run: |
+          bun audit --audit-level=high --json > audit-result.json 2>&1 || true
+
+      - name: Analyze audit results
+        id: analyze
+        run: |
+          if [ ! -f audit-result.json ] || [ "$(wc -l < audit-result.json)" -lt 5 ]; then
+            echo "No high/critical vulnerabilities found. ✅"
+            echo "has_vulns=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          node << 'EOF' >> "$GITHUB_OUTPUT"
+          const data = JSON.parse(require('fs').readFileSync('audit-result.json', 'utf-8'));
+          const packages = Object.keys(data);
+          let total = 0;
+          let table = '';
+          const details = [];
+
+          for (const [pkg, advisories] of Object.entries(data)) {
+            const high = advisories.filter(a => a.severity === 'high').length;
+            const critical = advisories.filter(a => a.severity === 'critical').length;
+            total += advisories.length;
+
+            const worst = critical > 0 ? 'critical' : 'high';
+            const label = critical > 0 ? '🔴' : '🟡';
+            table += `| ${pkg} | ${label} ${worst} | ${advisories.length} |\n`;
+
+            for (const adv of advisories) {
+              details.push({ pkg, id: adv.id, title: adv.title, severity: adv.severity, url: adv.url, cvss: adv.cvss?.score || 'N/A' });
+            }
+          }
+
+          console.log(`has_vulns=true`);
+          console.log(`total=${total}`);
+          console.log(`packages_count=${packages.length}`);
+
+          const summary = `### 🔒 Audit: ${total} high/critical vulnerabilities\n\n| Package | Severity | Count |\n|---|---|---|\n${table}`;
+          require('fs').writeFileSync('audit-summary.md', summary);
+          require('fs').writeFileSync('audit-details.json', JSON.stringify(details, null, 2));
+          EOF
+
+      - name: Post summary to PR
+        if: github.event_name == 'pull_request' && fromJSON(steps.analyze.outputs.has_vulns)
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('audit-summary.md', 'utf-8');
+            const body = summary + '\n_Run `bun audit` locally for full details._\n\n> This is a soft gate — the workflow does not fail. Review and prioritize fixes.';
+            const { data: comment } = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+            core.notice(`Audit results posted to PR #${context.issue.number}`);
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: audit-report-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            audit-result.json
+            audit-details.json

@@ -1,0 +1,71 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Argentina/Buenos_Aires"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+      - "automated"
+    groups:
+      effect:
+        patterns:
+          - "effect"
+          - "@effect/*"
+          - "@effect-smol/*"
+        update-types:
+          - "minor"
+          - "patch"
+      ai-sdk:
+        patterns:
+          - "@ai-sdk/*"
+          - "ai"
+        update-types:
+          - "minor"
+          - "patch"
+      solidjs:
+        patterns:
+          - "solid-js"
+          - "@solidjs/*"
+          - "@opentui/*"
+        update-types:
+          - "minor"
+          - "patch"
+      drizzle:
+        patterns:
+          - "drizzle-orm"
+          - "@drizzle-team/*"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.0.0"]
+      - dependency-name: "effect"
+        versions: [">=4.1.0"]
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    reviewers:
+      - "jlongster"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "ci"
+      - "automated"
+    commit-message:
+      prefix: "chore(ci)"

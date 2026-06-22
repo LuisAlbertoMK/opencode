@@ -10,8 +10,9 @@
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",
-    "test": "bun test --timeout 30000 --only-failures",
-    "test:coverage": "bun test --timeout 60000 --only-failures --coverage"
+    "test": "bun test --timeout 30000",
+    "test:failed": "bun test --timeout 30000 --only-failures",
+    "test:coverage": "bun test --timeout 60000 --coverage"
   },
   "dependencies": {
     "@opencode-ai/core": "workspace:*",
