@@ -1,4 +1,5 @@
 {
+  "$schema": "https://opencode.ai/config.json",
   "tools": {
     "github-triage": true,
     "github-pr-search": true

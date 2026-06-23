@@ -16,6 +16,7 @@ const generated = await import("./generate.ts")
 
 import { Script } from "@opencode-ai/script"
 import pkg from "../package.json"
+import rootPkg from "../../../package.json"
 
 const singleFlag = process.argv.includes("--single")
 const baselineFlag = process.argv.includes("--baseline")
@@ -165,11 +166,24 @@ const targets = singleFlag
 if (process.platform !== "win32") await $`rm -rf dist`
 
 const binaries: Record<string, string> = {}
+
+/** Resolve a version spec, handling Bun's "catalog:" protocol */
+function resolveDep(name: string, spec: string): string {
+  if (spec === "catalog:") {
+    const catalog = (rootPkg as any).workspaces?.catalog as Record<string, string> | undefined
+    const version = catalog?.[name]
+    if (!version) throw new Error(`Cannot resolve catalog reference for "${name}" — not found in root workspaces.catalog`)
+    return `${name}@${version}`
+  }
+  return `${name}@${spec}`
+}
+
 if (!skipInstall) {
-  const cross = singleFlag ? "" : `--os="*" --cpu="*"`
-  await $`bun install ${cross} @opentui/core@${pkg.dependencies["@opentui/core"]}`
-  await $`bun install ${cross} @parcel/watcher@${pkg.dependencies["@parcel/watcher"]}`
-  await $`bun install ${cross} @ff-labs/fff-bun@${pkg.dependencies["@ff-labs/fff-bun"]}`
+  const crossArgs = singleFlag ? [] : ["--os=*", "--cpu=*"]
+  for (const dep of ["@opentui/core", "@parcel/watcher", "@ff-labs/fff-bun"] as const) {
+    const spec = resolveDep(dep, pkg.dependencies[dep]!)
+    await $`bun install ${crossArgs} ${spec}`
+  }
 }
 for (const item of targets) {
   const name = [
