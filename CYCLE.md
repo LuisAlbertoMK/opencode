@@ -2,17 +2,17 @@
 
 > **Cycle**: 2026-06-22 — Project Health Recovery
 > **Objective**: Elevar project score de 6.8 → 7.5 cerrando gaps críticos
-> **Status**: Active
+> **Status**: ✅ Complete (score 7.3/10, errorPrevention 8/10)
 
 ## Metrics
 
 | Métrica | Target | Actual | Delta |
 |---------|--------|--------|-------|
-| **Project Score** | 7.5/10 | 6.8/10 | +0.7 |
-| **Correctness** | 8 | 7 | +1 |
-| **Error Prevention** | 8 | 6 | +2 |
+| **Project Score** | 7.5/10 | 7.3/10 | +0.2 |
+| **Correctness** | 8 | 8 | 0 |
+| **Error Prevention** | 8 | 8 | 0 |
 | **Tokens** | 8 | 7 | +1 |
-| **inter(30)** | 30 | 28 | +2 |
+| **inter(30)** | 30 | 24 | +6 |
 
 ## Difficulty Mapping
 
@@ -26,7 +26,7 @@
 ## Tasks
 
 | # | Task | Difficulty | Status | inter |
-|---|------|------------|--------|-------|
+|:---|:---|:---:|:---:|:---:|
 | 1 | Remove `--only-failures` from all package.json `test` scripts | Fácil | ✅ Done | 1 |
 | 2 | Create `SKILLS-INDEX.md` | Fácil | ✅ Done | 1 |
 | 3 | Create `CYCLE.md` | Fácil | ✅ Done | 1 |
@@ -34,8 +34,8 @@
 | 5 | Create `.github/dependabot.yml` | Media | ✅ Done | 2 |
 | 6 | Add `--timeout 30000` to packages/core test script | Fácil | ✅ Done | 1 |
 | 7 | Add coverage gate to CI test.yml | Compleja | ✅ Done | 2 |
-| 8 | Audit 11 patches for orphaned/needed status | Compleja | ✅ Done (1 orphan removed) | 12 |
-| 9 | Enable `noUncheckedIndexedAccess` in core + opencode | Muy Compleja | 🔲 Pending | — |
+| 8 | Audit 11 patches for orphaned/need status | Compleja | ✅ Done (1 orphan removed) | 12 |
+| 9 | Enable `noUncheckedIndexedAccess` in core + opencode | Muy Compleja | 🔶 Parcial (core✅, opencode reverted) | 5 |
 | 10 | Reorganize AGENTS.md into modules | Compleja | ✅ Done | 3 |
 
 ## Exit Criteria

@@ -29,7 +29,7 @@ const responsesLayer = (responses: ReadonlyArray<Response>) =>
             HttpClient.make((request) =>
               Effect.gen(function* () {
                 const index = yield* Ref.getAndUpdate(cursor, (value) => value + 1)
-                return HttpClientResponse.fromWeb(request, responses[index] ?? responses[responses.length - 1])
+                return HttpClientResponse.fromWeb(request, responses[index] ?? responses[responses.length - 1]!)
               }),
             ),
           )
@@ -50,7 +50,7 @@ const countedResponsesLayer = (attempts: Ref.Ref<number>, responses: ReadonlyArr
               Effect.gen(function* () {
                 yield* Ref.update(attempts, (value) => value + 1)
                 const index = yield* Ref.getAndUpdate(cursor, (value) => value + 1)
-                return HttpClientResponse.fromWeb(request, responses[index] ?? responses[responses.length - 1])
+                return HttpClientResponse.fromWeb(request, responses[index] ?? responses[responses.length - 1]!)
               }),
             ),
           )

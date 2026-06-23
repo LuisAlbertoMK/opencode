@@ -17,5 +17,18 @@ jobs:
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
 
+      - name: Check noUncheckedIndexedAccess overrides
+        run: |
+          errors=0
+          for pkg in core llm effect-drizzle-sqlite; do
+            file="packages/$pkg/tsconfig.json"
+            if [ -f "$file" ] && grep -q '"noUncheckedIndexedAccess": false' "$file"; then
+              echo "::error file=$file::noUncheckedIndexedAccess must not be false in $pkg (remove override)"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ "$errors" -gt 0 ]; then exit 1; fi
+        shell: bash
+
       - name: Run typecheck
         run: bun typecheck

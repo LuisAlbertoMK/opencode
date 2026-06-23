@@ -87,9 +87,9 @@ describe("LLM.generateObject", () => {
       expect(response.object).toEqual({ city: "Paris", temp: 22 })
       expect(response.response.toolCalls).toHaveLength(1)
       expect(bodies).toHaveLength(1)
-      expect(bodies[0].tool_choice).toEqual({ type: "function", function: { name: "generate_object" } })
-      const tool = bodies[0].tools?.[0]
-      expect(bodies[0].tools).toHaveLength(1)
+      expect(bodies[0]!.tool_choice).toEqual({ type: "function", function: { name: "generate_object" } })
+      const tool = bodies[0]!.tools?.[0]
+      expect(bodies[0]!.tools).toHaveLength(1)
       expect(tool).toMatchObject({
         type: "function",
         function: { name: "generate_object" },
@@ -130,7 +130,7 @@ describe("LLM.generateObject", () => {
       }).pipe(Effect.provide(layer))
 
       expect(response.object).toEqual({ name: "Ada", age: 30 })
-      expect(bodies[0].tools?.[0]?.function.parameters).toEqual({
+      expect(bodies[0]!.tools?.[0]?.function.parameters).toEqual({
         type: "object",
         properties: { name: { type: "string" }, age: { type: "number" } },
         required: ["name", "age"],

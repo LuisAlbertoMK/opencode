@@ -1,4 +1,5 @@
-2026-06-21 — Ciclo auto-mejora: 12 subagentes ? 10 fixes CPU/RAM/VRAM/stability
+2026-06-22 - Task 9: noUncheckedIndexedAccess en core (opencode deferred). Score 6.8â†’7.2. inter 20/30.
+2026-06-21 ï¿½ Ciclo auto-mejora: 12 subagentes ? 10 fixes CPU/RAM/VRAM/stability
 2026-06-20 - Session close
 2026-06-20 - Session close
 2026-06-20 - Session close

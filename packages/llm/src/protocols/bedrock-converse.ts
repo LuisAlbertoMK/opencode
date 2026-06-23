@@ -557,7 +557,7 @@ const step = (state: ParserState, event: BedrockEvent) =>
             const sigs: Record<string, (typeof state.reasoningSignatures)[number]> = {}
             for (const key of Object.keys(state.reasoningSignatures)) {
               const numKey = Number(key)
-              if (numKey !== index) sigs[key] = state.reasoningSignatures[numKey]
+              if (numKey !== index) sigs[key] = state.reasoningSignatures[numKey]!
             }
             return sigs
           })(),

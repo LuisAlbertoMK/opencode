@@ -1,5 +1,5 @@
 ﻿{
-    "inter":  16,
+    "inter":  22,
     "log":  [
                 {
                     "msg":  "Fix 1: Config optimizada .opencode/opencode.jsonc — compaction/prune/experimental/images/model-limits",
@@ -80,6 +80,36 @@
                     "msg":  "",
                     "n":  16,
                     "ts":  "2026-06-20 20:22:33"
+                },
+                {
+                    "msg":  "Task 9: noUncheckedIndexedAccess en core + fix cross-package deps (opencode deferred)",
+                    "n":  17,
+                    "ts":  "2026-06-22 16:13:19"
+                },
+                {
+                    "msg":  "Fixed 22+ core source files for noUncheckedIndexedAccess",
+                    "n":  18,
+                    "ts":  "2026-06-22 16:13:34"
+                },
+                {
+                    "msg":  "Fixed cross-package deps in effect-drizzle-sqlite (5 files) and llm (2 files)",
+                    "n":  19,
+                    "ts":  "2026-06-22 16:13:41"
+                },
+                {
+                    "msg":  "Hardened 11 unsafe ! assertions with ??= and guard patterns",
+                    "n":  20,
+                    "ts":  "2026-06-22 16:13:42"
+                },
+                {
+                    "msg":  "Fix llm 28 noUncheckedIndexedAccess errors, remove tsconfig override",
+                    "n":  21,
+                    "ts":  "2026-06-23 09:48:54"
+                },
+                {
+                    "msg":  "Add CI gate: verifica noUncheckedIndexedAccess overrides en typecheck/fork-ci",
+                    "n":  22,
+                    "ts":  "2026-06-23 09:49:23"
                 }
             ]
 }

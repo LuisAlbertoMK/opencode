@@ -219,7 +219,7 @@ describe("OpenAI Responses route", () => {
       expect(opened).toEqual([{ url: "wss://api.openai.test/v1/responses", authorization: "Bearer test" }])
       expect(closed).toBe(true)
       expect(sent).toHaveLength(1)
-      expect(JSON.parse(sent[0])).toEqual({
+      expect(JSON.parse(sent[0]!)).toEqual({
         type: "response.create",
         model: "gpt-4.1-mini",
         input: [{ role: "user", content: [{ type: "input_text", text: "Say hello." }] }],

@@ -32,7 +32,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "core",
     note: "Native OpenAI Chat / Responses recorded tests",
     vars: [{ name: "OPENAI_API_KEY" }],
-    validate: (env) => validateBearer("https://api.openai.com/v1/models", Redacted.make(env.OPENAI_API_KEY)),
+    validate: (env) => validateBearer("https://api.openai.com/v1/models", Redacted.make(env.OPENAI_API_KEY!)),
   },
   {
     id: "anthropic",
@@ -44,7 +44,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
       HttpClientRequest.get("https://api.anthropic.com/v1/models").pipe(
         HttpClientRequest.setHeaders({
           "anthropic-version": "2023-06-01",
-          "x-api-key": Redacted.value(Redacted.make(env.ANTHROPIC_API_KEY)),
+          "x-api-key": Redacted.value(Redacted.make(env.ANTHROPIC_API_KEY!)),
         }),
         executeRequest,
       ),
@@ -57,7 +57,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     vars: [{ name: "GOOGLE_GENERATIVE_AI_API_KEY" }],
     validate: (env) =>
       HttpClientRequest.get(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(env.GOOGLE_GENERATIVE_AI_API_KEY)}`,
+        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(env.GOOGLE_GENERATIVE_AI_API_KEY!)}`,
       ).pipe(executeRequest),
   },
   {
@@ -80,7 +80,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "canary",
     note: "Fast OpenAI-compatible canary for text/tool streaming",
     vars: [{ name: "GROQ_API_KEY" }],
-    validate: (env) => validateBearer("https://api.groq.com/openai/v1/models", Redacted.make(env.GROQ_API_KEY)),
+    validate: (env) => validateBearer("https://api.groq.com/openai/v1/models", Redacted.make(env.GROQ_API_KEY!)),
   },
   {
     id: "openrouter",
@@ -91,7 +91,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     validate: (env) =>
       validateChat({
         url: "https://openrouter.ai/api/v1/chat/completions",
-        token: Redacted.make(env.OPENROUTER_API_KEY),
+        token: Redacted.make(env.OPENROUTER_API_KEY!),
         model: "openai/gpt-4o-mini",
       }),
   },
@@ -101,7 +101,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "canary",
     note: "OpenAI-compatible xAI chat endpoint",
     vars: [{ name: "XAI_API_KEY" }],
-    validate: (env) => validateBearer("https://api.x.ai/v1/models", Redacted.make(env.XAI_API_KEY)),
+    validate: (env) => validateBearer("https://api.x.ai/v1/models", Redacted.make(env.XAI_API_KEY!)),
   },
   {
     id: "cloudflare-ai-gateway",
@@ -121,7 +121,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     validate: (env) =>
       validateChat({
         url: `${Cloudflare.aiGatewayBaseURL({
-          accountId: env.CLOUDFLARE_ACCOUNT_ID,
+          accountId: env.CLOUDFLARE_ACCOUNT_ID!,
           gatewayId: env.CLOUDFLARE_GATEWAY_ID || undefined,
         })}/chat/completions`,
         token: Redacted.make(envValue(env, Cloudflare.aiGatewayAuthEnvVars)),
@@ -140,7 +140,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     ],
     validate: (env) =>
       validateChat({
-        url: `${Cloudflare.workersAIBaseURL({ accountId: env.CLOUDFLARE_ACCOUNT_ID })}/chat/completions`,
+        url: `${Cloudflare.workersAIBaseURL({ accountId: env.CLOUDFLARE_ACCOUNT_ID! })}/chat/completions`,
         token: Redacted.make(envValue(env, Cloudflare.workersAIAuthEnvVars)),
         model: "@cf/meta/llama-3.1-8b-instruct",
       }),
@@ -151,7 +151,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "compatible",
     note: "Existing OpenAI-compatible recorded tests",
     vars: [{ name: "DEEPSEEK_API_KEY" }],
-    validate: (env) => validateBearer("https://api.deepseek.com/models", Redacted.make(env.DEEPSEEK_API_KEY)),
+    validate: (env) => validateBearer("https://api.deepseek.com/models", Redacted.make(env.DEEPSEEK_API_KEY!)),
   },
   {
     id: "togetherai",
@@ -159,7 +159,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "compatible",
     note: "Existing OpenAI-compatible text/tool recorded tests",
     vars: [{ name: "TOGETHER_AI_API_KEY" }],
-    validate: (env) => validateBearer("https://api.together.xyz/v1/models", Redacted.make(env.TOGETHER_AI_API_KEY)),
+    validate: (env) => validateBearer("https://api.together.xyz/v1/models", Redacted.make(env.TOGETHER_AI_API_KEY!)),
   },
   {
     id: "mistral",
@@ -167,7 +167,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "optional",
     note: "OpenAI-compatible bridge; native reasoning parity is follow-up work",
     vars: [{ name: "MISTRAL_API_KEY" }],
-    validate: (env) => validateBearer("https://api.mistral.ai/v1/models", Redacted.make(env.MISTRAL_API_KEY)),
+    validate: (env) => validateBearer("https://api.mistral.ai/v1/models", Redacted.make(env.MISTRAL_API_KEY!)),
   },
   {
     id: "perplexity",
@@ -175,7 +175,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "optional",
     note: "OpenAI-compatible bridge; citations/search metadata are follow-up work",
     vars: [{ name: "PERPLEXITY_API_KEY" }],
-    validate: (env) => validateBearer("https://api.perplexity.ai/models", Redacted.make(env.PERPLEXITY_API_KEY)),
+    validate: (env) => validateBearer("https://api.perplexity.ai/models", Redacted.make(env.PERPLEXITY_API_KEY!)),
   },
   {
     id: "venice",
@@ -183,7 +183,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "optional",
     note: "OpenAI-compatible bridge",
     vars: [{ name: "VENICE_API_KEY" }],
-    validate: (env) => validateBearer("https://api.venice.ai/api/v1/models", Redacted.make(env.VENICE_API_KEY)),
+    validate: (env) => validateBearer("https://api.venice.ai/api/v1/models", Redacted.make(env.VENICE_API_KEY!)),
   },
   {
     id: "cerebras",
@@ -191,7 +191,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     tier: "optional",
     note: "OpenAI-compatible bridge",
     vars: [{ name: "CEREBRAS_API_KEY" }],
-    validate: (env) => validateBearer("https://api.cerebras.ai/v1/models", Redacted.make(env.CEREBRAS_API_KEY)),
+    validate: (env) => validateBearer("https://api.cerebras.ai/v1/models", Redacted.make(env.CEREBRAS_API_KEY!)),
   },
   {
     id: "deepinfra",
@@ -200,7 +200,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     note: "OpenAI-compatible bridge",
     vars: [{ name: "DEEPINFRA_API_KEY" }],
     validate: (env) =>
-      validateBearer("https://api.deepinfra.com/v1/openai/models", Redacted.make(env.DEEPINFRA_API_KEY)),
+      validateBearer("https://api.deepinfra.com/v1/openai/models", Redacted.make(env.DEEPINFRA_API_KEY!)),
   },
   {
     id: "fireworks",
@@ -209,7 +209,7 @@ const PROVIDERS: ReadonlyArray<Provider> = [
     note: "OpenAI-compatible bridge",
     vars: [{ name: "FIREWORKS_API_KEY" }],
     validate: (env) =>
-      validateBearer("https://api.fireworks.ai/inference/v1/models", Redacted.make(env.FIREWORKS_API_KEY)),
+      validateBearer("https://api.fireworks.ai/inference/v1/models", Redacted.make(env.FIREWORKS_API_KEY!)),
   },
   {
     id: "baseten",
@@ -317,9 +317,9 @@ const upsertEnv = (contents: string, values: Env) => {
   const seen = new Set<string>()
   const lines = contents.split(/\r?\n/).map((line) => {
     const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/)
-    if (!match || !names.includes(match[1])) return line
-    seen.add(match[1])
-    return `${match[1]}=${quote(values[match[1]])}`
+    if (!match || !names.includes(match[1]!)) return line
+    seen.add(match[1]!)
+    return `${match[1]!}=${quote(values[match[1]!]!)}`
   })
   const missing = names.filter((name) => !seen.has(name))
   if (missing.length === 0) return lines.join("\n").replace(/\n*$/, "\n")
@@ -327,7 +327,7 @@ const upsertEnv = (contents: string, values: Env) => {
   const block = [
     "",
     "# Added by bun run setup:recording-env",
-    ...missing.map((name) => `${name}=${quote(values[name])}`),
+    ...missing.map((name) => `${name}=${quote(values[name]!)}`),
   ].join("\n")
   return `${prefix}${block}\n`
 }
@@ -401,8 +401,8 @@ const validateBedrock = (env: Env) =>
         method: "GET",
         service: "bedrock",
         region: env.BEDROCK_RECORDING_REGION || "us-east-1",
-        accessKeyId: env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+        accessKeyId: env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
         sessionToken: env.AWS_SESSION_TOKEN || undefined,
       }).sign(),
     )
