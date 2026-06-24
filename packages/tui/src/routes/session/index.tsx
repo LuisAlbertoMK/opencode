@@ -1217,7 +1217,7 @@ export function Session() {
                     const msgRevertMID = msgRevert?.messageID
                     return (
                     <Switch>
-                      <Match when={msgRevert}>
+                      <Match when={msgRevertMID && message.id === msgRevertMID}>
                         <RevertBanner messageID={message.id} revert={msgRevert!} />
                       </Match>
                       <Match when={msgRevertMID && message.id >= msgRevertMID}>
