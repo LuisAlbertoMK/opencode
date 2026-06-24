@@ -74,19 +74,14 @@ export const layer = Layer.effect(
             ? undefined
             : [
                 "Project references provide additional directories that can be accessed when relevant.",
-                "<available_references>",
                 ...references
                   .toSorted((a, b) => a.name.localeCompare(b.name))
-                  .flatMap((reference) => [
-                    "  <reference>",
-                    `    <name>${reference.name}</name>`,
-                    `    <path>${reference.path}</path>`,
-                    ...(reference.description === undefined
-                      ? []
-                      : [`    <description>${reference.description}</description>`]),
-                    "  </reference>",
-                  ]),
-                "</available_references>",
+                  .map((reference) =>
+                    [
+                      `- **${reference.name}**: ${reference.path}`,
+                      ...(reference.description === undefined ? [] : [`  → ${reference.description}`]),
+                    ].join("\n"),
+                  ),
               ].join("\n"),
         ].filter((part): part is string => part !== undefined)
       }),
@@ -101,7 +96,7 @@ export const layer = Layer.effect(
           "Use the skill tool to load a skill when a task matches its description.",
           // the agents seem to ingest the information about skills a bit better if we present a more verbose
           // version of them here and a less verbose version in tool description, rather than vice versa.
-          Skill.fmt(list, { verbose: true }),
+          Skill.fmt(list, { verbose: false }),
         ].join("\n")
       }),
     })

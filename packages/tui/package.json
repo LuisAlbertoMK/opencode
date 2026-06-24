@@ -70,5 +70,6 @@
     "@tsconfig/bun": "catalog:",
     "@types/bun": "catalog:",
     "@typescript/native-preview": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

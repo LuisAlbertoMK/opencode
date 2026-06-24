@@ -45,5 +45,6 @@
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "@typescript/native-preview": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

@@ -79,5 +79,6 @@
     "solid-list": "catalog:",
     "tailwindcss": "catalog:",
     "virtua": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

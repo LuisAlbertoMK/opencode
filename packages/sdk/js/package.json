@@ -30,5 +30,6 @@
   },
   "dependencies": {
     "cross-spawn": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

@@ -79,5 +79,6 @@
     "solid-list": "catalog:",
     "strip-ansi": "7.1.2",
     "virtua": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

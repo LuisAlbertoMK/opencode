@@ -126,5 +126,6 @@
   },
   "overrides": {
     "drizzle-orm": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

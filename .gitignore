@@ -24,6 +24,7 @@ Session.vim
 /opencode.json
 a.out
 target
+*.exe
 .scripts
 .direnv/
 

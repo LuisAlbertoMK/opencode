@@ -1,3 +1,5 @@
+const TALE_BUDGET = "\n\nIMPORTANT: Keep reasoning concise — aim for ~200 tokens per turn."
+
 import { PermissionV1 } from "@opencode-ai/core/v1/permission"
 import type { Auth } from "@/auth"
 import { SessionV1 } from "@opencode-ai/core/v1/session"
@@ -61,7 +63,7 @@ export const prepare = Effect.fn("LLMRequestPrep.prepare")(function* (input: Pre
       ...(input.user.system ? [input.user.system] : []),
     ]
       .filter((x) => x)
-      .join("\n"),
+      .join("\n") + TALE_BUDGET,
   ]
 
   const header = system[0]

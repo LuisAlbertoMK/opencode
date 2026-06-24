@@ -1,0 +1,71 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "packages/opencode/src/index.ts",
+    "packages/core/src/index.ts",
+    "packages/tui/src/index.ts",
+    "packages/ui/src/index.ts",
+    "packages/app/src/index.ts",
+    "packages/cli/src/index.ts",
+    "packages/desktop/src/index.ts",
+    "packages/llm/src/index.ts",
+    "packages/server/src/index.ts",
+    "packages/sdk/js/src/index.ts",
+    "packages/slack/src/index.ts",
+    "packages/web/src/index.ts",
+    "packages/plugin/src/index.ts",
+    "packages/script/src/index.ts",
+    "packages/function/src/index.ts",
+    "packages/http-recorder/src/index.ts",
+    "packages/effect-sqlite-node/src/index.ts",
+    "packages/effect-drizzle-sqlite/src/index.ts",
+    "packages/enterprise/src/index.ts",
+    "packages/stats/core/src/index.ts",
+    "packages/stats/server/src/index.ts",
+    "packages/stats/app/src/index.ts",
+    "packages/console/core/src/index.ts",
+    "packages/console/app/src/index.ts",
+    "packages/console/function/src/index.ts",
+    "packages/console/mail/src/index.ts",
+    "packages/console/resource/src/index.ts",
+    "packages/console/support/src/index.ts"
+  ],
+  "project": [
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "packages/console/*/src/**/*.ts",
+    "packages/console/*/src/**/*.tsx",
+    "packages/stats/*/src/**/*.ts",
+    "packages/stats/*/src/**/*.tsx",
+    "packages/sdk/js/src/**/*.ts"
+  ],
+  "rules": {
+    "devDependencies": "warn"
+  },
+  "ignore": [
+    "packages/storybook/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/test/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts"
+  ],
+  "ignoreDependencies": [
+    "@parcel/watcher-darwin-arm64",
+    "@parcel/watcher-darwin-x64",
+    "@parcel/watcher-linux-arm64",
+    "@parcel/watcher-linux-arm64-musl",
+    "@parcel/watcher-linux-x64",
+    "@parcel/watcher-linux-x64-musl",
+    "@parcel/watcher-win32-arm64",
+    "@parcel/watcher-win32-x64",
+    "@typescript/native-preview-win32-x64",
+    "esbuild",
+    "electron",
+    "husky",
+    "oxlint",
+    "prettier",
+    "turbo"
+  ]
+}

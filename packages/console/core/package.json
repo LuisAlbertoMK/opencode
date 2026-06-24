@@ -51,5 +51,6 @@
     "mysql2": "3.14.4",
     "typescript": "catalog:",
     "@typescript/native-preview": "catalog:"
-  }
+  },
+  "sideEffects": false
 }

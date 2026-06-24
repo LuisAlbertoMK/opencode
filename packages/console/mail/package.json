@@ -18,5 +18,6 @@
     "dev": "email preview emails/templates"
   },
   "type": "module",
-  "license": "MIT"
+  "license": "MIT",
+  "sideEffects": false
 }
