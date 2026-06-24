@@ -1,5 +1,5 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
-import { Effect, Layer, Context, Schema } from "effect"
+import { Effect, Layer, Context, Schema, SynchronizedRef } from "effect"
 import { SessionV1 } from "@opencode-ai/core/v1/session"
 import { EventV2Bridge } from "@/event-v2-bridge"
 import { Snapshot } from "../snapshot"
@@ -24,6 +24,27 @@ export interface Interface {
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/SessionRevert") {}
 
+// ── Safety checkpoint: per-session revert lock ────────────────────────
+// Prevents concurrent revert operations (fixes TOCTOU + no-mutex).
+// Revert acquires this lock atomically; cleanup and prompt can check isLocked.
+const makeRevertLock = Effect.fnUntraced(function* () {
+  const ref = yield* SynchronizedRef.make(new Map<SessionID, boolean>())
+  const acquire = (sessionID: SessionID) =>
+    SynchronizedRef.modify(ref, (map) => {
+      if (map.has(sessionID)) return [false, map] as const
+      map.set(sessionID, true)
+      return [true, map] as const
+    })
+  const release = (sessionID: SessionID) =>
+    SynchronizedRef.update(ref, (map) => {
+      map.delete(sessionID)
+      return map
+    })
+  const isLocked = (sessionID: SessionID) =>
+    SynchronizedRef.get(ref).pipe(Effect.map((map) => map.has(sessionID)))
+  return { acquire, release, isLocked } as const
+})
+
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
@@ -33,60 +54,70 @@ export const layer = Layer.effect(
     const events = yield* EventV2Bridge.Service
     const summary = yield* SessionSummary.Service
     const state = yield* SessionRunState.Service
+    const revertLock = yield* makeRevertLock
 
     const revert = Effect.fn("SessionRevert.revert")(function* (input: RevertInput) {
-      yield* state.assertNotBusy(input.sessionID)
-      const all = yield* sessions.messages({ sessionID: input.sessionID }).pipe(Effect.orDie)
-      let lastUser: SessionV1.User | undefined
-      const session = yield* sessions.get(input.sessionID).pipe(Effect.orDie)
+      // Safety checkpoint: acquire per-session revert lock.
+      // Prevents concurrent reverts (fixes TOCTOU + no-mutex findings).
+      const acquired = yield* revertLock.acquire(input.sessionID)
+      if (!acquired) {
+        yield* Effect.logWarning("revert already in progress for session", { sessionID: input.sessionID })
+        yield* Effect.fail(new Session.BusyError({ sessionID: input.sessionID }))
+      }
+      return yield* Effect.gen(function* () {
+        yield* state.assertNotBusy(input.sessionID)
+        const all = yield* sessions.messages({ sessionID: input.sessionID }).pipe(Effect.orDie)
+        let lastUser: SessionV1.User | undefined
+        const session = yield* sessions.get(input.sessionID).pipe(Effect.orDie)
 
-      let rev: Session.Info["revert"]
-      const patches: Snapshot.Patch[] = []
-      for (const msg of all) {
-        if (msg.info.role === "user") lastUser = msg.info
-        const remaining = []
-        for (const part of msg.parts) {
-          if (rev) {
-            if (part.type === "patch") patches.push(part)
-            continue
-          }
-
-          if (!rev) {
-            if ((msg.info.id === input.messageID && !input.partID) || part.id === input.partID) {
-              const partID = remaining.some((item) => ["text", "tool"].includes(item.type)) ? input.partID : undefined
-              rev = {
-                messageID: !partID && lastUser ? lastUser.id : msg.info.id,
-                partID,
-              }
+        let rev: Session.Info["revert"]
+        const patches: Snapshot.Patch[] = []
+        for (const msg of all) {
+          if (msg.info.role === "user") lastUser = msg.info
+          const remaining = []
+          for (const part of msg.parts) {
+            if (rev) {
+              if (part.type === "patch") patches.push(part)
+              continue
             }
-            remaining.push(part)
+
+            if (!rev) {
+              if ((msg.info.id === input.messageID && !input.partID) || part.id === input.partID) {
+                const partID = remaining.some((item) => ["text", "tool"].includes(item.type)) ? input.partID : undefined
+                rev = {
+                  messageID: !partID && lastUser ? lastUser.id : msg.info.id,
+                  partID,
+                }
+              }
+              remaining.push(part)
+            }
           }
         }
-      }
 
-      if (!rev) return session
+        if (!rev) return session
 
-      rev.snapshot = session.revert?.snapshot ?? (yield* snap.track())
-      if (session.revert?.snapshot) yield* snap.restore(session.revert.snapshot)
-      yield* snap.revert(patches)
-      if (rev.snapshot) rev.diff = yield* snap.diff(rev.snapshot)
-      const range = all.filter((msg) => msg.info.id >= rev.messageID)
-      const diffs = yield* summary.computeDiff({ messages: range })
-      yield* storage.write(["session_diff", input.sessionID], diffs).pipe(Effect.ignore)
-      yield* events.publish(Session.Event.Diff, { sessionID: input.sessionID, diff: diffs })
-      yield* sessions.setRevert({
-        sessionID: input.sessionID,
-        revert: rev,
-        summary: (() => {
-          let additions = 0, deletions = 0
-          for (let i = 0; i < diffs.length; i++) {
-            additions += diffs[i].additions
-            deletions += diffs[i].deletions
-          }
-          return { additions, deletions, files: diffs.length }
-        })(),
-      })
-      return yield* sessions.get(input.sessionID).pipe(Effect.orDie)
+        rev.snapshot = session.revert?.snapshot ?? (yield* snap.track())
+        if (session.revert?.snapshot) yield* snap.restore(session.revert.snapshot)
+        yield* snap.revert(patches)
+        if (rev.snapshot) rev.diff = yield* snap.diff(rev.snapshot)
+        const range = all.filter((msg) => msg.info.id >= rev.messageID)
+        const diffs = yield* summary.computeDiff({ messages: range })
+        yield* storage.write(["session_diff", input.sessionID], diffs).pipe(Effect.ignore)
+        yield* events.publish(Session.Event.Diff, { sessionID: input.sessionID, diff: diffs })
+        yield* sessions.setRevert({
+          sessionID: input.sessionID,
+          revert: rev,
+          summary: (() => {
+            let additions = 0, deletions = 0
+            for (let i = 0; i < diffs.length; i++) {
+              additions += diffs[i].additions
+              deletions += diffs[i].deletions
+            }
+            return { additions, deletions, files: diffs.length }
+          })(),
+        })
+        return yield* sessions.get(input.sessionID).pipe(Effect.orDie)
+      }).pipe(Effect.ensuring(revertLock.release(input.sessionID)))
     })
 
     const unrevert = Effect.fn("SessionRevert.unrevert")(function* (input: { sessionID: SessionID }) {
@@ -100,10 +131,14 @@ export const layer = Layer.effect(
     })
 
     const cleanup = Effect.fn("SessionRevert.cleanup")(function* (session: Session.Info) {
-      if (!session.revert) return
-      const sessionID = session.id
+      // Safety checkpoint: re-read revert state from DB to avoid stale snapshots.
+      // The caller's `session` parameter may be stale if a concurrent operation
+      // cleared or changed the revert between the read and this call.
+      const freshSession = yield* sessions.get(session.id).pipe(Effect.orDie)
+      if (!freshSession.revert) return
+      const sessionID = freshSession.id
       const msgs = yield* sessions.messages({ sessionID }).pipe(Effect.orDie)
-      const messageID = session.revert.messageID
+      const messageID = freshSession.revert.messageID
       const remove = [] as SessionV1.WithParts[]
       let target: SessionV1.WithParts | undefined
       for (const msg of msgs) {
@@ -112,7 +147,7 @@ export const layer = Layer.effect(
           remove.push(msg)
           continue
         }
-        if (session.revert.partID) {
+        if (freshSession.revert.partID) {
           target = msg
           continue
         }
@@ -121,8 +156,8 @@ export const layer = Layer.effect(
       for (const msg of remove) {
         yield* sessions.removeMessage({ sessionID, messageID: msg.info.id })
       }
-      if (session.revert.partID && target) {
-        const partID = session.revert.partID
+      if (freshSession.revert.partID && target) {
+        const partID = freshSession.revert.partID
         const idx = target.parts.findIndex((part) => part.id === partID)
         if (idx >= 0) {
           const removeParts = target.parts.slice(idx)

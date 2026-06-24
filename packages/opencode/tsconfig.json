@@ -1,17 +1,28 @@
-{
-  "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@tsconfig/bun/tsconfig.json",
-  "compilerOptions": {
-    "noUncheckedIndexedAccess": false,
-    "jsx": "preserve",
-    "jsxImportSource": "@opentui/solid",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": [],
-    "customConditions": ["browser"],
-    "paths": {
-      "@/*": ["./src/*", "../core/src/*"],
-      "@test/*": ["./test/*"]
-    }
-  }
-}
+﻿{
+    "$schema":  "https://json.schemastore.org/tsconfig",
+    "extends":  "@tsconfig/bun/tsconfig.json",
+    "compilerOptions":  {
+                            "jsx":  "preserve",
+                            "jsxImportSource":  "@opentui/solid",
+                            "lib":  [
+                                        "ESNext",
+                                        "DOM",
+                                        "DOM.Iterable"
+                                    ],
+                            "types":  [
 
+                                      ],
+                            "customConditions":  [
+                                                     "browser"
+                                                 ],
+                            "paths":  {
+                                          "@/*":  [
+                                                      "./src/*",
+                                                      "../core/src/*"
+                                                  ],
+                                          "@test/*":  [
+                                                          "./test/*"
+                                                      ]
+                                      }
+                        }
+}
