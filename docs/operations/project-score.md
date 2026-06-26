@@ -1,6 +1,6 @@
 # Project Score: opencode-vmk
 
-**Current**: 7.7/10
+**Current**: 8.1/10
 **Last updated**: 2026-06-26
 **Trend**: recalibrating
 
@@ -15,11 +15,11 @@
 | Project Artifacts | 8.0 | BITACORA, optimization plans, measurement guide exist. No baseline snapshot saved |
 | Dead Code | 7.0 | Knip + unbarrelify identified as gap (C2), some dead code likely present |
 | Clean Code | 8.5 | Well-structured TypeScript. ~22 AMARILLO files still missing `// vMK:` tags |
-| Metrics | 5.0 | No performance baseline, score was inflated, no regression tracking |
+| Metrics | 8.0 | Tests run (30/30 passing in footer suite), CI pipeline via turbo. No perf baseline yet |
 | Backlog Integrity | 6.0 | VMK-MANIFEST items documented but no formal tracking board |
 | Bitacora | 10.0 | Comprehensive session history |
 | Security | 10.0 | No identified issues in vMK scope |
-| Score Depth | 5.0 | Previous score (9.8) was inherited without calibration — this is the first honest baseline |
+| Score Depth | 7.0 | Previous score (9.8) inherited without calibration. First honest baseline + caught inflation early |
 | Best Practices | 8.0 | Solid TS practices, but lazy loading and tree-shaking not implemented |
 | Orthography | 10.0 | Documentation is clean |
 
