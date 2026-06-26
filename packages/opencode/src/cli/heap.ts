@@ -2,10 +2,10 @@ import path from "path"
 import { writeHeapSnapshot } from "node:v8"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { Global } from "@opencode-ai/core/global"
-const MINUTE = 60_000
-const LIMIT = 2 * 1024 * 1024 * 1024
-const SOFT_LIMIT = 1.5 * 1024 * 1024 * 1024
-const MAX_HEAP = 4 * 1024 * 1024 * 1024
+const MINUTE = 30_000
+const LIMIT = 768 * 1024 * 1024
+const SOFT_LIMIT = 512 * 1024 * 1024
+const MAX_HEAP = 4 * 1024 * 1024 * 1024 // Unused — kept for reference
 
 let timer: Timer | undefined
 let lock = false

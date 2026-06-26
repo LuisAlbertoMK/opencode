@@ -1,3 +1,4 @@
+2026-06-25 - Optimización vMK: drop console/debugger + heap thresholds 512MB/768MB. Plan completo en docs/optimization/. 
 2026-06-24 - Revert-loop bug fix: TUI banner scoping + RevertLock safety checkpoint. Score 7.3→7.5. inter 74/30.
 2026-06-22 - Task 9: noUncheckedIndexedAccess en core (opencode deferred). Score 6.8→7.2. inter 20/30.
 2026-06-21 � Ciclo auto-mejora: 12 subagentes ? 10 fixes CPU/RAM/VRAM/stability

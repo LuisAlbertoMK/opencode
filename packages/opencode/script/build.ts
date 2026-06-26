@@ -215,6 +215,7 @@ for (const item of targets) {
     external: ["node-gyp"],
     format: "esm",
     minify: true,
+    drop: ["console", "debugger"],
     sourcemap: sourcemapsFlag ? "linked" : "none",
     splitting: true,
     compile: {
