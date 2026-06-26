@@ -52,7 +52,14 @@
 Recalibrate project score to reflect honest VMK optimization progress.
 Target 8.5 achieved. No further low-hanging fruit in vMK fork scope.
 Remaining items blocked by upstream or not applicable.
-Next session: consider C3 deep-dive (provider plugin static imports → dynamic) or new analysis.
+## Pending (requires approval)
+
+| Item | Description | File | Effort | Impact |
+|------|-------------|------|--------|--------|
+| **Core plugins → lazy** | Convert 32 static imports in `packages/core/src/plugin/provider.ts` to dynamic `import()` | `packages/core/src/plugin/provider.ts` + 32 files under `packages/core/src/plugin/provider/*.ts` | Medium-High | Medium — deferred module eval on first command |
+
+This is 🟡 AMARILLO zone (`packages/*/src/**`), requires `// vMK:` tags.
+Need: verify build, user approval, then implement + verify.
 
 ## Instructions
 
