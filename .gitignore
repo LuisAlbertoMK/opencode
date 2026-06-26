@@ -41,3 +41,8 @@ tsconfig.tsbuildinfo
 
 # Project scoring — binary is READ-ONLY, never modified by the binary
 .project.json
+
+# vMK isolation directories (config/data/cache local al fork)
+.vmk-config/
+.vmk-data/
+.vmk-cache/
