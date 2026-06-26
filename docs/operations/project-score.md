@@ -1,12 +1,12 @@
 # Project Score: opencode-vmk
 
-**Current**: 8.3/10
+**Current**: 8.5/10
 **Last updated**: 2026-06-26
 **Trend**: improving
 
 > Score reconcialiated from inherited 9.8 (gentleman-agent template, not representative).
 > Baseline established 2026-06-26 after VMK optimization audit.
-> Updated 2026-06-26 after B3: lazy CLI commands completed (+0.2).
+> Updated 2026-06-26 after full VMK-MANIFEST audit: all 16 items evaluated.
 
 ## Dimensions
 
@@ -50,7 +50,9 @@
 ## Goal
 
 Recalibrate project score to reflect honest VMK optimization progress.
-Next target: 8.5 (requires 1 more optimization or test config fix).
+Target 8.5 achieved. No further low-hanging fruit in vMK fork scope.
+Remaining items blocked by upstream or not applicable.
+Next session: consider C3 deep-dive (provider plugin static imports → dynamic) or new analysis.
 
 ## Instructions
 
