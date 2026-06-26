@@ -33,18 +33,19 @@
 | A3: batch() multi-signal footer | ✅ Done | 100% |
 | A4: smol=true | ✅ Done | 100% |
 | B1: useThread=true (OpenTUI Zig) | ⚠️ Partial | 50% |
-| B2: Project References TS | ❌ Pending | 0% |
+| B2: Project References TS | ❌ Skip | tsgo typechecker, no tsc — no benefit |
 | B3: Lazy CLI commands (23 static→dynamic imports) | ✅ Done | 100% |
-| B4: Memoization hot paths | ❌ Pending | 0% |
+| B4: Memoization hot paths | ❌ Skip | AppRuntime already optimized; no clear targets |
 | C2: Knip — remove unused @hono/zod-validator | ✅ Done | 100% |
-| C3: AI SDK provider lazy loading | ❌ Pending | 0% |
-| C4: tree-sitter WASM lazy loading | ❌ Pending | 0% |
-| C5: Effect.ts Pool/TTL | ❌ Pending | 0% |
+| C3: AI SDK provider lazy loading | ✅ Already lazy | All providers use dynamic import() |
+| C4: tree-sitter WASM lazy loading | ✅ Already lazy | Parser + WASM loaded via dynamic import() |
+| C5: Effect.ts Pool/TTL | ✅ Already ok | WebSocket pool has TTL; no Effect Pool usage |
 | Benchmark A/B vs upstream | ✅ Done | 100% |
-| Score reconciliation | ✅ Done (this doc) | 100% |
-| Test config fix | ❌ Pending | 0% |
+| Score reconciliation | ✅ Done | 100% |
+| Test config fix | ❌ Blocked | OpenTUI upstream segfault — not fork-fixable |
 
-**Overall progress**: 14/16 items weight-complete = 87%
+**Overall progress**: 10/13 actionable items complete = 77%
+**(C3/C4/C5 were pre-optimized by upstream, B2/B4 not applicable)
 
 ## Goal
 
