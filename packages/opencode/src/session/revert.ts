@@ -54,7 +54,7 @@ export const layer = Layer.effect(
     const events = yield* EventV2Bridge.Service
     const summary = yield* SessionSummary.Service
     const state = yield* SessionRunState.Service
-    const revertLock = yield* makeRevertLock
+    const revertLock = yield* makeRevertLock()
 
     const revert = Effect.fn("SessionRevert.revert")(function* (input: RevertInput) {
       // Safety checkpoint: acquire per-session revert lock.
