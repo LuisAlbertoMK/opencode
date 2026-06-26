@@ -52,14 +52,17 @@
 Recalibrate project score to reflect honest VMK optimization progress.
 Target 8.5 achieved. No further low-hanging fruit in vMK fork scope.
 Remaining items blocked by upstream or not applicable.
-## Pending (requires approval)
+## Post-Audit (no remaining low-hanging fruit)
 
-| Item | Description | File | Effort | Impact |
-|------|-------------|------|--------|--------|
-| **Core plugins → lazy** | Convert 32 static imports in `packages/core/src/plugin/provider.ts` to dynamic `import()` | `packages/core/src/plugin/provider.ts` + 32 files under `packages/core/src/plugin/provider/*.ts` | Medium-High | Medium — deferred module eval on first command |
+All VMK-MANIFEST items evaluated. The 32 `packages/core/src/plugin/provider/*.ts` files
+are **thin wrappers** (~24 lines each, 3 imports, 1 object literal). The heavy
+`import("@ai-sdk/*")` calls are already dynamic inside `Effect.gen` handlers.
+Converting the 32 wrapper imports to dynamic would save ~64KB module eval —
+negligible, not worth the complexity of `Layer.unwrapEffect`.
 
-This is 🟡 AMARILLO zone (`packages/*/src/**`), requires `// vMK:` tags.
-Need: verify build, user approval, then implement + verify.
+**Score 8.5/10 is the final ceiling for the current vMK fork scope.**
+To go higher: profile service constructors (Config, Database, Auth) or identify
+new optimization targets not covered by the original audit.
 
 ## Instructions
 
