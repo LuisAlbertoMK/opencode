@@ -118,20 +118,19 @@ smol = true
 
 ---
 
-### B2. AI SDK Provider Tree-Shaking
+### B2. AI SDK Provider Tree-Shaking → **SKIP** (no aplica)
 
-**Problema**: `packages/opencode/package.json` tiene **20+ providers** `@ai-sdk/*` como dependencias. Con `bun build --compile`, Bun los embala **todos** en el binario aunque solo uses 2-3.
+**⚠️ Verificación cruzada**: Exploración exhaustiva mostró que **TODOS** los 20+ `@ai-sdk/*` providers declarados en `package.json` se usan en código:
+- Vía `BUNDLED_PROVIDERS` en `provider/provider.ts` (todos)
+- Vía `provider/transform.ts` (mapeo de casos)
+- Algunos también vía `session/llm/native-request.ts` (7 providers: openai, azure, anthropic, google, bedck, openai-compatible, openrouter)
+- Algunos vía plugins específicos (azure.ts, xai.ts, cloudflare.ts, digitalocean.ts, github-copilot/)
 
-**Solución**:
-1. Mover providers no usados a `devDependencies` o a un `peerDependencies` opcional
-2. O usar `--external '@ai-sdk/*'` en build + documentar que el usuario instala solo los que necesita
-3. O crear un `bundler plugin` que remplace imports de providers no configurados por stubs
+**Solo 3 providers tienen ruta nativa** (`native-runtime.ts`): `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/openai-compatible`. Los otros 17+ usan AI SDK directo.
 
-**Archivos**: `packages/opencode/package.json`, `packages/opencode/script/build.ts`
+**Decisión**: **SKIP** — no hay providers no usados para tree-shake. El dual-path (nativo + AI SDK) convive y ambos caminos son necesarios. El binario incluye todo el AI SDK, pero no hay forma limpia de excluir providers individuales sin romper funcionalidad.
 
-**Impacto estimado**: ~500KB-2MB menos en binario, dependiendo de cuántos providers se puedan externalizar.
-
-**Riesgo**: Moderado. Si un provider se necesita en runtime y se externalizó, falla. Requiere análisis fino de cuáles providers usa realmente vMK.
+**Futuro**: Si se quisiera reducir binario, habría que refactorizar `provider/provider.ts` para que los providers se carguen lazy (dynamic import) en vez de estar en `BUNDLED_PROVIDERS` estático. Eso es un refactor mayor.
 
 ---
 
@@ -148,6 +147,10 @@ smol = true
 **Impacto estimado**: UI responsiva incluso durante procesamiento pesado. Render loop en thread separado.
 
 **⚠️ Riesgo identificado por subagente 2**: `bun build --compile` + Zig threading puede tener problemas. El binary single-file de Bun no siempre maneja correctamente threads nativos. Requiere TESTING MANUAL antes de considerar estable.
+
+**✅ Ejecutado**: Commit `66d6300b6`. `useThread: true` agregado a `createCliRenderer()`.
+
+**⚠️ Pendiente**: Verificar con `bun build --compile` que el thread Zig funcione en el binario compilado. Bun's single-file binary puede tener problemas con threading nativo. Probar en dev (`bun run dev`) primero.
 
 **Verificación**: Correr sesión TUI con `gatherStats: true` y monitorear frame times con/sin `useThread`.
 
@@ -229,8 +232,8 @@ Es O(1) en todas las operaciones. 64 entradas con eviction FIFO. Todo bien.
 | A3. Heap thresholds | 🟡 Medio | 🟢 Bajo | 🟢 1 archivo | **2** |
 | A1. batch() multi-señal | 🟡 Medio (corregido) | 🟢 Bajo | 🟢 2-3 archivos | **3** |
 | B1. smol=true | 🟡 Medio | 🟡 Moderado | 🟢 1 línea | **4** |
-| B2. AI SDK tree-shaking | 🟡 Medio | 🟡 Moderado | 🟡 ~4 archivos | **5** |
-| B3. useThread | 🟡 Medio | 🔴 Alto | 🔴 Requiere test | **6** |
+| B2. AI SDK tree-shaking | 🟡 Medio | ✅ SKIP — todos los providers se usan en código | — | **SKIP** |
+| B3. useThread | 🟡 Medio | 🔴 Alto — requiere test con bun build --compile | ✅ commit 66d6300b6 | **6** |
 | B4. Dual-bundle | 🔴 Alto | 🔴 Alto | 🔴 Días | **7** |
 | C1. LRU | ✅ Ya O(1) | — | — | **SKIP** |
 | C2. Streaming buffer | ✅ Ya existe queueMicrotask | — | — | **MERGED into A1** |
@@ -252,13 +255,14 @@ Es O(1) en todas las operaciones. 64 entradas con eviction FIFO. Todo bien.
    - Día 2-3: Medir impacto de los 3 cambios juntos
 
 3. **Sprint 2** (B1 + B2):
-   - Día 4: B1 (smol=true)
-   - Día 4-5: B2 (provider tree-shaking)
-   - Día 5-6: Medir impacto
+   - Día 4: B1 (smol=true) ✅
+   - Día 4-5: B2 (provider tree-shaking) → **SKIP** — todos los providers se usan en código
+   - Día 5-6: Medir impacto de B1
 
 4. **Sprint 3** (B3 + B4 si aplican):
-   - Semana 2: B3 (useThread test)
-   - Semana 2-3: B4 (dual-bundle, si justifica el ROI)
+   - Día 4: B3 (useThread=true) ✅ commit 66d6300b6
+   - Pendiente: test con bun build --compile para validar threading
+   - Semana 2-3: B4 (dual-bundle, si justifica el ROI) — **pendiente**
 
 ---
 

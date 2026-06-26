@@ -1,4 +1,9 @@
-2026-06-25 - Optimización vMK: drop console/debugger + heap thresholds 512MB/768MB. Plan completo en docs/optimization/. 
+2026-06-25 — Investigación profunda: optimización recursos hardware (RAM/CPU/GPU/vRAM) para opencode-vmk y gentleman-vmk con 20+ subagentes + verificación triple
+2026-06-25 - Optimización vMK FINAL: measurement-guide.md creado con 3 subagentes. Método A/B con opencode run --format json. 
+2026-06-25 - Optimización vMK FINAL: B4 SKIP (dual-bundle no justifica riesgo). Binario ~133MB con/sin Web UI. Plan cerrado con 5 cambios aplicados + 4 SKIPs documentados. 
+2026-06-25 - Optimización vMK sprint3: OpenTUI useThread=true (Zig render offload). Falta test con bun build --compile. 
+2026-06-25 - Optimización vMK sprint2: smol=true + análisis AI SDK (todos los providers se usan, no hay tree-shaking).
+2026-06-25 - Optimización vMK: drop console/debugger + heap thresholds 512MB/768MB. Plan completo en docs/optimization/.
 2026-06-24 - Revert-loop bug fix: TUI banner scoping + RevertLock safety checkpoint. Score 7.3→7.5. inter 74/30.
 2026-06-22 - Task 9: noUncheckedIndexedAccess en core (opencode deferred). Score 6.8→7.2. inter 20/30.
 2026-06-21 � Ciclo auto-mejora: 12 subagentes ? 10 fixes CPU/RAM/VRAM/stability
