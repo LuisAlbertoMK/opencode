@@ -1,34 +1,39 @@
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
-import { RunCommand } from "./cli/cmd/run"
-import { GenerateCommand } from "./cli/cmd/generate"
-import { ConsoleCommand } from "./cli/cmd/account"
-import { ProvidersCommand } from "./cli/cmd/providers"
-import { AgentCommand } from "./cli/cmd/agent"
-import { UpgradeCommand } from "./cli/cmd/upgrade"
-import { UninstallCommand } from "./cli/cmd/uninstall"
-import { ModelsCommand } from "./cli/cmd/models"
+import type { CommandModule } from "yargs"
 import { UI } from "./cli/ui"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { FormatError } from "./cli/error"
-import { ServeCommand } from "./cli/cmd/serve"
-import { DebugCommand } from "./cli/cmd/debug"
-import { StatsCommand } from "./cli/cmd/stats"
-import { McpCommand } from "./cli/cmd/mcp"
-import { GithubCommand } from "./cli/cmd/github"
-import { ExportCommand } from "./cli/cmd/export"
-import { ImportCommand } from "./cli/cmd/import"
-import { AttachCommand } from "./cli/cmd/attach"
-import { TuiThreadCommand } from "./cli/cmd/tui"
-import { AcpCommand } from "./cli/cmd/acp"
 import { EOL } from "os"
-import { WebCommand } from "./cli/cmd/web"
-import { PrCommand } from "./cli/cmd/pr"
-import { SessionCommand } from "./cli/cmd/session"
-import { DbCommand } from "./cli/cmd/db"
 import { errorMessage } from "./util/error"
-import { PluginCommand } from "./cli/cmd/plug"
 import { Heap } from "./cli/heap"
+
+// vMK: lazy command — replaces 23 static imports with dynamic import()
+// vMK: defers builder + handler until the command actually matches
+// vMK: --help loads 0 command modules instead of 23; any command loads 1
+function lazy<T, U>(
+  command: string | readonly string[],
+  describe: string | false | undefined,
+  path: string,
+  key: string,
+  aliases?: string[],
+): CommandModule<T, U> {
+  return {
+    command,
+    describe,
+    ...(aliases?.length ? { aliases } : {}),
+    builder: async (yargs) => {
+      const mod: any = await import(path)
+      const cmd = mod[key] as CommandModule<T, U>
+      return cmd.builder ? (cmd.builder as any)(yargs) : yargs
+    },
+    handler: async (args) => {
+      const mod: any = await import(path)
+      const cmd = mod[key] as CommandModule<T, U>
+      if (cmd.handler) await cmd.handler(args as any)
+    },
+  }
+}
 
 const args = hideBin(process.argv)
 
@@ -78,29 +83,29 @@ const cli = yargs(args)
   })
   .usage("")
   .completion("completion", "generate shell completion script")
-  .command(AcpCommand)
-  .command(McpCommand)
-  .command(TuiThreadCommand)
-  .command(AttachCommand)
-  .command(RunCommand)
-  .command(GenerateCommand)
-  .command(DebugCommand)
-  .command(ConsoleCommand)
-  .command(ProvidersCommand)
-  .command(AgentCommand)
-  .command(UpgradeCommand)
-  .command(UninstallCommand)
-  .command(ServeCommand)
-  .command(WebCommand)
-  .command(ModelsCommand)
-  .command(StatsCommand)
-  .command(ExportCommand)
-  .command(ImportCommand)
-  .command(GithubCommand)
-  .command(PrCommand)
-  .command(SessionCommand)
-  .command(PluginCommand)
-  .command(DbCommand)
+  .command(lazy("acp", "start ACP (Agent Client Protocol) server", "./cli/cmd/acp", "AcpCommand"))
+  .command(lazy("mcp", "manage MCP (Model Context Protocol) servers", "./cli/cmd/mcp", "McpCommand"))
+  .command(lazy("$0 [project]", "start opencode tui", "./cli/cmd/tui", "TuiThreadCommand"))
+  .command(lazy("attach <url>", "attach to a running opencode server", "./cli/cmd/attach", "AttachCommand"))
+  .command(lazy("run [message..]", "run opencode with a message", "./cli/cmd/run", "RunCommand"))
+  .command(lazy("generate", undefined, "./cli/cmd/generate", "GenerateCommand"))
+  .command(lazy("debug", "debugging and troubleshooting tools", "./cli/cmd/debug", "DebugCommand"))
+  .command(lazy("console", false, "./cli/cmd/account", "ConsoleCommand"))
+  .command(lazy("providers", "manage AI providers and credentials", "./cli/cmd/providers", "ProvidersCommand", ["auth"]))
+  .command(lazy("agent", "manage agents", "./cli/cmd/agent", "AgentCommand"))
+  .command(lazy("upgrade [target]", "upgrade opencode to the latest or a specific version", "./cli/cmd/upgrade", "UpgradeCommand"))
+  .command(lazy("uninstall", "uninstall opencode and remove all related files", "./cli/cmd/uninstall", "UninstallCommand"))
+  .command(lazy("serve", "starts a headless opencode server", "./cli/cmd/serve", "ServeCommand"))
+  .command(lazy("web", "start opencode server and open web interface", "./cli/cmd/web", "WebCommand"))
+  .command(lazy("models [provider]", "list all available models", "./cli/cmd/models", "ModelsCommand"))
+  .command(lazy("stats", "show token usage and cost statistics", "./cli/cmd/stats", "StatsCommand"))
+  .command(lazy("export [sessionID]", "export session data as JSON", "./cli/cmd/export", "ExportCommand"))
+  .command(lazy("import <file>", "import session data from JSON file or URL", "./cli/cmd/import", "ImportCommand"))
+  .command(lazy("github", "manage GitHub agent", "./cli/cmd/github", "GithubCommand"))
+  .command(lazy("pr <number>", "fetch and checkout a GitHub PR branch, then run opencode", "./cli/cmd/pr", "PrCommand"))
+  .command(lazy("session", "manage sessions", "./cli/cmd/session", "SessionCommand"))
+  .command(lazy("plugin <module>", "install plugin and update config", "./cli/cmd/plug", "PluginCommand"))
+  .command(lazy("db", "database tools", "./cli/cmd/db", "DbCommand"))
   .fail((msg, err) => {
     if (
       msg?.startsWith("Unknown argument") ||
