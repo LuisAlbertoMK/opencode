@@ -14,7 +14,7 @@
 |-----------|-------|-----------|
 | Cycle Activity | 7.0 | 4/12 VMK optimizations implemented (A1-A4), 1 partial (B1), 7 pending |
 | Project Artifacts | 8.0 | BITACORA, optimization plans, measurement guide exist. No baseline snapshot saved |
-| Dead Code | 7.5 | Knip + unbarrelify identified as gap (C2). B3 lazy imports reduce eager code — 23 modules deferred |
+| Dead Code | 8.0 | Knip + unbarrelify partially done. @hono/zod-validator removed. B3 lazy imports reduce eager code — 23 modules deferred. C2 main gap closed |
 | Clean Code | 9.0 | Well-structured TypeScript. A3 batch() + B3 lazy() applied. ~22 AMARILLO files still missing `// vMK:` tags |
 | Metrics | 8.0 | Tests run (30/30 passing in footer suite), CI pipeline via turbo. No perf baseline yet |
 | Backlog Integrity | 6.0 | VMK-MANIFEST items documented but no formal tracking board |
@@ -36,7 +36,7 @@
 | B2: Project References TS | ❌ Pending | 0% |
 | B3: Lazy CLI commands (23 static→dynamic imports) | ✅ Done | 100% |
 | B4: Memoization hot paths | ❌ Pending | 0% |
-| C2: Knip + unbarrelify | ❌ Pending | 0% |
+| C2: Knip — remove unused @hono/zod-validator | ✅ Done | 100% |
 | C3: AI SDK provider lazy loading | ❌ Pending | 0% |
 | C4: tree-sitter WASM lazy loading | ❌ Pending | 0% |
 | C5: Effect.ts Pool/TTL | ❌ Pending | 0% |
@@ -44,12 +44,12 @@
 | Score reconciliation | ✅ Done (this doc) | 100% |
 | Test config fix | ❌ Pending | 0% |
 
-**Overall progress**: 13/16 items weight-complete = 81%
+**Overall progress**: 14/16 items weight-complete = 87%
 
 ## Goal
 
 Recalibrate project score to reflect honest VMK optimization progress.
-Next target: 8.5 (requires 2 more optimizations or test config fix).
+Next target: 8.5 (requires 1 more optimization or test config fix).
 
 ## Instructions
 
