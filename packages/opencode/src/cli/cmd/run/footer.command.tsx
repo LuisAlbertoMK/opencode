@@ -1,3 +1,4 @@
+// vMK: batch() multi-signal consumer — signals updated atomically from footer.ts
 /** @jsxImportSource @opentui/solid */
 import { TextAttributes, type InputRenderable, type KeyEvent } from "@opentui/core"
 import { useKeyboard, type JSX } from "@opentui/solid"

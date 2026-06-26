@@ -24,10 +24,14 @@
 // Ctrl-c clears a live prompt draft first; otherwise interrupt and exit use a
 // two-press pattern where the first press shows a hint and the second press
 // within 5 seconds actually fires the action.
+//
+// vMK: batch() multi-signal — wrap concurrent signal sets in Solid batch()
+// to coalesce reactive re-renders into a single pass, improving FPS when
+// catalog/variants/present fire multiple setters synchronously.
 import { CliRenderEvents, type CliRenderer, type KeyEvent, type Renderable, type TreeSitterClient } from "@opentui/core"
 import type { Keymap } from "@opentui/keymap"
 import { render } from "@opentui/solid"
-import { createComponent, createSignal, type Accessor, type Setter } from "solid-js"
+import { batch, createComponent, createSignal, type Accessor, type Setter } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 import { OpencodeKeymapProvider } from "@opencode-ai/tui/keymap"
 import { RUN_COMMAND_PANEL_ROWS, RUN_SUBAGENT_PANEL_ROWS } from "./footer.command"
@@ -410,11 +414,14 @@ export class RunFooter implements FooterApi {
         return
       }
 
-      this.setAgents(next.agents)
-      this.setResources(next.resources)
-      if (next.commands !== undefined) {
-        this.setCommands(next.commands)
-      }
+      // vMK: batch 3 signal sets → 1 re-render
+      batch(() => {
+        this.setAgents(next.agents)
+        this.setResources(next.resources)
+        if (next.commands !== undefined) {
+          this.setCommands(next.commands)
+        }
+      })
       return
     }
 
@@ -432,8 +439,11 @@ export class RunFooter implements FooterApi {
         return
       }
 
-      this.setVariants(next.variants)
-      this.setCurrentVariant(next.current)
+      // vMK: batch 2 signal sets → 1 re-render
+      batch(() => {
+        this.setVariants(next.variants)
+        this.setCurrentVariant(next.current)
+      })
       return
     }
 
@@ -519,13 +529,16 @@ export class RunFooter implements FooterApi {
       })
   }
 
+  // vMK: batch setView + applyHeight → subscribers see both updates atomically
   private present(view: FooterView): void {
     if (this.isGone) {
       return
     }
 
-    this.setView(view)
-    this.applyHeight()
+    batch(() => {
+      this.setView(view)
+      this.applyHeight()
+    })
   }
 
   // Queues a scrollback commit. Consecutive progress chunks for the same
@@ -795,6 +808,7 @@ export class RunFooter implements FooterApi {
     await this.options.onQuestionReject(input)
   }
 
+  // vMK: batch multi-signal variant update → coalesce re-renders
   private handleCycle = (): void => {
     const result = this.options.onCycleVariant?.()
     if (!result) {
@@ -804,20 +818,22 @@ export class RunFooter implements FooterApi {
 
     const patch: FooterPatch = {}
 
-    if ("variants" in result) {
-      this.setVariants(result.variants ?? [])
-    }
+    batch(() => {
+      if ("variants" in result) {
+        this.setVariants(result.variants ?? [])
+      }
 
-    if ("variant" in result) {
-      this.setCurrentVariant(result.variant)
-    }
+      if ("variant" in result) {
+        this.setCurrentVariant(result.variant)
+      }
 
-    if (result.modelLabel) {
-      patch.model = result.modelLabel
-    }
+      if (result.modelLabel) {
+        patch.model = result.modelLabel
+      }
 
-    this.patch(patch)
-    this.setNotice(result.status ?? "variant updated")
+      this.patch(patch)
+      this.setNotice(result.status ?? "variant updated")
+    })
   }
 
   private handleModelSelect = (model: NonNullable<RunInput["model"]>): void => {

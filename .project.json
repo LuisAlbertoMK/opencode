@@ -1,22 +1,20 @@
 {
   "score": {
-    "current": 9.8,
+    "current": 7.7,
     "dimensions": {
-      "Cycle Activity": 10,
-      "Project Artifacts": 10,
-      "Dead Code": 9,
-      "Clean Code": 9.4,
-      "Script Performance": 9,
-      "Metrics": 10,
-      "Backlog Integrity": 10,
-      "Bitacora": 10,
-      "Security": 10,
-      "Skill Effectiveness": 10,
-      "Score Depth": 9.7,
-      "Best Practices": 10,
-      "Orthography": 10
+      "Cycle Activity": 7.0,
+      "Project Artifacts": 8.0,
+      "Dead Code": 7.0,
+      "Clean Code": 8.5,
+      "Metrics": 5.0,
+      "Backlog Integrity": 6.0,
+      "Bitacora": 10.0,
+      "Security": 10.0,
+      "Score Depth": 5.0,
+      "Best Practices": 8.0,
+      "Orthography": 10.0
     },
-    "last_updated": "2026-06-24",
-    "trend": "stable"
+    "last_updated": "2026-06-26",
+    "trend": "recalibrating"
   }
 }

@@ -1,3 +1,4 @@
+// vMK: batch() multi-signal consumer — signals updated atomically from footer.ts
 /** @jsxImportSource @opentui/solid */
 import { TextAttributes, type ColorInput } from "@opentui/core"
 import { useTerminalDimensions } from "@opentui/solid"
