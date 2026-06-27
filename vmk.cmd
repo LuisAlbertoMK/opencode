@@ -5,7 +5,7 @@ REM ============================================================
 REM Busca automaticamente el binario compilado de TU fork
 REM en packages/opencode/dist/ y lo ejecuta con isolation.
 REM ============================================================
-setlocal enabledelayedexpansion
+setlocal
 
 REM --- Aislamiento de Config/Data/Cache ---
 set OPENCODE_CONFIG_DIR=%~dp0.vmk-config
@@ -48,6 +48,9 @@ echo.
 exit /b 1
 
 :run
+REM Ejecutar binario directamente. ANSI VT processing lo maneja @opentui/core
+REM internamente (Windows 10+ con Windows Terminal o ConPTY).
 echo [vMK] Usando: %VMK_EXE%
 "%VMK_EXE%" %*
-exit /b !ERRORLEVEL!
+
+exit /b %ERRORLEVEL%

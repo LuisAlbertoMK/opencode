@@ -185,6 +185,7 @@ if (!skipInstall) {
     await $`bun install ${crossArgs} ${spec}`
   }
 }
+
 for (const item of targets) {
   const name = [
     pkg.name,
