@@ -10,7 +10,8 @@ import { streamText, wrapLanguageModel, type ModelMessage, type Tool } from "ai"
 import type { LLMEvent } from "@opencode-ai/llm"
 import { LLMClient, RequestExecutor, WebSocketExecutor } from "@opencode-ai/llm/route"
 import type { LLMClientService } from "@opencode-ai/llm/route"
-import { GitLabWorkflowLanguageModel } from "gitlab-ai-provider"
+// vMK: was `import { GitLabWorkflowLanguageModel }` — now type-only + duck-type at point of use
+import type { GitLabWorkflowLanguageModel } from "gitlab-ai-provider"
 import { ProviderTransform } from "@/provider/transform"
 import { Config } from "@/config/config"
 import type { Agent } from "@/agent/agent"
@@ -101,7 +102,8 @@ const live: Layer.Layer<
         { concurrency: "unbounded" },
       )
 
-      const isWorkflow = language instanceof GitLabWorkflowLanguageModel
+      // vMK: replaced `import { GitLabWorkflowLanguageModel }` + instanceof with duck-type check
+      const isWorkflow = language?.constructor?.name === "_GitLabWorkflowLanguageModel"
       const prepared = yield* LLMRequestPrep.prepare({
         ...input,
         provider: item,
@@ -115,7 +117,8 @@ const live: Layer.Layer<
       // from the workflow service are executed via opencode's tool system
       // and results sent back over the WebSocket.
       const bridge = yield* EffectBridge.make()
-      if (language instanceof GitLabWorkflowLanguageModel) {
+      // vMK: duck-type check (no class import needed)
+      if (language?.constructor?.name === "_GitLabWorkflowLanguageModel") {
         const workflowModel = language as GitLabWorkflowLanguageModel & {
           sessionID?: string
           sessionPreapprovedTools?: string[]

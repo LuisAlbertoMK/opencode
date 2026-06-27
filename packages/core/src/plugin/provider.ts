@@ -1,3 +1,7 @@
+// vMK: static barrel — 32 plugins registered eagerly at boot.
+// npm packages inside each provider ARE lazy-loaded via Effect.promise(() => import(...)).
+// These 32 local imports are bundled anyway; conversion to dynamic registration
+// would not yield meaningful savings (see analysis in vmk-containment).
 import { AlibabaPlugin } from "./provider/alibaba"
 import { AmazonBedrockPlugin } from "./provider/amazon-bedrock"
 import { AnthropicPlugin } from "./provider/anthropic"
