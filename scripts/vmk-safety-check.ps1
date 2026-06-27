@@ -143,6 +143,43 @@ if ($CheckGlobal) {
 }
 
 # ============================================================
+# MODO: Verificar dependencias vMK (Catalog integrity)
+# ============================================================
+function Check-CatalogIntegrity {
+    Write-Host "`n=== Catalog Integrity Check ===" -ForegroundColor Cyan
+    $issues = 0
+
+    # Verificar que @opentui/core NO este pinned en packages/opencode
+    $opencodePkg = "D:\opencode\packages\opencode\package.json"
+    if (Test-Path $opencodePkg) {
+        $content = Get-Content $opencodePkg -Raw
+        if ($content -match '"@opentui/core":\s*"(?!catalog:)') {
+            Write-Host "[PELIGRO] @opentui/core esta PINNEADO en packages/opencode (NO catalog:)" -ForegroundColor Red
+            Write-Host "         Esto causa typecheck errors en TUI (dos versiones de @opentui/keymap)" -ForegroundColor Red
+            Write-Host "         Fix: cambiar a 'catalog:' en packages/opencode/package.json" -ForegroundColor Yellow
+            $issues++
+        } else {
+            Write-Host "[OK] @opentui/core usa catalog: en packages/opencode" -ForegroundColor Green
+        }
+    }
+
+    # Verificar todos los packages que usan @opentui
+    Get-ChildItem "D:\opencode\packages" -Recurse -Depth 0 -Filter "package.json" | ForEach-Object {
+        $pkgContent = Get-Content $_.FullName -Raw
+        if ($pkgContent -match '"@opentui/[a-z]+":\s*"(?!catalog:)([^"]+)"') {
+            Write-Host "[AVISO] $($_.FullName): @opentui/$($Matches[1]) pinneado" -ForegroundColor Yellow
+            $issues++
+        }
+    }
+
+    if ($issues -eq 0) {
+        Write-Host "[OK] Todos los @opentui/* usan catalog:" -ForegroundColor Green
+    } else {
+        Write-Host "[WARN] $issues issue(s) de integridad de catalog encontrados" -ForegroundColor Yellow
+    }
+}
+
+# ============================================================
 # MODO: Verificacion completa (sin parametros)
 # ============================================================
 Write-Host "`n=== vMK Containment Status ===" -ForegroundColor Cyan
@@ -152,6 +189,9 @@ Write-Host "`n=== vMK Containment Status ===" -ForegroundColor Cyan
 
 # Verificar binarios
 & "D:\opencode\scripts\vmk-safety-check.ps1" -CheckBuild
+
+# Verificar integridad de catalog
+Check-CatalogIntegrity
 
 Write-Host "`n=== Uso ===" -ForegroundColor Gray
 Write-Host "  .\vmk-safety-check.ps1 -TargetFile 'path\to\file'  # Verificar archivo"
