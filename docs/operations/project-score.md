@@ -1,6 +1,6 @@
 # Project Score: opencode-vMK
 
-**Current**: 8.7/10
+**Current**: 8.9/10
 **Last updated**: 2026-06-26
 **Trend**: improving
 

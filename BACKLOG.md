@@ -19,7 +19,7 @@
 | # | Item | Estado | Ciclo | Prioridad | Notas |
 |:-:|:-----|:------:|:-----:|:---------:|:------|
 | 1 | B1: useThread=true test en binario compilado | 🟡 Pendiente | Cycle4 | Alta | require test TUI manual |
-| 2 | Cross-compile script (Linux/macOS) | 🟡 Pendiente | Cycle4 | Media | build.ts ya soporta targets |
+| 2 | Cross-compile script (Linux/macOS) | ✅ Hecho | Cycle4 | Media | `scripts/vmk-cross-compile.ps1` + build.ts nativo |
 | 3 | Dead Code audit (Knip + unbarrelify) | 🟡 Pendiente | Cycle4 | Media | Pendiente desde audit inicial |
 | 4 | AMARILLO tag rule: ¿solo modificados o todos? | 🟡 Pendiente | Cycle4 | Baja | Aclarar con el usuario |
 | 5 | Profile service constructors (Config, DB, Auth) | 🟡 Pendiente | Cycle4 | Baja | Requiere benchmark |
