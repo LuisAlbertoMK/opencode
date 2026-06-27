@@ -221,6 +221,16 @@ export const run = Effect.fn("Tui.run")(function* (input: TuiInput) {
         }),
       )
       yield* Effect.addFinalizer(() => Effect.sync(TuiAudio.dispose))
+      // vMK: Global unhandled rejection handler — evita crashes silenciosos en TUI.
+      // Captura promesas que escapan del runtime de Effect/Solid y las loggea con contexto.
+      const onUnhandledRejection = (reason: unknown) => {
+        console.error("[TUI] Unhandled rejection:", reason)
+      }
+      yield* Effect.acquireRelease(
+        Effect.sync(() => process.on("unhandledRejection", onUnhandledRejection)),
+        () => Effect.sync(() => process.off("unhandledRejection", onUnhandledRejection)),
+      )
+
       const shutdown = yield* Deferred.make<unknown>()
       const onSighup = () => destroyRenderer(renderer)
       yield* Effect.acquireRelease(
