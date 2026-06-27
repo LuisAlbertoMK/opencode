@@ -66,11 +66,19 @@ export const layer: Layer.Layer<
       "CONTEXT.md", // deprecated
     ]
 
+    // vMK: per-instance cache to skip redundant filesystem I/O across LLM turns
+    type InstSysCache = {
+      paths: { ts: number; value: Set<string> } | null
+      result: { ts: number; value: string[] } | null
+    }
+
     const state = yield* InstanceState.make(
       Effect.fn("Instruction.state")(() =>
         Effect.succeed({
           // Track which instruction files have already been attached for a given assistant message.
           claims: new Map<MessageID, Set<string>>(),
+          // vMK: cache filesystem-heavy results — instructions don't change mid-session
+          _vmsys: { paths: null, result: null } as InstSysCache,
         }),
       ),
     )
@@ -107,6 +115,12 @@ export const layer: Layer.Layer<
     })
 
     const systemPaths = Effect.fn("Instruction.systemPaths")(function* () {
+      const s = yield* InstanceState.get(state)
+      // vMK: cache filesystem scan (120s TTL) — instruction paths don't change mid-session
+      if (s._vmsys.paths && Date.now() - s._vmsys.paths.ts < 120_000) {
+        return s._vmsys.paths.value
+      }
+
       const config = yield* cfg.get()
       const ctx = yield* InstanceState.context
       const paths = new Set<string>()
@@ -148,10 +162,18 @@ export const layer: Layer.Layer<
         }
       }
 
+      // vMK: cache for next turn
+      s._vmsys.paths = { ts: Date.now(), value: paths }
       return paths
     })
 
     const system = Effect.fn("Instruction.system")(function* () {
+      const s = yield* InstanceState.get(state)
+      // vMK: cache full result (120s TTL) — skips file reads + remote fetch
+      if (s._vmsys.result && Date.now() - s._vmsys.result.ts < 120_000) {
+        return s._vmsys.result.value
+      }
+
       const config = yield* cfg.get()
       const paths = yield* systemPaths()
       const urls = (config.instructions ?? []).filter(
@@ -161,10 +183,13 @@ export const layer: Layer.Layer<
       const files = yield* Effect.forEach(Array.from(paths), read, { concurrency: 8 })
       const remote = yield* Effect.forEach(urls, fetch, { concurrency: 4 })
 
-      return [
+      const result = [
         ...Array.from(paths).flatMap((item, i) => (files[i] ? [`Instructions from: ${item}\n${files[i]}`] : [])),
         ...urls.flatMap((item, i) => (remote[i] ? [`Instructions from: ${item}\n${remote[i]}`] : [])),
       ]
+      // vMK: cache for next turn
+      s._vmsys.result = { ts: Date.now(), value: result }
+      return result
     })
 
     const find = Effect.fn("Instruction.find")(function* (dir: string) {

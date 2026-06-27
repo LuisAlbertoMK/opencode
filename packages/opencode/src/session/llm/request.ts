@@ -127,7 +127,17 @@ export const prepare = Effect.fn("LLMRequestPrep.prepare")(function* (input: Pre
         : undefined,
       topP: input.agent.topP ?? ProviderTransform.topP(input.model),
       topK: ProviderTransform.topK(input.model),
-      maxOutputTokens: ProviderTransform.maxOutputTokens(input.model, input.flags.outputTokenMax),
+      // vMK: dynamic output constraint — shorter queries need less output budget
+      maxOutputTokens: (() => {
+        const base = ProviderTransform.maxOutputTokens(input.model, input.flags.outputTokenMax)
+        const lastUser = input.messages.filter((m) => m.role === "user").at(-1)
+        if (!lastUser) return base
+        const len = extractText(lastUser).length
+        if (len < 100) return Math.min(base, 4096)
+        if (len < 500) return Math.min(base, 8192)
+        if (len < 2000) return Math.min(base, 16384)
+        return base
+      })(),
       options,
     },
   )
@@ -205,6 +215,13 @@ function resolveTools(input: Pick<PrepareInput, "tools" | "agent" | "permission"
     Permission.merge(input.agent.permission, input.permission ?? []),
   )
   return Record.filter(input.tools, (_, k) => input.user.tools?.[k] !== false && !disabled.has(k))
+}
+
+// vMK: extract text from a ModelMessage (content can be string or array of parts)
+function extractText(msg: ModelMessage): string {
+  if (typeof msg.content === "string") return msg.content
+  if (Array.isArray(msg.content)) return msg.content.filter((p) => p.type === "text").map((p) => p.text).join(" ")
+  return ""
 }
 
 export function hasToolCalls(messages: ModelMessage[]): boolean {

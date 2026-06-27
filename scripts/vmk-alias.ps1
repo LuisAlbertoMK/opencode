@@ -10,6 +10,42 @@
 # Raiz del repo = directorio padre del script
 $script:vmkRepoRoot = Resolve-Path "$PSScriptRoot\.."
 
+# --- Auto-habilitar ANSI VT processing (Windows 10+) ---
+# Evita que binarios con colores/ANSI (como opencode-vMK) muestren
+# escapes crudos tipo [I[555;...] en PowerShell 5.1/CMD clasico.
+# Funciona sin registry ni terminal moderno.
+$script:ansiEnabled = $false
+function Enable-ANSIConsole {
+    if ($script:ansiEnabled) { return }
+    try {
+        $script:ansiCode = @'
+using System;
+using System.Runtime.InteropServices;
+public static class ConsoleANSI {
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern IntPtr GetStdHandle(uint nStdHandle);
+}
+'@
+        if (-not ('ConsoleANSI' -as [type])) {
+            Add-Type -TypeDefinition $script:ansiCode -ErrorAction Stop
+        }
+        $handle = [ConsoleANSI]::GetStdHandle(0xFFFFFFF5) # STD_OUTPUT_HANDLE
+        $mode = 0
+        if ([ConsoleANSI]::GetConsoleMode($handle, [ref]$mode)) {
+            $mode = $mode -bor 0x0004 # ENABLE_VIRTUAL_TERMINAL_PROCESSING
+            [ConsoleANSI]::SetConsoleMode($handle, $mode) | Out-Null
+        }
+        $script:ansiEnabled = $true
+    } catch {
+        # Si falla (entorno restringido), continuar sin ANSI
+        $script:ansiEnabled = $false
+    }
+}
+
 function Invoke-vMK {
     <#
     .SYNOPSIS
@@ -67,6 +103,9 @@ function Invoke-vMK {
         Write-Host "  `$env:OPENCODE_CHANNEL=`"vMK-dev`"; bun run --cwd packages/opencode build -- --skip-embed-web-ui" -ForegroundColor Gray
         return
     }
+
+    # Activar ANSI VT processing para que el TUI del binario se vea bien
+    Enable-ANSIConsole
 
     Write-Host "[vMK] Usando: $vmkExe" -ForegroundColor DarkGray
     & $vmkExe @args

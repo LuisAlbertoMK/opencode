@@ -1,4 +1,4 @@
-# opencode-vmk — Optimization Plan
+# opencode-vMK — Optimization Plan
 
 > **Current score**: 7.3/10 (`.project.json`), 6.8/10 (`PROJECT-SCORE.md`) — must reconcile
 > **Target**: 8.5–9.0/10
@@ -97,7 +97,7 @@
 
 ---
 
-## Cross-Project Concerns (gentleman-agent-gh ↔ opencode-vmk)
+## Cross-Project Concerns (gentleman-agent-gh ↔ opencode-vMK)
 
 | Concern | Impact | Action |
 |---------|--------|--------|

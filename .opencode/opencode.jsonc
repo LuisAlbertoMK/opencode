@@ -3,5 +3,13 @@
   "tools": {
     "github-triage": true,
     "github-pr-search": true
+  },
+  "mcp": {
+    "codebase-memory": {
+      "type": "local",
+      "command": ["codebase-memory-mcp"],
+      "enabled": false,
+      "timeout": 30000
+    }
   }
 }

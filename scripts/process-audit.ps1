@@ -21,11 +21,18 @@ if ($Audit -or $Auto) {
   Write-Output "RAM total opencode+engram: $([math]::Round($total,1))MB"
 
   $npmProcesses = $all | Where-Object { $_.CommandLine -match 'AppData.*npm' }
+  $vmkProcesses = $all | Where-Object { $_.CommandLine -match 'opencode-vMK' }
   if ($npmProcesses) {
     $npmRAM = ($npmProcesses | Measure-Object -Property 'RAM(MB)' -Sum).Sum
     Write-Output "ADVERTENCIA: $($npmProcesses.Count) instancias de opencode ORIGINAL (npm)"
     Write-Output "RAM desperdiciada: ~$([math]::Round($npmRAM,1))MB"
     Write-Output "Sugerencia: .\scripts\process-audit.ps1 -Cleanup para liberar"
+  }
+  if ($vmkProcesses) {
+    $vmkRAM = ($vmkProcesses | Measure-Object -Property 'RAM(MB)' -Sum).Sum
+    Write-Output "NOTA: $($vmkProcesses.Count) instancias de opencode-vMK (fork)"
+    Write-Output "RAM usada: ~$([math]::Round($vmkRAM,1))MB"
+    Write-Output "Sugerencia: .\scripts\process-audit.ps1 -Cleanup para liberar (incluye vMK)"
   }
 }
 
@@ -36,12 +43,23 @@ if ($Cleanup -or $Auto) {
     $all = Get-CimInstance Win32_Process -Filter "Name LIKE '%opencode%' OR Name LIKE '%engram%'" | Select-Object ProcessId, Name, @{N='RAM(MB)';E={[math]::Round($_.WorkingSetSize/1MB,1)}}, @{N='CPU(s)';E={[math]::Round($_.KernelModeTime/10000000,1)}}, CommandLine
   }
   $npm = $all | Where-Object { $_.CommandLine -match 'AppData.*npm' -and $_.Name -eq 'opencode.exe' }
+  $vmk = $all | Where-Object { $_.CommandLine -match 'opencode-vMK' -and $_.Name -eq 'opencode-vMK.exe' }
   foreach ($p in $npm) {
     $processPid = $p.ProcessId
     $ram = [math]::Round($p.WorkingSetSize/1MB,1)
     try {
       Stop-Process -Id $processPid -Force
       Write-Output "Kill PID $processPid (original npm opencode) - liberados ~${ram}MB"
+    } catch {
+      Write-Output ("No se pudo matar PID " + $processPid + ": " + $_ )
+    }
+  }
+  foreach ($p in $vmk) {
+    $processPid = $p.ProcessId
+    $ram = [math]::Round($p.WorkingSetSize/1MB,1)
+    try {
+      Stop-Process -Id $processPid -Force
+      Write-Output "Kill PID $processPid (vMK fork) - liberados ~${ram}MB"
     } catch {
       Write-Output ("No se pudo matar PID " + $processPid + ": " + $_ )
     }

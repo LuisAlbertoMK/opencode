@@ -40,7 +40,7 @@ export function provider(model: Provider.Model) {
 
 export interface Interface {
   readonly environment: (model: Provider.Model) => Effect.Effect<string[]>
-  readonly skills: (agent: Agent.Info) => Effect.Effect<string | undefined>
+  readonly skills: (agent: Agent.Info, query?: string) => Effect.Effect<string | undefined>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/SystemPrompt") {}
@@ -51,13 +51,22 @@ export const layer = Layer.effect(
     const skill = yield* Skill.Service
     const locations = yield* LocationServiceMap
 
+    // vMK: cache Reference list across LLM turns (120s TTL)
+    let _vmg_refs: { ts: number; value: Reference.Info[] } | undefined
+
     return Service.of({
       environment: Effect.fn("SystemPrompt.environment")(function* (model: Provider.Model) {
         const ctx = yield* InstanceState.context
-        const references = yield* Effect.gen(function* () {
-          yield* (yield* PluginBoot.Service).wait()
-          return (yield* (yield* Reference.Service).list()).filter((reference) => reference.description !== undefined)
-        }).pipe(Effect.provide(locations.get(Location.Ref.make({ directory: AbsolutePath.make(ctx.directory) }))))
+
+        // vMK: skip Reference.Service.list() if cached
+        if (!_vmg_refs || Date.now() - _vmg_refs.ts > 120_000) {
+          const refs = yield* Effect.gen(function* () {
+            yield* (yield* PluginBoot.Service).wait()
+            return (yield* (yield* Reference.Service).list()).filter((reference) => reference.description !== undefined)
+          }).pipe(Effect.provide(locations.get(Location.Ref.make({ directory: AbsolutePath.make(ctx.directory) }))))
+          _vmg_refs = { ts: Date.now(), value: refs }
+        }
+        const references = _vmg_refs.value
         return [
           [
             `You are powered by the model named ${model.api.id}. The exact model ID is ${model.providerID}/${model.api.id}`,
@@ -86,10 +95,22 @@ export const layer = Layer.effect(
         ].filter((part): part is string => part !== undefined)
       }),
 
-      skills: Effect.fn("SystemPrompt.skills")(function* (agent: Agent.Info) {
+      // vMK: context pruning — filter skills by relevance to user query (SWE-Pruner inspired)
+      skills: Effect.fn("SystemPrompt.skills")(function* (agent: Agent.Info, query?: string) {
         if (Permission.disabled(["skill"], agent.permission).has("skill")) return
 
-        const list = yield* skill.available(agent)
+        let list = yield* skill.available(agent)
+
+        if (query) {
+          const q = query.toLowerCase()
+          const matched = list.filter(
+            (s) =>
+              s.name.toLowerCase().includes(q) ||
+              (s.description && s.description.toLowerCase().includes(q)),
+          )
+          // Fallback to full list if filter is too aggressive (fewer than 3 matches)
+          if (matched.length >= 3) list = matched
+        }
 
         return [
           "Skills provide specialized instructions and workflows for specific tasks.",

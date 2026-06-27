@@ -12,7 +12,7 @@
 4. **Engram SQLite tuning** (WAL mode, FTS5 optimization)
 5. **Script inter-dependency** (dependency graph, parallel execution)
 
-### opencode-vmk
+### opencode-vMK
 1. **Bun-specific tuning** (bunfig.toml, --smol, JSC flags)
 2. **Turbo monorepo optimization** (cache hit ratio, remote cache)
 3. **Effect-TS v4 performance** (fiber allocation, GC interaction)

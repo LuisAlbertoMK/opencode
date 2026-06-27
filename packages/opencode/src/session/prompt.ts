@@ -1308,8 +1308,13 @@ export const layer = Layer.effect(
 
             yield* plugin.trigger("experimental.chat.messages.transform", {}, { messages: msgs })
 
+            // vMK: extract user query for skill context pruning
+            const userQuery = lastUserMsg?.parts
+              .filter((p): p is SessionV1.TextPart => p.type === "text")
+              .map((p) => p.text)
+              .join(" ")
             const [skills, env, instructions, modelMsgs] = yield* Effect.all([
-              sys.skills(agent),
+              sys.skills(agent, userQuery),
               sys.environment(model),
               instruction.system().pipe(Effect.orDie),
               MessageV2.toModelMessagesEffect(msgs, model),

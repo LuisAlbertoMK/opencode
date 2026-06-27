@@ -1,6 +1,6 @@
-# opencode-vmk — Optimization Research Index
+# opencode-vMK — Optimization Research Index
 
-> **Context**: Resource optimization plan for opencode-vmk (TypeScript/Bun monorepo, current score ~7.3/10)
+> **Context**: Resource optimization plan for opencode-vMK (TypeScript/Bun monorepo, current score ~7.3/10)
 > **Goal**: 8.5–9.0/10 via dependency reduction, config fixes, Bun tuning, and prompt optimization
 
 ---

@@ -2,7 +2,7 @@
 
 > Fecha: 2026-06-25
 > Estado: ANÁLISIS — pendiente de aprobación
-> Contexto: Aislamiento entre opencode-vmk.exe y opencode global (npm)
+> Contexto: Aislamiento entre opencode-vMK.exe y opencode global (npm)
 
 ---
 
@@ -179,7 +179,7 @@ function Invoke-vMK {
     $env:OPENCODE_DISABLE_MODELS_FETCH = "true"
     $env:OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER = "true"
     $env:OPENCODE_DISABLE_EMBEDDED_WEB_UI = "true"
-    & "D:\opencode\opencode-vmk.exe" @args
+    & "D:\opencode\opencode-vMK.exe" @args
 }
 Set-Alias -Name vmk -Value Invoke-vMK
 ```

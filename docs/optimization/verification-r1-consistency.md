@@ -32,7 +32,7 @@
 | P4 | Formalize hierarchical summarization L1/L2/L3 | Low | Medium |
 | — | Everything else (GPU, MoA, frameworks) | None | — |
 
-### opencode-vmk (score 7.3/10)
+### opencode-vMK (score 7.3/10)
 | Priority | Recommendation | Impact | Effort |
 |----------|---------------|--------|--------|
 | P1 | Dependency bloat control (Knip, tree-shaking, barrels) | High | Low |
