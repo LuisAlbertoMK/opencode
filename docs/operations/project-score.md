@@ -1,28 +1,28 @@
-# Project Score: opencode-vmk
+# Project Score: opencode-vMK
 
-**Current**: 8.5/10
+**Current**: 8.7/10
 **Last updated**: 2026-06-26
 **Trend**: improving
 
 > Score reconcialiated from inherited 9.8 (gentleman-agent template, not representative).
 > Baseline established 2026-06-26 after VMK optimization audit.
-> Updated 2026-06-26 after full VMK-MANIFEST audit: all 16 items evaluated.
+> Updated 2026-06-26 — Cycle2 build fix + score refresh.
 
 ## Dimensions
 
-| Dimension | Score | Rationale |
-|-----------|-------|-----------|
-| Cycle Activity | 7.0 | 4/12 VMK optimizations implemented (A1-A4), 1 partial (B1), 7 pending |
-| Project Artifacts | 8.0 | BITACORA, optimization plans, measurement guide exist. No baseline snapshot saved |
-| Dead Code | 8.0 | Knip + unbarrelify partially done. @hono/zod-validator removed. B3 lazy imports reduce eager code — 23 modules deferred. C2 main gap closed |
-| Clean Code | 9.0 | Well-structured TypeScript. A3 batch() + B3 lazy() applied. ~22 AMARILLO files still missing `// vMK:` tags |
-| Metrics | 8.0 | Tests run (30/30 passing in footer suite), CI pipeline via turbo. No perf baseline yet |
-| Backlog Integrity | 6.0 | VMK-MANIFEST items documented but no formal tracking board |
-| Bitacora | 10.0 | Comprehensive session history |
-| Security | 10.0 | No identified issues in vMK scope |
-| Score Depth | 7.0 | Previous score (9.8) inherited without calibration. First honest baseline + caught inflation early |
-| Best Practices | 8.5 | Solid TS practices. B3: lazy loading of CLI commands implemented. Tree-shaking via C2 still pending |
-| Orthography | 10.0 | Documentation is clean |
+| Dimension | Score | Rationale | Δ |
+|-----------|-------|-----------|---|
+| Cycle Activity | 8.0 | Cycle2 completado (build fix + vmk.cmd + cycle report). Cycle3 iniciado con CYCLE.md actualizado | +1.0 |
+| Project Artifacts | 8.5 | BITACORA, optimization plans, ciclo report en docs/ciclos/cycle2.md | +0.5 |
+| Dead Code | 8.0 | Knip + unbarrelify partially done. @hono/zod-validator removed. | — |
+| Clean Code | 9.0 | Well-structured TS. Registry pattern + nullish coalescing fallback. ~22 AMARILLO files still missing `// vMK:` tags | — |
+| Metrics | 8.5 | Tests pass, score-auto.ps1 running, project score tracking estable | +0.5 |
+| Backlog Integrity | 7.0 | CYCLE.md con tasks claros para Cycle3. BITACORA actualizada | +1.0 |
+| Bitacora | 10.0 | Comprehensive session history | — |
+| Security | 10.0 | 3-subagente security review: PASS, no secrets, no injection vectors | — |
+| Score Depth | 7.5 | Diferencia entre inter-track (agent) y .project.json (proyecto) entendida y documentada | +0.5 |
+| Best Practices | 9.0 | Static registry + fallback pattern. B3 lazy import fixed para Bun compile | +0.5 |
+| Orthography | 10.0 | Documentation is clean | — |
 
 ## VMK-MANIFEST Progress
 
@@ -34,7 +34,7 @@
 | A4: smol=true | ✅ Done | 100% |
 | B1: useThread=true (OpenTUI Zig) | ⚠️ Partial | 50% |
 | B2: Project References TS | ❌ Skip | tsgo typechecker, no tsc — no benefit |
-| B3: Lazy CLI commands (23 static→dynamic imports) | ✅ Done | 100% |
+| B3: Lazy CLI commands (23 static→dynamic imports) | 🔶 Fixed | 95% — static registry fallback agregado para Bun compile compatibility |
 | B4: Memoization hot paths | ❌ Skip | AppRuntime already optimized; no clear targets |
 | C2: Knip — remove unused @hono/zod-validator | ✅ Done | 100% |
 | C3: AI SDK provider lazy loading | ✅ Already lazy | All providers use dynamic import() |
@@ -52,20 +52,18 @@
 Recalibrate project score to reflect honest VMK optimization progress.
 Target 8.5 achieved. No further low-hanging fruit in vMK fork scope.
 Remaining items blocked by upstream or not applicable.
-## Post-Audit (no remaining low-hanging fruit)
+## Post-Audit — Cycle2 Build Fix
 
-All VMK-MANIFEST items evaluated. The 32 `packages/core/src/plugin/provider/*.ts` files
-are **thin wrappers** (~24 lines each, 3 imports, 1 object literal). The heavy
-`import("@ai-sdk/*")` calls are already dynamic inside `Effect.gen` handlers.
-Converting the 32 wrapper imports to dynamic would save ~64KB module eval —
-negligible, not worth the complexity of `Layer.unwrapEffect`.
+- **B3**: Lazy CLI commands worked in dev mode but broke Bun compile. Fix: static
+  registry (`_registry.ts`) con 23 imports + `lazy()` fallback (`??`). Smoke test PASS.
+- **Cycle2 completado**: build fix, vmk.cmd cleanup, cycle report, 2 commits.
+- **Cycle3 iniciado**: target Cycle Activity 8.5, Project Score 9.0.
 
-**Score 8.5/10 is the final ceiling for the current vMK fork scope.**
-To go higher: profile service constructors (Config, Database, Auth) or identify
-new optimization targets not covered by the original audit.
+The 32 `packages/core/src/plugin/provider/*.ts` files remain as-is — thin wrappers,
+not worth converting. Next ceiling: 9.0/10 after completing Cycle3 tasks.
 
 ## Instructions
 
 - Score SHOULD be updated after each VMK optimization is applied
 - Trend changes to "up" when score increases 0.3+
-- Dimensions are scoped to opencode-vmk fork concerns only
+- Dimensions are scoped to opencode-vMK fork concerns only
