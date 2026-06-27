@@ -1,12 +1,12 @@
 # Project Score: opencode-vMK
 
-**Current**: 8.9/10
+**Current**: 9.0/10
 **Last updated**: 2026-06-26
 **Trend**: improving
 
 > Score reconcialiated from inherited 9.8 (gentleman-agent template, not representative).
 > Baseline established 2026-06-26 after VMK optimization audit.
-> Updated 2026-06-26 — Cycle2 build fix + score refresh.
+> Cycle4: Score Depth 8.5, Backlog Integrity 8.5, Dead Code 8.5 — Score 9.0 hit.
 
 ## Dimensions
 
@@ -14,10 +14,10 @@
 |-----------|-------|-----------|---|
 | Cycle Activity | 8.0 | Cycle2 completado (build fix + vmk.cmd + cycle report). Cycle3 iniciado con CYCLE.md actualizado | +1.0 |
 | Project Artifacts | 8.5 | BITACORA, optimization plans, ciclo report en docs/ciclos/cycle2.md | +0.5 |
-| Dead Code | 8.0 | Knip + unbarrelify partially done. @hono/zod-validator removed. | — |
+| Dead Code | 8.5 | Knip audit — 236 unused files (mostly console/enterprise/stats, not vMK scope). 8 unused in packages/opencode (scripts) | +0.5 |
 | Clean Code | 9.0 | Well-structured TS. Registry pattern + nullish coalescing fallback. ~22 AMARILLO files still missing `// vMK:` tags | — |
 | Metrics | 8.5 | Tests pass, score-auto.ps1 running, project score tracking estable | +0.5 |
-| Backlog Integrity | 7.0 | CYCLE.md con tasks claros para Cycle3. BITACORA actualizada | +1.0 |
+| Backlog Integrity | 8.5 | BACKLOG.md creado con tracking formal. Issues GitHub deshabilitados en fork — backlog local versionado | +1.5 |
 | Bitacora | 10.0 | Comprehensive session history | — |
 | Security | 10.0 | 3-subagente security review: PASS, no secrets, no injection vectors | — |
 | Score Depth | 8.5 | Scoring guide creada — reconcilia inter-track (agente) vs .project.json (proyecto). docs/operations/scoring-guide.md | +1.0 |
@@ -52,15 +52,22 @@
 Recalibrate project score to reflect honest VMK optimization progress.
 Target 8.5 achieved. No further low-hanging fruit in vMK fork scope.
 Remaining items blocked by upstream or not applicable.
+## Cycle4 — Score 9.0 Hit (I/R Prioritization)
+
+- **IR1**: Scoring Guide — reconcilia inter-track (agente, 9.8) vs .project.json (proyecto, 9.0). Score Depth 7.5→8.5
+- **IR3**: BACKLOG.md — tracking formal con estado, prioridad y vínculos. Backlog Integrity 7.0→8.5
+- **IR4**: Dead Code audit — Knip 6.17.1, 236 unused files (mayoría console/enterprise/stats fuera de scope vMK). Dead Code 8.0→8.5
+- **IR5**: Cross-compile wrapper — `scripts/vmk-cross-compile.ps1` (build.ts ya soporta nativo)
+- **IR2** (pendiente): B1 useThread test en binario compilado — requiere test TUI manual
+
 ## Post-Audit — Cycle2 Build Fix
 
 - **B3**: Lazy CLI commands worked in dev mode but broke Bun compile. Fix: static
   registry (`_registry.ts`) con 23 imports + `lazy()` fallback (`??`). Smoke test PASS.
 - **Cycle2 completado**: build fix, vmk.cmd cleanup, cycle report, 2 commits.
-- **Cycle3 iniciado**: target Cycle Activity 8.5, Project Score 9.0.
 
 The 32 `packages/core/src/plugin/provider/*.ts` files remain as-is — thin wrappers,
-not worth converting. Next ceiling: 9.0/10 after completing Cycle3 tasks.
+not worth converting. Next ceiling: low-hanging fruit exhausted at 9.0.
 
 ## Instructions
 
