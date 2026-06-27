@@ -7,12 +7,13 @@
 > Score reconcialiated from inherited 9.8 (gentleman-agent template, not representative).
 > Baseline established 2026-06-26 after VMK optimization audit.
 > Cycle4: Score Depth 8.5, Backlog Integrity 8.5, Dead Code 8.5 — Score 9.0 hit.
+Cycle5: Boot chain audit, B1 useThread init test, @opentui/core pin revert. Cycle Activity 8.5.
 
 ## Dimensions
 
 | Dimension | Score | Rationale | Δ |
 |-----------|-------|-----------|---|
-| Cycle Activity | 8.0 | Cycle2 completado (build fix + vmk.cmd + cycle report). Cycle3 iniciado con CYCLE.md actualizado | +1.0 |
+| Cycle Activity | 8.5 | Cycle5 completado — boot chain audit, 3 candidatos de optimización identificados | +1.5 |
 | Project Artifacts | 8.5 | BITACORA, optimization plans, ciclo report en docs/ciclos/cycle2.md | +0.5 |
 | Dead Code | 8.5 | Knip audit — 236 unused files (mostly console/enterprise/stats, not vMK scope). 8 unused in packages/opencode (scripts) | +0.5 |
 | Clean Code | 9.0 | Well-structured TS. Registry pattern + nullish coalescing fallback. ~22 AMARILLO files still missing `// vMK:` tags | — |

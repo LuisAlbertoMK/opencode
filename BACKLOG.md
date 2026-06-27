@@ -18,13 +18,15 @@
 
 | # | Item | Estado | Ciclo | Prioridad | Notas |
 |:-:|:-----|:------:|:-----:|:---------:|:------|
-| 1 | B1: useThread=true test en binario compilado | 🟡 Pendiente | Cycle4 | Alta | require test TUI manual |
-| 2 | Cross-compile script (Linux/macOS) | ✅ Hecho | Cycle4 | Media | `scripts/vmk-cross-compile.ps1` + build.ts nativo |
-| 3 | Dead Code audit (Knip + unbarrelify) | 🟡 Pendiente | Cycle4 | Media | Pendiente desde audit inicial |
-| 4 | AMARILLO tag rule: ¿solo modificados o todos? | 🟡 Pendiente | Cycle4 | Baja | Aclarar con el usuario |
-| 5 | Profile service constructors (Config, DB, Auth) | 🟡 Pendiente | Cycle4 | Baja | Requiere benchmark |
-| 6 | OpenTUI segfault test config | 🔴 Bloqueado | — | Media | Upstream, no fork-fixable |
-| 7 | Migrar BITACORA a entries estructurados | 🟡 Pendiente | Cycle4 | Baja | Actualmente texto libre |
+| 1 | B1: useThread=true test en binario compilado | 🔶 En progreso | Cycle5 | Alta | ✅ No crash en init (timeout 3s). Pendiente: test TUI interactivo completo |
+| 2 | Parallel plugin loading (100-500ms boot win) | 🟡 Pendiente | Cycle5 | Alta | `packages/opencode/src/plugin/index.ts` — 10 internal plugins en for..of secuencial. Riesgo: orden de hooks determinista. Pendiente: benchmark antes/después |
+| 3 | Deferred non-critical config loading | 🟡 Pendiente | Cycle5 | Media | `packages/opencode/src/config/config.ts` — remote configs y `.opencode` scan secuenciales |
+| 4 | Lazy database connection | 🟡 Pendiente | Cycle5 | Media | `packages/core/src/database/database.ts` — ZONA ROJA parcial. Requiere upstream sync |
+| 5 | Boot chain audit completada | ✅ Hecho | Cycle5 | — | 3 candidatos identificados. Cold boot est: 300ms-1s |
+| 6 | Cross-compile script (Linux/macOS) | ✅ Hecho | Cycle4 | Media | `scripts/vmk-cross-compile.ps1` + build.ts nativo |
+| 7 | Dead Code audit (Knip) | ✅ Hecho | Cycle4 | Media | 236 unused files (mayoría out-of-scope) |
+| 8 | AMARILLO tag rule: ¿solo modificados o todos? | 🟡 Pendiente | Cycle5 | Baja | Aclarar con el usuario |
+| 9 | OpenTUI segfault test config | 🔴 Bloqueado | — | Media | Upstream, no fork-fixable |
 
 ## Completado (ciclos anteriores)
 
