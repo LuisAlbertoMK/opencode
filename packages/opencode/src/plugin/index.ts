@@ -163,14 +163,19 @@ export const layer = Layer.effect(
           $: typeof Bun === "undefined" ? undefined : Bun.$,
         }
 
-        for (const plugin of flags.disableDefaultPlugins ? [] : internalPlugins(flags)) {
-          const init = yield* Effect.tryPromise({
+        // vMK: parallel internal plugins — auth plugins are independent, safe for concurrent init
+        const enabledPlugins = flags.disableDefaultPlugins ? [] : internalPlugins(flags)
+        const internalResults = yield* Effect.forEach(enabledPlugins, (plugin) =>
+          Effect.tryPromise({
             try: () => plugin(input),
             catch: errorMessage,
           }).pipe(
             Effect.tapError((error) => Effect.logError("failed to load internal plugin", { name: plugin.name, error })),
             Effect.option,
-          )
+          ),
+          { concurrency: "unbounded" },
+        )
+        for (const init of internalResults) {
           if (init._tag === "Some") hooks.push(init.value)
         }
 
@@ -237,16 +242,17 @@ export const layer = Layer.effect(
           )
         }
 
-        // Notify plugins of current config
-        for (const hook of hooks) {
-          yield* Effect.tryPromise({
+        // Notify plugins of current config (parallel — independent per-plugin)
+        yield* Effect.forEach(hooks, (hook) =>
+          Effect.tryPromise({
             try: () => Promise.resolve((hook as any).config?.(cfg)),
             catch: errorMessage,
           }).pipe(
             Effect.tapError((error) => Effect.logError("plugin config hook failed", { error })),
             Effect.ignore,
-          )
-        }
+          ),
+          { concurrency: "unbounded" },
+        )
 
         const unsubscribe = yield* events.listen((event) => {
           if (event.location?.directory !== ctx.directory) return Effect.void
