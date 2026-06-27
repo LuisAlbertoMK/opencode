@@ -8,12 +8,12 @@
 
 | Métrica | Target | Actual | Delta |
 |---------|--------|--------|-------|
-| **Project Score** | 9.0/10 | 8.5/10 | +0.5 |
+| **Project Score** | 9.0/10 | 8.7/10 | +0.5 |
 | **Cycle Activity** | 8.5 | 7.0 | +1.5 |
 | **Project Artifacts** | 9.0 | 8.0 | +1.0 |
 | **Metrics** | 9.0 | 8.0 | +1.0 |
 | **Backlog Integrity** | 9.0 | 8.0 | +1.0 |
-| **inter** | 30 | 0 | — |
+| **inter** | 30 | 4 | +4 |
 
 ## Difficulty Mapping
 
@@ -30,9 +30,9 @@
 |:---|:---|:---:|:---:|:---:|
 | 1 | Fix Bun compile — static command registry `_registry.ts` | Compleja | ✅ Done (Cycle2) | 3 |
 | 2 | Fix vmk.cmd ANSI VT quoting | Fácil | ✅ Done (Cycle2) | 1 |
-| 3 | Refresh `.project.json` con métricas post-fix | Media | ⬜ Pending | — |
-| 4 | Evaluar otros `import()` dinámicos en codebase | Media | ⬜ Pending | — |
-| 5 | Refresh `docs/operations/project-score.md` | Fácil | ⬜ Pending | — |
+| 3 | Refresh `.project.json` con métricas post-fix (8.5→8.7) | Media | ✅ Done | 1 |
+| 4 | Evaluar otros `import()` dinámicos en codebase | Media | ✅ Done — 7 críticos (runtime, no reparables), 1 mitigado (nuestro fix), ~40 warning | 2 |
+| 5 | Refresh `docs/operations/project-score.md` | Fácil | ✅ Done | 1 |
 
 ## Exit Criteria
 
