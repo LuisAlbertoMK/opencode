@@ -1,4 +1,5 @@
-2026-06-27 — I/R #3 #5 #6: SkillOpt scoring (vmk-skill-audit.ps1), Codebase Memory MCP v0.8.1 install+config, Ponytail benchmark (vmk-ponytail-bench.ps1). Build vMK verificado. Score 9.0 — cambios sin commit.
+2026-06-27 — I/R #3 #5 #6: SkillOpt scoring, Codebase Memory MCP v0.8.1, Ponytail benchmark, Build vMK. Score 9.0.
+2026-06-27 — TUI polish + vMK fixes: session loading spinner, showThinking conectado a preferencia, console.log production removido, dead signals cleanup. vmk-safety-check: 10 hardcoded paths → $PSScriptRoot. gitlab-ai-provider: static→type-only. 3 commits en vmk-containment.
 2026-06-26 — Cycle2: Fix Bun compile — static command registry _registry.ts + vmk.cmd cleanup. 3 commits. Score 8.5→8.7.
 2026-06-26 — Cycle3: Score refresh, dynamic import audit (7 critical runtime-only, 40 warning OK), AMARILLO tags en 4 files. inter 133/30.
 2026-06-25 — Investigación profunda: optimización recursos hardware (RAM/CPU/GPU/vRAM) para opencode-vMK y gentleman-vmk con 20+ subagentes + verificación triple
