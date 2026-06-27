@@ -292,12 +292,18 @@ export function Session() {
   const sdk = useSDK()
   const editor = useEditorContext()
 
+  // vMK: Generation counter + stale-closure guard for session navigation race condition.
+  // Prevents stale IIFE completions from mutating sync store or navigating after rapid
+  // session switches. Replaces all `route.sessionID === sessionID` guards with gen check.
+  let loadGen = 0
   createEffect(() => {
     const sessionID = route.sessionID
+    const gen = ++loadGen
     setSessionLoading(true)
     void (async () => {
       const previousWorkspace = untrack(() => project.workspace.current())
       const result = await sdk.client.session.get({ sessionID }, { throwOnError: true })
+      if (gen !== loadGen) return
       if (!result.data) {
         toast.show({
           message: `Session not found: ${sessionID}`,
@@ -318,14 +324,16 @@ export function Session() {
         try {
           await sync.bootstrap({ fatal: false })
         } catch {}
+        if (gen !== loadGen) return
       }
       editor.reconnect(result.data.directory)
       await sync.session.sync(sessionID)
-      if (route.sessionID === sessionID) setSessionLoading(false)
-      if (route.sessionID === sessionID && scroll) scroll.scrollBy(100_000)
-    })().catch((error) => {
+      if (gen !== loadGen) return
       setSessionLoading(false)
-      if (route.sessionID !== sessionID) return
+      if (scroll) scroll.scrollBy(100_000)
+    })().catch((error) => {
+      if (gen !== loadGen) return
+      setSessionLoading(false)
       toast.show({
         message: errorMessage(error),
         variant: "error",
@@ -436,11 +444,14 @@ export function Session() {
     dialog.clear()
   }
 
-  function toBottom() {
-    setTimeout(() => {
-      if (!scroll || scroll.isDestroyed) return
-      scroll.scrollTo(scroll.scrollHeight)
-    }, 50)
+  // vMK: Elimina race condition en scroll-to-bottom — retry hasta que el scroll ref esté
+  // montado, en vez de timeout mágico de 50ms. Max 10 retries (~1ms total).
+  function toBottom(retries = 10) {
+    if (!scroll || scroll.isDestroyed) {
+      if (retries > 0) setTimeout(() => toBottom(retries - 1), 0)
+      return
+    }
+    scroll.scrollTo(scroll.scrollHeight)
   }
 
   const local = useLocal()
