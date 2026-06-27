@@ -1,6 +1,6 @@
 {
   "score": {
-    "current": 8.7,
+    "current": 8.8,
     "dimensions": {
       "Cycle Activity": 8.0,
       "Project Artifacts": 8.5,
@@ -10,7 +10,7 @@
       "Backlog Integrity": 7.0,
       "Bitacora": 10.0,
       "Security": 10.0,
-      "Score Depth": 7.5,
+      "Score Depth": 8.5,
       "Best Practices": 9.0,
       "Orthography": 10.0
     },

@@ -20,7 +20,7 @@
 | Backlog Integrity | 7.0 | CYCLE.md con tasks claros para Cycle3. BITACORA actualizada | +1.0 |
 | Bitacora | 10.0 | Comprehensive session history | — |
 | Security | 10.0 | 3-subagente security review: PASS, no secrets, no injection vectors | — |
-| Score Depth | 7.5 | Diferencia entre inter-track (agent) y .project.json (proyecto) entendida y documentada | +0.5 |
+| Score Depth | 8.5 | Scoring guide creada — reconcilia inter-track (agente) vs .project.json (proyecto). docs/operations/scoring-guide.md | +1.0 |
 | Best Practices | 9.0 | Static registry + fallback pattern. B3 lazy import fixed para Bun compile | +0.5 |
 | Orthography | 10.0 | Documentation is clean | — |
 
