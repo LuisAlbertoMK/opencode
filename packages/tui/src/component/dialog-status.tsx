@@ -98,6 +98,7 @@ export function DialogStatus() {
           <text fg={theme.text}>{sync.data.lsp.length} LSP Servers</text>
           <For each={sync.data.lsp}>
             {(item) => (
+              /* vMK: Text label alongside bullet for a11y — ● connected, ▲ error */
               <box flexDirection="row" gap={1}>
                 <text
                   flexShrink={0}
@@ -108,10 +109,14 @@ export function DialogStatus() {
                     }[item.status],
                   }}
                 >
-                  •
+                  {item.status === "connected" ? "●" : "▲"}
                 </text>
                 <text fg={theme.text} wrapMode="word">
-                  <b>{item.id}</b> <span style={{ fg: theme.textMuted }}>{item.root}</span>
+                  <b>{item.id}</b>{" "}
+                  <span style={{ fg: { connected: theme.textMuted, error: theme.error }[item.status] }}>
+                    [{item.status}]
+                  </span>{" "}
+                  <span style={{ fg: theme.textMuted }}>{item.root}</span>
                 </text>
               </box>
             )}

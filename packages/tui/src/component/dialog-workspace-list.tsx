@@ -46,7 +46,8 @@ export function DialogWorkspaceList() {
           value: { workspace },
           footer: workspace.type,
           details: expanded[workspace.id] && workspace.directory ? [workspace.directory] : undefined,
-          gutter: () => <text fg={status === "connected" ? theme.success : theme.error}>●</text>,
+          // vMK: Distinct symbols per connection status — ● connected, ○ disconnected
+          gutter: () => <text fg={status === "connected" ? theme.success : theme.error}>{status === "connected" ? "●" : "○"}</text>,
         }
       }),
   )
