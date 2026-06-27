@@ -216,7 +216,7 @@ for (const item of targets) {
     external: ["node-gyp"],
     format: "esm",
     minify: true,
-    drop: ["console", "debugger"],
+    drop: ["console", "debugger"], // vMK: strip console/debugger from compiled binary
     sourcemap: sourcemapsFlag ? "linked" : "none",
     splitting: true,
     compile: {
@@ -225,8 +225,8 @@ for (const item of targets) {
       autoloadTsconfig: true,
       autoloadPackageJson: true,
       target: name.replace(pkg.name, "bun") as any,
-      outfile: `dist/${name}/bin/opencode-vMK`,
-      execArgv: [`--user-agent=opencode-vMK/${Script.version}`, "--use-system-ca", "--"],
+      outfile: `dist/${name}/bin/opencode-vMK`, // vMK: fork binary name
+      execArgv: [`--user-agent=opencode-vMK/${Script.version}`, "--use-system-ca", "--"], // vMK: fork user-agent
       windows: {},
     },
     files: embeddedFileMap ? { "opencode-web-ui.gen.ts": embeddedFileMap } : {},
