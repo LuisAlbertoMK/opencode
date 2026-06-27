@@ -39,14 +39,28 @@ export function createPluginRoutes() {
 
 export type PluginRoutes = ReturnType<typeof createPluginRoutes>
 
-export function createTuiApi(input: Omit<TuiPluginApi, "lifecycle">): TuiPluginApi {
+// vMK: Plugin lifecycle fix — onDispose ahora registra callbacks realmente,
+// signal se aborta en dispose(). State: callbacks + controller encapsulados.
+export function createTuiApi(input: Omit<TuiPluginApi, "lifecycle">): TuiPluginApi & { dispose(): void } {
+  const controller = new AbortController()
+  const disposeCallbacks: (() => void)[] = []
+
   return {
     ...input,
     lifecycle: {
-      signal: new AbortController().signal,
-      onDispose() {
-        return () => {}
+      signal: controller.signal,
+      onDispose(cb: () => void) {
+        disposeCallbacks.push(cb)
+        return () => {
+          const index = disposeCallbacks.indexOf(cb)
+          if (index >= 0) disposeCallbacks.splice(index, 1)
+        }
       },
+    },
+    dispose() {
+      controller.abort()
+      for (const cb of disposeCallbacks) cb()
+      disposeCallbacks.length = 0
     },
   }
 }

@@ -410,7 +410,10 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
       api,
       config: tuiConfig,
       runtime: pluginRuntime,
-      dispose: () => attention.dispose(),
+      dispose: () => {
+        attention.dispose()
+        api.dispose()
+      },
     })
     .catch((error) => {
       console.error("Failed to load TUI plugins", error)

@@ -230,6 +230,7 @@ export function Prompt(props: PromptProps) {
   let promptPartTypeId = 0
   let cachedExtmarkIds: readonly number[] | undefined
   let syncTimer: ReturnType<typeof setTimeout> | undefined
+  onCleanup(() => { if (syncTimer) clearTimeout(syncTimer) })
   const event = useEvent()
 
   onCleanup(
@@ -1016,10 +1017,10 @@ export function Prompt(props: PromptProps) {
 
       if (res.error) {
         if (finishMoveProgress) move.finishSubmit()
-        console.log("Creating a session failed:", res.error)
+        console.error("Creating a session failed:", res.error)
 
         toast.show({
-          message: "Creating a session failed. Open console for more details.",
+          message: "Creating a session failed.",
           variant: "error",
         })
 
@@ -1137,15 +1138,15 @@ export function Prompt(props: PromptProps) {
     setStore("extmarkToPartIndex", new Map())
     props.onSubmit?.()
 
-    // temporary hack to make sure the message is sent
+    // vMK: Replaced magic 50ms timeout with retry pattern — same fix as toBottom().
     if (!props.sessionID) {
       if (editorParts.length > 0) editor.preserveSelectionFromNewSession()
-      setTimeout(() => {
-        route.navigate({
-          type: "session",
-          sessionID,
-        })
-      }, 50)
+      const navToSession = (retries = 10) => {
+        if (retries <= 0) return
+        if (input.isDestroyed) { setTimeout(() => navToSession(retries - 1), 0); return }
+        route.navigate({ type: "session", sessionID })
+      }
+      navToSession()
     }
     input.clear()
     if (finishMoveProgress) move.finishSubmit()

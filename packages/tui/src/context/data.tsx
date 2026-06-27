@@ -173,9 +173,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
       flushTextDeltas()
     }
 
-    onCleanup(() => { if (deltaTimer) { clearTimeout(deltaTimer); deltaTimer = null } })
-
-    event.subscribe((event, metadata) => {
+    const unsubEvent = event.subscribe((event, metadata) => {
       switch (event.type) {
         case "catalog.updated":
           void Promise.all([
@@ -493,6 +491,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
           break
       }
     })
+    onCleanup(unsubEvent)
 
     const result = {
       session: {
