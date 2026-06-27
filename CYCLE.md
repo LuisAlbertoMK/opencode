@@ -1,50 +1,48 @@
-# Improvement Cycle — opencode vMK
+# Improvement Cycle 3 — opencode vMK
 
-> **Cycle**: 2026-06-22 — Project Health Recovery
-> **Objective**: Elevar project score de 6.8 → 7.5 cerrando gaps críticos
-> **Status**: ✅ Complete (score 7.3/10, errorPrevention 8/10)
+> **Cycle**: 2026-06-26 — Build Stability & Cycle Activity Recovery
+> **Objective**: Elevar Cycle Activity de 7.0 → 8.5 y asegurar compilación estable del binario vMK
+> **Status**: 🔶 In Progress
 
 ## Metrics
 
 | Métrica | Target | Actual | Delta |
 |---------|--------|--------|-------|
-| **Project Score** | 7.5/10 | 7.3/10 | +0.2 |
-| **Correctness** | 8 | 8 | 0 |
-| **Error Prevention** | 8 | 8 | 0 |
-| **Tokens** | 8 | 7 | +1 |
-| **inter(30)** | 30 | 24 | +6 |
+| **Project Score** | 9.0/10 | 8.5/10 | +0.5 |
+| **Cycle Activity** | 8.5 | 7.0 | +1.5 |
+| **Project Artifacts** | 9.0 | 8.0 | +1.0 |
+| **Metrics** | 9.0 | 8.0 | +1.0 |
+| **Backlog Integrity** | 9.0 | 8.0 | +1.0 |
+| **inter** | 30 | 0 | — |
 
 ## Difficulty Mapping
 
 | Dificultad | Criterio | Verification |
 |------------|----------|-------------|
-| **Fácil** | Archivos faltantes, config | None (zona verde) |
-| **Media** | Scripts de package.json | Triple verify L1 |
-| **Compleja** | tsconfig, CI/CD | Triple verify L2 |
-| **Muy Compleja** | Dependabot/Coverage infra | Triple verify L3 |
+| **Fácil** | Archivos faltantes, config, docs | None (zona verde) |
+| **Media** | Script de build, package.json | 3 subagentes |
+| **Compleja** | Cambios a src/ (ZONA AMARILLA) | 3 subagentes |
+| **Muy Compleja** | Refactor cross-package, CI/CD | 3 subagentes + verificación cruzada |
 
 ## Tasks
 
 | # | Task | Difficulty | Status | inter |
 |:---|:---|:---:|:---:|:---:|
-| 1 | Remove `--only-failures` from all package.json `test` scripts | Fácil | ✅ Done | 1 |
-| 2 | Create `SKILLS-INDEX.md` | Fácil | ✅ Done | 1 |
-| 3 | Create `CYCLE.md` | Fácil | ✅ Done | 1 |
-| 4 | Enable `github-triage` + `github-pr-search` tools | Media | ✅ Done | 2 |
-| 5 | Create `.github/dependabot.yml` | Media | ✅ Done | 2 |
-| 6 | Add `--timeout 30000` to packages/core test script | Fácil | ✅ Done | 1 |
-| 7 | Add coverage gate to CI test.yml | Compleja | ✅ Done | 2 |
-| 8 | Audit 11 patches for orphaned/need status | Compleja | ✅ Done (1 orphan removed) | 12 |
-| 9 | Enable `noUncheckedIndexedAccess` in core + opencode | Muy Compleja | 🔶 Parcial (core✅, opencode reverted) | 5 |
-| 10 | Reorganize AGENTS.md into modules | Compleja | ✅ Done | 3 |
+| 1 | Fix Bun compile — static command registry `_registry.ts` | Compleja | ✅ Done (Cycle2) | 3 |
+| 2 | Fix vmk.cmd ANSI VT quoting | Fácil | ✅ Done (Cycle2) | 1 |
+| 3 | Refresh `.project.json` con métricas post-fix | Media | ⬜ Pending | — |
+| 4 | Evaluar otros `import()` dinámicos en codebase | Media | ⬜ Pending | — |
+| 5 | Refresh `docs/operations/project-score.md` | Fácil | ⬜ Pending | — |
 
 ## Exit Criteria
 
 - inter ≥ 30
+- Project Score ≥ 9.0
 - No dimension below 8.0
-- Project Score ≥ 7.5
+- Cycle Activity ≥ 8.5
 
 ## Rollback
 
 Si el score cae >0.5 puntos tras algún cambio, revertir el cambio y registrar
 en BITACORA.md con causa raíz.
+Commit de referencia: `23a14de3b` (Cycle2: build fix + vmk.cmd)
