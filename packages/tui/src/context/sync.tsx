@@ -32,6 +32,12 @@ import { batch, onMount } from "solid-js"
 import path from "path"
 import { useKV } from "./kv"
 
+// vMK: Maximum messages kept per session in the TUI store. Messages beyond this
+// are silently trimmed on initial sync and real-time updates. Increase for long
+// sessions with >100 exchanges. Server-side store holds up to 1000 in-memory
+// (packages/core/src/session/message-updater.ts).
+const MESSAGE_LIMIT = 500
+
 const emptyConsoleState: ConsoleState = {
   consoleManagedProviders: [],
   switchableOrgCount: 0,
@@ -315,7 +321,7 @@ export const {
             }),
           )
           const updated = store.message[event.properties.info.sessionID]
-          if (updated.length > 100) {
+          if (updated.length > MESSAGE_LIMIT) {
             const oldest = updated[0]
             batch(() => {
               setStore(
@@ -568,7 +574,7 @@ export const {
           const task = (async () => {
             const [session, messages, todo, diff] = await Promise.all([
               sdk.client.session.get({ sessionID }, { throwOnError: true }),
-              sdk.client.session.messages({ sessionID, limit: 100 }),
+              sdk.client.session.messages({ sessionID, limit: MESSAGE_LIMIT }),
               sdk.client.session.todo({ sessionID }),
               sdk.client.session.diff({ sessionID }),
             ])
@@ -589,8 +595,8 @@ export const {
                     (message) => tracker.messages.has(message.id) && !infos.some((item) => item.id === message.id),
                   ),
                 )
-                const removed = infos.slice(0, -100)
-                const visible = infos.slice(-100)
+                const removed = infos.slice(0, -MESSAGE_LIMIT)
+                const visible = infos.slice(-MESSAGE_LIMIT)
                 const visibleIDs = new Set(visible.map((message) => message.id))
                 for (const message of messages.data ?? []) {
                   if (!visibleIDs.has(message.info.id)) {
