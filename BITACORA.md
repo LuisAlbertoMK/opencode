@@ -1,4 +1,6 @@
-2026-06-25 — Investigación profunda: optimización recursos hardware (RAM/CPU/GPU/vRAM) para opencode-vmk y gentleman-vmk con 20+ subagentes + verificación triple
+2026-06-26 — Cycle2: Fix Bun compile — static command registry _registry.ts + vmk.cmd cleanup. 3 commits. Score 8.5→8.7.
+2026-06-26 — Cycle3: Score refresh, dynamic import audit (7 critical runtime-only, 40 warning OK), AMARILLO tags en 4 files. inter 133/30.
+2026-06-25 — Investigación profunda: optimización recursos hardware (RAM/CPU/GPU/vRAM) para opencode-vMK y gentleman-vmk con 20+ subagentes + verificación triple
 2026-06-25 - Optimización vMK FINAL: measurement-guide.md creado con 3 subagentes. Método A/B con opencode run --format json. 
 2026-06-25 - Optimización vMK FINAL: B4 SKIP (dual-bundle no justifica riesgo). Binario ~133MB con/sin Web UI. Plan cerrado con 5 cambios aplicados + 4 SKIPs documentados. 
 2026-06-25 - Optimización vMK sprint3: OpenTUI useThread=true (Zig render offload). Falta test con bun build --compile. 
