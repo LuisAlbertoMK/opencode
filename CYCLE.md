@@ -19,6 +19,7 @@
 | 2 | Revert @opentui/core pin en package.json a `catalog:` | Fácil | ✅ Done |
 | 3 | Boot chain audit (subagent) | Media | ✅ 3 candidatos identificados |
 | 4 | Boot chain findings → BACKLOG.md | Fácil | ✅ Done |
+| 5 | Parallel plugin loading (Effect.forEach concurrency) | Compleja | ✅ Done — triple verify: 3/3 pass |
 
 ## Boot Chain Findings
 
