@@ -2,6 +2,7 @@ import path from "path"
 import { writeHeapSnapshot } from "node:v8"
 import { Flag } from "@opencode-ai/core/flag/flag"
 import { Global } from "@opencode-ai/core/global"
+// vMK: aggressive heap thresholds — 30s check interval, 768MB hard / 512MB soft
 const MINUTE = 30_000
 const LIMIT = 768 * 1024 * 1024
 const SOFT_LIMIT = 512 * 1024 * 1024

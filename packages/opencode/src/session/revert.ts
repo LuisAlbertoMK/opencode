@@ -54,6 +54,7 @@ export const layer = Layer.effect(
     const events = yield* EventV2Bridge.Service
     const summary = yield* SessionSummary.Service
     const state = yield* SessionRunState.Service
+    // vMK: call makeRevertLock() — upstream had a typo (missing parens)
     const revertLock = yield* makeRevertLock()
 
     const revert = Effect.fn("SessionRevert.revert")(function* (input: RevertInput) {

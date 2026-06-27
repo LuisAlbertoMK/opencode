@@ -183,7 +183,7 @@ export async function createRuntimeLifecycle(input: LifecycleInput): Promise<Lif
       stdin: source.stdin,
       targetFps: 30,
       maxFps: 60,
-      useThread: true, // Zig render thread — offloads VT rendering from main JS loop. Test with bun build --compile.
+      useThread: true, // vMK: Zig render thread — offloads VT rendering from main JS loop
       useMouse: false,
       autoFocus: false,
       openConsoleOnError: false,
