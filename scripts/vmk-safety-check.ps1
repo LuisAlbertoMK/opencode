@@ -16,6 +16,9 @@ param(
     [switch]$CheckGlobal
 )
 
+$ErrorActionPreference = "Stop"
+$repoRoot = Split-Path $PSScriptRoot -Parent
+
 # --- Patrones de zona roja (NUNCA TOCAR) ---
 $globalPatterns = @(
     @{ Pattern = "node_modules\\opencode-ai"; Description = "npm global install" },
@@ -83,7 +86,7 @@ if ($TargetFile) {
 if ($CheckBuild) {
     Write-Host "`n=== vMK Build Verification ===" -ForegroundColor Cyan
 
-    $distPath = "D:\opencode\packages\opencode\dist"
+    $distPath = Join-Path $repoRoot "packages\opencode\dist"
     $binaries = Get-ChildItem -Path $distPath -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue
 
     if (-not $binaries) {
@@ -119,9 +122,9 @@ if ($CheckGlobal) {
 
     # Verificar directorios de aislamiento
     $dirs = @(
-        @{ Path = "D:\opencode\.vmk-config"; Name = ".vmk-config" },
-        @{ Path = "D:\opencode\.vmk-data"; Name = ".vmk-data" },
-        @{ Path = "D:\opencode\.vmk-cache"; Name = ".vmk-cache" }
+        @{ Path = Join-Path $repoRoot ".vmk-config"; Name = ".vmk-config" },
+        @{ Path = Join-Path $repoRoot ".vmk-data"; Name = ".vmk-data" },
+        @{ Path = Join-Path $repoRoot ".vmk-cache"; Name = ".vmk-cache" }
     )
 
     foreach ($d in $dirs) {
@@ -133,7 +136,7 @@ if ($CheckGlobal) {
     }
 
     # Verificar vmk.cmd
-    if (Test-Path "D:\opencode\vmk.cmd") {
+    if (Test-Path (Join-Path $repoRoot "vmk.cmd")) {
         Write-Host "[OK] vmk.cmd existe" -ForegroundColor Green
     } else {
         Write-Host "[PELIGRO] vmk.cmd no existe" -ForegroundColor Red
@@ -150,7 +153,7 @@ function Check-CatalogIntegrity {
     $issues = 0
 
     # Verificar que @opentui/core NO este pinned en packages/opencode
-    $opencodePkg = "D:\opencode\packages\opencode\package.json"
+    $opencodePkg = Join-Path $repoRoot "packages\opencode\package.json"
     if (Test-Path $opencodePkg) {
         $content = Get-Content $opencodePkg -Raw
         if ($content -match '"@opentui/core":\s*"(?!catalog:)') {
@@ -164,7 +167,7 @@ function Check-CatalogIntegrity {
     }
 
     # Verificar todos los packages que usan @opentui
-    Get-ChildItem "D:\opencode\packages" -Recurse -Depth 0 -Filter "package.json" | ForEach-Object {
+    Get-ChildItem (Join-Path $repoRoot "packages") -Recurse -Depth 0 -Filter "package.json" | ForEach-Object {
         $pkgContent = Get-Content $_.FullName -Raw
         if ($pkgContent -match '"@opentui/[a-z]+":\s*"(?!catalog:)([^"]+)"') {
             Write-Host "[AVISO] $($_.FullName): @opentui/$($Matches[1]) pinneado" -ForegroundColor Yellow
@@ -185,10 +188,10 @@ function Check-CatalogIntegrity {
 Write-Host "`n=== vMK Containment Status ===" -ForegroundColor Cyan
 
 # Verificar entorno
-& "D:\opencode\scripts\vmk-safety-check.ps1" -CheckGlobal
+& $PSCommandPath -CheckGlobal
 
 # Verificar binarios
-& "D:\opencode\scripts\vmk-safety-check.ps1" -CheckBuild
+& $PSCommandPath -CheckBuild
 
 # Verificar integridad de catalog
 Check-CatalogIntegrity

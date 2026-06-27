@@ -1013,7 +1013,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
 
   unsubs.push(
     event.on("installation.update-available", async (evt) => {
-    console.log("installation.update-available", evt)
+    // vMK: removed console.log production debug
     const version = evt.properties.version
 
     const skipped = kv.get("skipped_version")

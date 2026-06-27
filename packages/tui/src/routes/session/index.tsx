@@ -260,14 +260,16 @@ export function Session() {
   const [conceal, setConceal] = createSignal(true)
   const thinking = useThinkingMode()
   const thinkingMode = thinking.mode
-  const showThinking = createMemo(() => true)
+  // vMK: connect showThinking to user preference (was hardcoded true)
+  const showThinking = createMemo(() => thinking.mode() === "show")
   const [timestamps, setTimestamps] = kv.signal<"hide" | "show">("timestamps", "hide")
   const [showDetails, setShowDetails] = kv.signal("tool_details_visibility", true)
   const [showAssistantMetadata, _setShowAssistantMetadata] = kv.signal("assistant_metadata_visibility", true)
   const [showScrollbar, setShowScrollbar] = kv.signal("scrollbar_visible", false)
+  // vMK: removed unused _animationsEnabled signal (prompt reads kv directly)
   const [diffWrapMode] = kv.signal<"word" | "none">("diff_wrap_mode", "word")
-  const [_animationsEnabled, _setAnimationsEnabled] = kv.signal("animations_enabled", true)
   const [showGenericToolOutput, setShowGenericToolOutput] = kv.signal("generic_tool_output_visibility", false)
+  const [sessionLoading, setSessionLoading] = createSignal(false)
 
   const wide = createMemo(() => dimensions().width > 120)
   const sidebarVisible = createMemo(() => {
@@ -292,6 +294,7 @@ export function Session() {
 
   createEffect(() => {
     const sessionID = route.sessionID
+    setSessionLoading(true)
     void (async () => {
       const previousWorkspace = untrack(() => project.workspace.current())
       const result = await sdk.client.session.get({ sessionID }, { throwOnError: true })
@@ -318,8 +321,10 @@ export function Session() {
       }
       editor.reconnect(result.data.directory)
       await sync.session.sync(sessionID)
+      if (route.sessionID === sessionID) setSessionLoading(false)
       if (route.sessionID === sessionID && scroll) scroll.scrollBy(100_000)
     })().catch((error) => {
+      setSessionLoading(false)
       if (route.sessionID !== sessionID) return
       toast.show({
         message: errorMessage(error),
@@ -1190,6 +1195,14 @@ export function Session() {
       >
         <box flexDirection="row" flexGrow={1} minHeight={0}>
           <box flexGrow={1} minHeight={0} paddingBottom={1} paddingLeft={2} paddingRight={2} gap={1}>
+            <Show when={!session() && sessionLoading()}>
+              <box alignItems="center" justifyContent="center" flexGrow={1}>
+                <box gap={1}>
+                  <Spinner />
+                  <box>Loading session…</box>
+                </box>
+              </box>
+            </Show>
             <Show when={session()}>
               <scrollbox
                 ref={(r) => (scroll = r)}
