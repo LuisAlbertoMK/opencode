@@ -97,6 +97,28 @@ function requireConfig(input: unknown) {
 - Prefer Effect schema helpers such as `Schema.UnknownFromJsonString` and `Schema.decodeUnknownOption` over manual `JSON.parse` wrapped in `Effect.try` when parsing untrusted JSON strings.
 - Add comments for non-obvious constraints and surprising behavior, not for obvious assignments or control flow.
 
+## TUI / OpenTUI (JSX for terminal UI)
+
+The TUI framework (OpenTUI, based on Ink/Yoga) **prohíbe texto crudo como hijo directo de elementos contenedores**. Todo texto visible debe envolverse en `<text>` o `<span>`.
+
+```tsx
+// ❌ MAL — Raw string directo dentro de <box>
+<box>Loading session…</box>
+
+// ✅ BIEN — Envuelto en <text>
+<box>
+  <text>Loading session…</text>
+</box>
+```
+
+Reglas específicas:
+- `<box>` solo puede tener hijos JSX (otros `<box>`, `<text>`, `<Show>`, `<For>`, etc.), NUNCA strings crudos
+- `<text>` acepta strings crudos, expresiones `{...}`, `<span>`, y `<b>`
+- `<text>` NO debe contener elementos de bloque como `<box>`, `<scrollbox>`, etc.
+- Envolver `{expresion}` en `<text>` si la expresión puede ser string en runtime (ej: `JSX.Element` incluye `string` en SolidJS)
+- Usar `<span style={...}>` para estilo inline dentro de `<text>`
+- Verificar con `bun test test/static/orphan-text.test.ts` (o `grep '<box>[A-Za-z]'`) antes de commit para detectar texto huérfano. Este test se ejecuta como parte de la suite de TUI.
+
 ## Schema Definitions (Drizzle)
 
 Use snake_case for field names so column names don't need to be redefined as strings.

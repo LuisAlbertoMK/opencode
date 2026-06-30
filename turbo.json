@@ -65,6 +65,11 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    "@opencode-ai/tui#test": {
+      "dependsOn": [],
+      "outputs": [],
+      "passThroughEnv": ["*"]
+    },
     "@opencode-ai/tui#test:coverage": {
       "dependsOn": [],
       "outputs": []

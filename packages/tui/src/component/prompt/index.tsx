@@ -1600,7 +1600,7 @@ export function Prompt(props: PromptProps) {
                 <text fg={theme.accent}>(new working copy)</text>
               </box>
             </Match>
-            <Match when={true}>{props.hint ?? <text />}</Match>
+            <Match when={true}><text>{props.hint}</text></Match> {/* vMK: defensive wrap - prevent orphan text if hint is a string */}
           </Switch>
           <Show when={status().type !== "retry"}>
             <box gap={2} flexDirection="row">

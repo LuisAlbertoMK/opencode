@@ -1210,7 +1210,7 @@ export function Session() {
               <box alignItems="center" justifyContent="center" flexGrow={1}>
                 <box gap={1}>
                   <Spinner />
-                  <box>Loading session…</box>
+                  <text>Loading session…</text> {/* vMK: fix orphan text error - raw text inside <box> must be wrapped in <text> */}
                 </box>
               </box>
             </Show>

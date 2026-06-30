@@ -628,7 +628,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                           >
                             <Show when={!current() && option.margin}>
                               <box position="absolute" left={1} flexShrink={0}>
-                                {option.margin}
+                                <text>{option.margin}</text> {/* vMK: defensive wrap - prevent orphan text if margin is a string */}
                               </box>
                             </Show>
                             <Option

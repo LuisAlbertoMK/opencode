@@ -13,10 +13,17 @@ fi
 # Si no hay cambios en packages/, skip automático
 
 CHANGED=$(git diff --cached --name-only --diff-filter=ACMR | grep '^packages/' | sed 's|^\(packages/[^/]*\)/.*|\1|' | sort -u)
+TUI_CHANGED=$(git diff --cached --name-only --diff-filter=ACMR | grep '^packages/tui/' || true)
 
 if [ -z "$CHANGED" ]; then
-  echo "[pre-commit] No source changes in packages/ — skipping typecheck"
+  echo "[pre-commit] No source changes in packages/ — skipping checks"
   exit 0
+fi
+
+# Pre-commit: orphan text check when TUI files changed (rápido: <1s)
+if [ -n "$TUI_CHANGED" ]; then
+  echo "[pre-commit] TUI files changed — running orphan text detection..."
+  (cd packages/tui && bun test test/static/orphan-text.test.ts 2>&1 | tail -3 && echo "[pre-commit] Orphan text check OK")
 fi
 
 PACKAGES=$(echo "$CHANGED" | tr '\n' ',' | sed 's/,$//')

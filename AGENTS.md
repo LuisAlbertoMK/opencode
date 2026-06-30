@@ -81,7 +81,7 @@ Ver también: `docs/vmk-containment-brainstorm.md` para el análisis completo.
 
 | Topic | File | Description |
 |-------|------|-------------|
-| Style Guide | [`.opencode/style-guide.md`](.opencode/style-guide.md) | TS code style: imports, destructuring, control flow, Effect patterns, Drizzle schemas |
+| Style Guide | [`.opencode/style-guide.md`](.opencode/style-guide.md) | TS code style: imports, destructuring, control flow, Effect patterns, Drizzle schemas, **TUI text wrapping rules** |
 | Testing | [`.opencode/testing.md`](.opencode/testing.md) | Test philosophy, mock avoidance, type checking |
 | V2 Session Core | [`specs/v2/session.md`](specs/v2/session.md) | Session V2 architecture: prompt admission, execution, delivery, system context |
 | Skills Index | [`SKILLS-INDEX.md`](SKILLS-INDEX.md) | Agent skills catalog: installed + roadmap |
