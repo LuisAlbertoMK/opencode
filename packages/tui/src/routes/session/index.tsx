@@ -1209,8 +1209,7 @@ export function Session() {
             <Show when={!session() && sessionLoading()}>
               <box alignItems="center" justifyContent="center" flexGrow={1}>
                 <box gap={1}>
-                  <Spinner />
-                  <text>Loading session…</text> {/* vMK: fix orphan text error - raw text inside <box> must be wrapped in <text> */}
+                  <Spinner /><text>Loading session…</text> {/* vMK: same-line prevents whitespace text node inside <box> */}
                 </box>
               </box>
             </Show>

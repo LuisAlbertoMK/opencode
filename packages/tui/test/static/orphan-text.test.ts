@@ -44,6 +44,14 @@ describe("TUI orphan text detection", () => {
   /**
    * Multiline: line ending with <box> or <box …> followed by a line
    * that contains raw text (does NOT start with <, {, }, or </).
+   *
+   * NOTE: this also catches whitespace between JSX siblings only when the
+   * next line starts with text (not <). Whitespace BETWEEN sibling elements
+   * (e.g. <Spinner />\n<text>…) is NOT caught here because the next line
+   * starts with < — which looks "safe" to this check.
+   *
+   * See KNOWN_LOW_RISK entries in routes/session/index.tsx for the
+   * whitespace-between-concrete-siblings pattern detected at runtime.
    */
   const BOX_END_RE = /<box[^>]*>\s*$/
   const CLOSING_ONLY = /^[\s)\]}\/]+$/
