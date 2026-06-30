@@ -76,3 +76,4 @@ vMK corre su propio ciclo de mejora:
 - **2026-06-24**: Fix del revert-loop bug (TUI + server race conditions). Creación de ANTI-PATTERN-CATALOG.md.
 - **2026-06-25**: 5-subagentes analysis de mejoras. Creación de este manifiesto.
 - **2026-06-25**: Contención implementada — `vmk.cmd` con aislamiento de config/DB/cache, directorios `.vmk-*`, alias `vmk` (PowerShell), safety check script, `.gitignore`. Score: 9.8/10.
+- **2026-06-30**: MCP Token Budget — `tool_output` global (500 líneas/10KB), `truncateLimit` por server en schema V1+V2, expuesto via `MCP.toolTruncateLimit()`. Análisis estructural con codebase-memory (26K nodos). Parallel Plugin Loading reevaluado → ❌ Skip. Cycle 6 eliminado (0 tareas). BACKLOG actualizado.

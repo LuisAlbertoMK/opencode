@@ -172,7 +172,13 @@ export const resolve = Effect.fn("SessionTools.resolve")(function* (input: {
             }
           }
 
-          const truncated = yield* truncate.output(textParts.join("\n\n"), {}, input.agent)
+          // vMK: Use per-server truncateLimit if configured
+          const truncateLimit = yield* mcp.toolTruncateLimit(key)
+          const truncated = yield* truncate.output(
+            textParts.join("\n\n"),
+            truncateLimit ? { maxBytes: truncateLimit } : {},
+            input.agent,
+          )
           const metadata = {
             ...result.metadata,
             truncated: truncated.truncated,

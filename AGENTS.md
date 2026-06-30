@@ -77,6 +77,26 @@ Ver también: `docs/vmk-containment-brainstorm.md` para el análisis completo.
 
 ---
 
+## MCP Token Budget Rules
+
+Los MCP servers tienen un límite de truncamiento global (`tool_output`) de 500 líneas / 10 KB,
+y cada server puede tener su propio `truncateLimit` por server (en bytes).
+
+Al usar herramientas MCP:
+
+1. **Siempre usa límites conservadores** en los parámetros de la herramienta:
+   - `search_graph` → `limit: 20-30` (NO el default 200)
+   - `search_code` → `limit: 5`, prefiere `mode: "compact"`
+   - `query_graph` → **SIEMPRE** incluye `max_rows` (ej. 50). NUNCA sin límite.
+   - `trace_path` → `depth: 2` si es posible
+2. **Prefiere `get_code_snippet` sobre `search_code` en modo `full`** cuando solo necesitas ver una función específica.
+3. **Usa `query_graph` solo para consultas específicas**, nunca queries abiertas como `MATCH (n) RETURN n`.
+4. **Verifica `has_more`/`total`** en resultados de `search_graph`/`search_code` — si hay más datos, página con `offset` en vez de pedir todo de golpe.
+
+El sistema truncará automáticamente salidas que excedan los límites, pero cada truncamiento es un viaje de ida y vuelta desperdiciado.
+
+---
+
 ## Modules
 
 | Topic | File | Description |

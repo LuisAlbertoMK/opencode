@@ -20,6 +20,10 @@ export const Local = Schema.Struct({
   timeout: Schema.optional(PositiveInt).annotate({
     description: "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.",
   }),
+  truncateLimit: Schema.optional(PositiveInt).annotate({
+    description:
+      "Maximum output size in bytes for tool results from this server. Results exceeding this limit will be truncated. Overrides the global tool_output.max_bytes.",
+  }),
 }).annotate({ identifier: "McpLocalConfig" })
 export type Local = Schema.Schema.Type<typeof Local>
 
@@ -55,6 +59,10 @@ export const Remote = Schema.Struct({
   }),
   timeout: Schema.optional(PositiveInt).annotate({
     description: "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.",
+  }),
+  truncateLimit: Schema.optional(PositiveInt).annotate({
+    description:
+      "Maximum output size in bytes for tool results from this server. Results exceeding this limit will be truncated. Overrides the global tool_output.max_bytes.",
   }),
 }).annotate({ identifier: "McpRemoteConfig" })
 export type Remote = Schema.Schema.Type<typeof Remote>

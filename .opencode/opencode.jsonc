@@ -4,18 +4,24 @@
     "github-triage": true,
     "github-pr-search": true
   },
+  "tool_output": {
+    "max_lines": 500,
+    "max_bytes": 10240
+  },
   "mcp": {
     "codebase-memory": {
       "type": "local",
       "command": ["codebase-memory-mcp"],
       "enabled": true,
-      "timeout": 30000
+      "timeout": 30000,
+      "truncateLimit": 8192
     },
     "engram": {
       "type": "local",
       "command": ["engram", "mcp", "--tools=agent"],
       "enabled": true,
-      "timeout": 120000
+      "timeout": 120000,
+      "truncateLimit": 4096
     }
   },
   "agent": {

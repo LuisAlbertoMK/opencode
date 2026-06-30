@@ -696,16 +696,17 @@ Con el guard (mismo patrón que `limitFrames()` existente), todo esto se salta c
 
 ---
 
-## 2026-06-30 — Sesión: Diagnóstico MCP + Análisis de Mejora
+## 2026-06-30 — Sesión: MCP Token Budget + Análisis Estructural
 
-**Contexto**: Evaluación del estado del proyecto y MCP servers. Sin cambios de código en esta sesión.
+**Contexto**: Implementación de tool_output y truncateLimit por MCP server. Análisis con codebase-memory del proyecto vMK. Reevaluación de backlog.
 
 | Métrica | Valor |
 |---------|-------|
 | inter | 23/30 |
 | Score (project.json) | 9.0/10 |
-| MCP context7 | ✅ Connected |
-| MCP engram | ❌ Error -32000: connection closed |
-| MCP codebase-memory | ⚪ Disabled (intencional) |
-| Cycle 6 | 🔶 In Progress — 0 tareas |
-| Acción | Diagnóstico + documentación, sin compilar |
+| MCP context7 | ✅ Built-in tool |
+| MCP engram | ✅ Connected (fix --tools=agent aplicado) |
+| MCP codebase-memory | ✅ Indexado (fast mode, 26,538 nodos) |
+| Cycle 6 | ❌ Eliminado (0 tareas) |
+| BACKLOG #2 | ❌ Skip — Parallel Plugin Loading ya implementado |
+| Acción | 6 archivos modificados: opencode.jsonc, AGENTS.md, config/mcp.ts (V1+V2), mcp/index.ts, session/tools.ts |

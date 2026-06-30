@@ -27,7 +27,7 @@ Cold boot estimado: **300ms-1s** para `run --interactive`.
 
 | Candidato | Archivo | Win est. | Riesgo |
 |:----------|:--------|:--------:|:-------|
-| Parallel plugin loading | `src/plugin/index.ts` | 100-500ms | Orden hooks |
+| Parallel plugin loading | `src/plugin/index.ts` | ~10ms | ❌ Skip: loader.ts ya usa Promise.all. applyPlugin secuencial es <10ms. El bottleneck real es plugin.init() bloqueante por diseño. |
 | Deferred config loading | `src/config/config.ts` | 50-200ms | Config tardía |
 | Lazy database connection | `packages/core/src/database/database.ts` | 10-30ms | ZONA ROJA |
 

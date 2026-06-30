@@ -161,6 +161,7 @@ export interface Interface {
   readonly status: () => Effect.Effect<Record<string, Status>>
   readonly clients: () => Effect.Effect<Record<string, MCPClient>>
   readonly tools: () => Effect.Effect<Record<string, Tool>>
+  readonly toolTruncateLimit: (toolKey: string) => Effect.Effect<number | undefined>
   readonly prompts: () => Effect.Effect<Record<string, PromptInfo & { client: string }>>
   readonly resources: () => Effect.Effect<Record<string, ResourceInfo & { client: string }>>
   readonly add: (name: string, mcp: ConfigMCPV1.Info) => Effect.Effect<{ status: Record<string, Status> | Status }>
@@ -662,6 +663,31 @@ export const layer = Layer.effect(
       return result
     })
 
+    // vMK: Per-server truncateLimit for MCP tool outputs
+    const toolTruncateLimit = Effect.fn("MCP.toolTruncateLimit")(function* (toolKey: string) {
+      const s = yield* InstanceState.get(state)
+      const cfg = yield* cfgSvc.get()
+      const config = cfg.mcp ?? {}
+
+      for (const serverName of Object.keys(s.clients)) {
+        const prefix = McpCatalog.sanitize(serverName) + "_"
+        if (toolKey.startsWith(prefix)) {
+          // Check loaded config (from opencode.jsonc)
+          const mcpConfig = config[serverName]
+          if (mcpConfig && isMcpConfigured(mcpConfig) && "truncateLimit" in mcpConfig) {
+            return (mcpConfig as { truncateLimit?: number }).truncateLimit
+          }
+          // Check dynamically added config
+          const dynamicConfig = s.config[serverName]
+          if (dynamicConfig && "truncateLimit" in dynamicConfig) {
+            return (dynamicConfig as { truncateLimit?: number }).truncateLimit
+          }
+          return undefined
+        }
+      }
+      return undefined
+    })
+
     function collectFromConnected<T extends { name: string }>(
       s: State,
       listFn: (c: Client, timeout?: number) => Promise<T[]>,
@@ -944,6 +970,7 @@ export const layer = Layer.effect(
       supportsOAuth,
       hasStoredTokens,
       getAuthStatus,
+      toolTruncateLimit,
     })
   }),
 )
