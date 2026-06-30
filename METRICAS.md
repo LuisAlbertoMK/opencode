@@ -696,7 +696,21 @@ Con el guard (mismo patrón que `limitFrames()` existente), todo esto se salta c
 
 ---
 
-## 2026-06-30 — Sesión: MCP Token Budget + Análisis Estructural
+## 2026-06-30 — Sesión 3: vMK containment + context menu
+
+**Contexto**: Compilación y safety check de vMK. Configuración de alias PowerShell, menú contextual Explorer, y script portable.
+
+| Métrica | Valor |
+|---------|-------|
+| vMK safety check | ✅ Completo (opencode-vMK.exe correcto, catalog OK, aislamiento OK) |
+| vmk alias en $PROFILE | ✅ Creado `profile.ps1` → dotsourcea `scripts/vmk-alias.ps1` |
+| Context menu: "Open PowerShell 7 here" | ✅ Instalado (background, folder, drive) |
+| Context menu: "Open vMK here" | ✅ Instalado (background, folder, drive) |
+| Script portable: `scripts/vmk-install-context.ps1` | ✅ Creado (auto-detect, auto-elevate, install/uninstall) |
+| .learnings | ✅ `2026-06-30-vmk-context-menu.md` |
+| Working tree | Limpio (+1 new file: vmk-install-context.ps1) |
+
+## 2026-06-30 — Sesión 2: MCP Token Budget + Análisis Estructural
 
 **Contexto**: Implementación de tool_output y truncateLimit por MCP server. Análisis con codebase-memory del proyecto vMK. Reevaluación de backlog.
 
