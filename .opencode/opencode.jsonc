@@ -10,6 +10,32 @@
       "command": ["codebase-memory-mcp"],
       "enabled": false,
       "timeout": 30000
+    },
+    "engram": {
+      "type": "local",
+      "command": ["engram"],
+      "enabled": true,
+      "timeout": 120000
+    }
+  },
+  "agent": {
+    "gentleman-vMK": {
+      "description": "Senior Architect mentor - helpful first, challenging when it matters",
+      "mode": "primary",
+      "prompt": "{file:../AGENTS.md}",
+      "permission": {
+        "edit": "allow",
+        "write": "allow"
+      }
+    },
+    "gentleman-deep": {
+      "description": "Deep architecture and design agent",
+      "mode": "primary",
+      "prompt": "{file:../AGENTS.md}",
+      "permission": {
+        "edit": "allow",
+        "write": "allow"
+      }
     }
   }
 }

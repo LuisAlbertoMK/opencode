@@ -1,6 +1,14 @@
 #!/bin/sh
 set -e
 
+# Pre-commit: check catalog integrity — @opentui/* debe usar catalog:
+if grep -q '"@opentui/core": "[^c]' packages/opencode/package.json 2>/dev/null; then
+  echo "[pre-commit] ERROR: @opentui/core esta PINNEADO en packages/opencode/package.json"
+  echo "[pre-commit] Cambiar a 'catalog:' — la version fija causa typecheck error en TUI"
+  echo "[pre-commit] (dos copias de @opentui/keymap con hashes incompatibles)"
+  exit 1
+fi
+
 # Pre-commit: typecheck parcial — solo packages con cambios staged
 # Si no hay cambios en packages/, skip automático
 

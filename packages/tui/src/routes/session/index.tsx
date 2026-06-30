@@ -1181,7 +1181,7 @@ export function Session() {
   })
 
   // snap to bottom when session changes
-  createEffect(on(() => route.sessionID, toBottom))
+  createEffect(on(() => route.sessionID, () => toBottom()))
 
   return (
     <PathFormatterProvider path={session()?.directory}>
