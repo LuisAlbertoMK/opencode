@@ -1208,9 +1208,7 @@ export function Session() {
           <box flexGrow={1} minHeight={0} paddingBottom={1} paddingLeft={2} paddingRight={2} gap={1}>
             <Show when={!session() && sessionLoading()}>
               <box alignItems="center" justifyContent="center" flexGrow={1}>
-                <box gap={1}>
-                  <Spinner /><text>Loading session…</text> {/* vMK: same-line prevents whitespace text node inside <box> */}
-                </box>
+                <box gap={1}><Spinner /><text>Loading session…</text></box>
               </box>
             </Show>
             <Show when={session()}>
