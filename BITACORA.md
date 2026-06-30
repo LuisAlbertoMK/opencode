@@ -1,3 +1,4 @@
+2026-06-30 — Sesión: Diagnóstico MCP servers + análisis de mejora. context7 OK, codebase-memory disabled, engram error -32000 connection closed. .learnings revisados (no aprendidos). Score 9.0. Pendiente: arreglar engram MCP, evaluar codebase-memory, arrancar Cycle6.
 2026-06-27 — I/R #3 #5 #6: SkillOpt scoring, Codebase Memory MCP v0.8.1, Ponytail benchmark, Build vMK. Score 9.0.
 2026-06-27 — TUI polish + vMK fixes: session loading spinner, showThinking conectado a preferencia, console.log production removido, dead signals cleanup. vmk-safety-check: 10 hardcoded paths → $PSScriptRoot. gitlab-ai-provider: static→type-only. 3 commits en vmk-containment.
 2026-06-26 — Cycle2: Fix Bun compile — static command registry _registry.ts + vmk.cmd cleanup. 3 commits. Score 8.5→8.7.

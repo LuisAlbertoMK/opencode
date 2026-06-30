@@ -1,5 +1,5 @@
 ﻿{
-    "inter":  22,
+    "inter":  23,
     "log":  [
                 {
                     "msg":  "Fix 1: Config optimizada .opencode/opencode.jsonc — compaction/prune/experimental/images/model-limits",
@@ -110,6 +110,11 @@
                     "msg":  "Add CI gate: verifica noUncheckedIndexedAccess overrides en typecheck/fork-ci",
                     "n":  22,
                     "ts":  "2026-06-23 09:49:23"
+                },
+                {
+                    "msg":  "Sesión 2026-06-30: Diagnóstico MCP — context7 OK, engram error -32000, codebase-memory disabled. Score 9.0. Pendiente: fix engram MCP.",
+                    "n":  23,
+                    "ts":  "2026-06-30 00:00:00"
                 }
             ]
 }

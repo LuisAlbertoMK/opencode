@@ -693,3 +693,19 @@ Con el guard (mismo patrón que `limitFrames()` existente), todo esto se salta c
 | METRICAS.md | ✅ Rondas 14-15 + métricas de automejora |
 | AGENTS.md | ✅ v2.5 — Hot path en Structured CoT |
 | Pendientes | ⏳ session-runner.test timeout (pre-existing), binary testing (postergado) |
+
+---
+
+## 2026-06-30 — Sesión: Diagnóstico MCP + Análisis de Mejora
+
+**Contexto**: Evaluación del estado del proyecto y MCP servers. Sin cambios de código en esta sesión.
+
+| Métrica | Valor |
+|---------|-------|
+| inter | 23/30 |
+| Score (project.json) | 9.0/10 |
+| MCP context7 | ✅ Connected |
+| MCP engram | ❌ Error -32000: connection closed |
+| MCP codebase-memory | ⚪ Disabled (intencional) |
+| Cycle 6 | 🔶 In Progress — 0 tareas |
+| Acción | Diagnóstico + documentación, sin compilar |
