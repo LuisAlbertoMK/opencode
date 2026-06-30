@@ -8,12 +8,12 @@
     "codebase-memory": {
       "type": "local",
       "command": ["codebase-memory-mcp"],
-      "enabled": false,
+      "enabled": true,
       "timeout": 30000
     },
     "engram": {
       "type": "local",
-      "command": ["engram"],
+      "command": ["engram", "mcp", "--tools=agent"],
       "enabled": true,
       "timeout": 120000
     }

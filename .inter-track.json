@@ -1,5 +1,5 @@
 ﻿{
-    "inter":  23,
+    "inter":  24,
     "log":  [
                 {
                     "msg":  "Fix 1: Config optimizada .opencode/opencode.jsonc — compaction/prune/experimental/images/model-limits",
@@ -115,6 +115,11 @@
                     "msg":  "Sesión 2026-06-30: Diagnóstico MCP — context7 OK, engram error -32000, codebase-memory disabled. Score 9.0. Pendiente: fix engram MCP.",
                     "n":  23,
                     "ts":  "2026-06-30 00:00:00"
+                },
+                {
+                    "msg":  "Fix engram MCP: agregados args 'mcp --tools=agent' al comando. Error -32000 corregido.",
+                    "n":  24,
+                    "ts":  "2026-06-30 00:01:00"
                 }
             ]
 }
