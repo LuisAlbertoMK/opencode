@@ -53,3 +53,8 @@ NUL3
 test-output.exe
 opencode-vmk.exe
 *.exe
+
+# vMK artifacts
+.learnings/
+knip_header.txt
+
