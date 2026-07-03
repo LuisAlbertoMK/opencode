@@ -105,11 +105,11 @@ const getData = query(async (shareID) => {
         break
       case "message":
         result.message[item.data.sessionID] = result.message[item.data.sessionID] ?? []
-        result.message[item.data.sessionID].push(item.data)
+        result.message[item.data.sessionID]!.push(item.data)
         break
       case "part":
         result.part[item.data.messageID] = result.part[item.data.messageID] ?? []
-        result.part[item.data.messageID].push(item.data)
+        result.part[item.data.messageID]!.push(item.data)
         break
       case "model":
         result.model[share.sessionID] = item.data
@@ -157,7 +157,7 @@ export default function () {
         {(data) => {
           const match = createMemo(() => Binary.search(data().session, data().sessionID, (s) => s.id))
           if (!match().found) throw new Error(`Session ${data().sessionID} not found`)
-          const info = createMemo(() => data().session[match().index])
+          const info = createMemo(() => data().session[match().index]!)
           const ogImage = createMemo(() => {
             const models = new Set<string>()
             const messages = data().message[data().sessionID] ?? []
@@ -170,11 +170,11 @@ export default function () {
             const encodedTitle = encodeURIComponent(Base64.encode(encodeURIComponent(info().title.substring(0, 700))))
             let modelParam: string
             if (modelIDs.length === 1) {
-              modelParam = modelIDs[0]
+              modelParam = modelIDs[0]!
             } else if (modelIDs.length === 2) {
-              modelParam = encodeURIComponent(`${modelIDs[0]} & ${modelIDs[1]}`)
+              modelParam = encodeURIComponent(`${modelIDs[0]!} & ${modelIDs[1]!}`)
             } else if (modelIDs.length > 2) {
-              modelParam = encodeURIComponent(`${modelIDs[0]} & ${modelIDs.length - 1} others`)
+              modelParam = encodeURIComponent(`${modelIDs[0]!} & ${modelIDs.length - 1} others`)
             } else {
               modelParam = "unknown"
             }

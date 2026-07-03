@@ -93,8 +93,8 @@ describe.concurrent("core.share", () => {
     const result = await Share.data(share.id)
 
     expect(result.length).toBe(2)
-    expect(result[0].type).toBe("part")
-    expect(result[1].type).toBe("part")
+    expect(result[0]!.type).toBe("part")
+    expect(result[1]!.type).toBe("part")
 
     await Share.remove({ id: share.id, secret: share.secret })
   })
@@ -176,7 +176,7 @@ describe.concurrent("core.share", () => {
     const result = await Share.data(share.id)
 
     expect(result.length).toBe(1)
-    const [first] = result
+    const first = result[0]!
     expect(first.type).toBe("part")
     expect(first.type === "part" && first.data.type === "text" && first.data.text).toBe("Hello Updated")
 
