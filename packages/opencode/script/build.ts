@@ -23,7 +23,7 @@ const baselineFlag = process.argv.includes("--baseline")
 const skipInstall = process.argv.includes("--skip-install")
 const sourcemapsFlag = process.argv.includes("--sourcemaps")
 const plugin = createSolidTransformPlugin()
-const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
+const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui") || process.env.OPENCODE_DISABLE_EMBEDDED_WEB_UI === "true" // vMK: respect env var from vmk.cmd
 
 const CACHE_HASH_FILE = path.join(dir, "dist", ".webui-hash")
 
@@ -213,7 +213,13 @@ for (const item of targets) {
     conditions: ["bun", "node"],
     tsconfig: "./tsconfig.json",
     plugins: [plugin],
-    external: ["node-gyp"],
+    external: [
+      "node-gyp",
+      "tree-sitter-bash", // vMK: exclude WASM to reduce binary size
+      "tree-sitter-powershell", // vMK: exclude WASM to reduce binary size
+      "@silvia-odwyer/photon-node", // vMK: exclude WASM to reduce binary size
+      "web-tree-sitter", // vMK: exclude WASM to reduce binary size (shell parser degrades gracefully)
+    ],
     format: "esm",
     minify: true,
     drop: ["console", "debugger"], // vMK: strip console/debugger from compiled binary
