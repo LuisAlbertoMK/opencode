@@ -155,6 +155,47 @@ Score >0.5 drop → revert. Ref: `vMK-dev` (commit ~18508701e).
 
 ---
 
+# Improvement Cycle 10 — opencode vMK
+
+> **Cycle**: 2026-07-03 — Upstream Cherry-pick: Security & Features
+> **Objective**: Sincronizar commits de alta prioridad de upstream/dev (~613 atrás). Seleccionar y aplicar fixes de core/MCP/TUI compatibles con vMK.
+> **Status**: ✅ Completado
+
+## Metrics
+
+| Métrica | Target | Actual | Delta |
+|---------|--------|--------|-------|
+| **Cherry-picks attempted** | — | 7 commits | — |
+| **Cherry-picks applied** | — | 5 commits (+1 stats) | — |
+| **Cherry-picks reverted** | — | 2 commits (incompat. estructural) | — |
+| **TUI tests** | 7/7 | 7/7 ✅ | 0 |
+| **Cold boot** | < 970ms | 616.4 ms avg | **-36.4%** |
+
+## Tasks
+
+| # | Task | Difficulty | Status | Notas |
+|:---|:-----|:---:|:-----:|:------|
+| 1 | Scan upstream commits for high-value cherry-picks | Media | ✅ Done | 50 commits revisados, 7 seleccionados |
+| 2 | Cherry-pick Cerebras reasoning replay (#34826) | Baja | ✅ Done | SDK update + test coverage |
+| 3 | Cherry-pick session list filter (#34842) | Baja | ✅ Done | 3 files, clean merge |
+| 4 | Cherry-pick copilot endpoints (#34958) | Media | ✅ Done | Conflict resuelto (github-copilot.ts) |
+| 5 | Cherry-pick TUI debug dialog (#35004) | Media | ✅ Done | Conflict resuelto (error-component.tsx) |
+| 6 | Cherry-pick observability fix (#35171) | Alta | ❌ Revertido | Importa módulos que no existen en vMK |
+| 7 | Cherry-pick core layer rewrite (#35175) | Alta | ❌ Revertido | buildLayer no compatible con callers existentes |
+| 8 | Cherry-pick stats fix | Baja | ✅ Done | CSS/TSX, sin impacto en vMK |
+| 9 | Build + smoke + TUI tests | Media | ✅ Done | Build OK, 7/7 PASS |
+
+## Exit Criteria
+
+- [x] 5 upstream commits aplicados exitosamente
+- [x] 0 breaking changes introducidos (2 incompatibles revertidos a tiempo)
+- [x] Build compila sin errores
+- [x] Binary smoke test pasa
+- [x] TUI tests 7/7 pasan
+- [x] Benchmark estable: 616.4ms avg, 126.8 MB
+
+---
+
 # Cycle 5 (archived) — Boot Chain Audit & Cycle Activity Recovery. Score 8.0→8.5. inter 147/30.
 
 # Cycle 4 (archived) — I/R backlog. Score 8.7→9.0.

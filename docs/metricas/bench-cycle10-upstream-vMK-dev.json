@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-07-03T13:15:05.2783128-06:00",
+  "label": "cycle10-upstream",
+  "performance": {
+    "cold_boot_help_ms": {
+      "max": 637.8,
+      "avg": 616.4,
+      "n": 3,
+      "min": 599.4,
+      "median": 612.0,
+      "spread": 38.4,
+      "runs": [
+        612.0,
+        637.8,
+        599.4
+      ],
+      "p95": 637.8
+    }
+  },
+  "date": "2026-07-03T13:15:05.2778602-06:00",
+  "build": {
+    "bun": "1.3.14",
+    "platform": "win32-x64"
+  },
+  "binary": {
+    "size_bytes": 132963328,
+    "path": "D:\\opencode\\packages\\opencode\\dist\\opencode-windows-x64\\bin\\opencode-vMK.exe",
+    "size_mb": 126.8
+  },
+  "smoke": {
+    "exit_code": 0,
+    "version": true
+  },
+  "branch": "vMK-dev"
+}
