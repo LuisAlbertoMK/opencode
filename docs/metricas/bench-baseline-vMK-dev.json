@@ -1,0 +1,32 @@
+{
+  "date": "2026-06-30T19:19:50Z",
+  "branch": "vMK-dev",
+  "build": {
+    "bun": "1.3.14",
+    "channel": "vMK-dev",
+    "version": "1.17.7-vMK-dev",
+    "flags": "--single --skip-embed-web-ui",
+    "platform": "win32-x64"
+  },
+  "binary": {
+    "path": "packages/opencode/dist/opencode-windows-x64/bin/opencode-vMK.exe",
+    "size_bytes": 136867328,
+    "size_mb": 130.5
+  },
+  "performance": {
+    "cold_boot_help_ms": {
+      "avg": 1889.4,
+      "runs": [1860, 1871.4, 1940.1, 1871.5, 1903.8],
+      "description": "Time to show --help from cold start (CLI parsing + Bun runtime init)"
+    }
+  },
+  "notes": "Baseline post-consolidation. Previous build was 155.8MB (vmk-containment, older flags). RSS measurement requires API key for inference runs.",
+  "comparison": {
+    "previous_build": {
+      "branch": "vmk-containment",
+      "size_mb": 155.8,
+      "delta_pct": -16.2,
+      "note": "Pre-consolidation build with embedded web UI"
+    }
+  }
+}

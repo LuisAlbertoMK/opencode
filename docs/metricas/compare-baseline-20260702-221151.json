@@ -1,0 +1,77 @@
+{
+  "label": "baseline",
+  "branch": "vMK-dev",
+  "date": "2026-07-02T22:11:22.9879661-06:00",
+  "original": {
+    "Serve": {
+      "Alive": true,
+      "DurationMs": 3173.0
+    },
+    "Size": {
+      "SizeMB": 158.21,
+      "Path": "C:\\Users\\MK\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\bin\\opencode.exe",
+      "SizeBytes": 165897096
+    },
+    "Models": {
+      "ElapsedMs": 4213.9,
+      "ExitCode": 0,
+      "Lines": 5
+    },
+    "Version": {
+      "ExitCode": 0,
+      "Output": "1.17.13"
+    },
+    "ColdBoot": {
+      "Avg": 1680.6,
+      "Max": 1926.4,
+      "Min": 1539.0,
+      "Runs": [
+        1926.4,
+        1576.5,
+        1539.0
+      ]
+    },
+    "ProvidersList": {
+      "ElapsedMs": 2531.6,
+      "OutputLength": 106,
+      "ExitCode": 0
+    }
+  },
+  "vmk": {
+    "Serve": {
+      "Alive": true,
+      "DurationMs": 3029.0
+    },
+    "Size": {
+      "SizeMB": 126.75,
+      "Path": "D:\\opencode\\packages\\opencode\\dist\\opencode-windows-x64\\bin\\opencode-vMK.exe",
+      "SizeBytes": 132903424
+    },
+    "Models": {
+      "ElapsedMs": 3501.6,
+      "ExitCode": 0,
+      "Lines": 5
+    },
+    "Version": {
+      "ExitCode": 0,
+      "Output": "1.17.7-vMK-dev"
+    },
+    "ColdBoot": {
+      "Avg": 556.7,
+      "Max": 576.1,
+      "Min": 540.3,
+      "Runs": [
+        576.1,
+        553.6,
+        540.3
+      ]
+    },
+    "ProvidersList": {
+      "ElapsedMs": 2193.0,
+      "OutputLength": 106,
+      "ExitCode": 0
+    }
+  },
+  "os": "Microsoft Windows 10.0.26200",
+  "bun": "1.3.14"
+}
