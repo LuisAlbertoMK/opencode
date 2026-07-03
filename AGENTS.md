@@ -35,14 +35,14 @@ Examples: `fix(tui): simplify thinking toggle styling`, `docs: update contributi
 | Zona | Archivos | Acción |
 |------|----------|--------|
 | 🟢 VERDE | `vmk.cmd`, `scripts/vmk-*`, `docs/vmk-*` | Modificar libremente |
-| 🟡 AMARILLO | `packages/*/src/**`, `build.ts` | Documentar intención vMK + tag `// vMK:` |
+| 🟡 AMARILLO | `packages/*/src/**`, `build.ts` | **Inline `// vMK:`** en TODA línea/bloque modificado + **Header `// vMK:`** (opcional, en cambios arquitectónicamente significativos) |
 | 🔴 ROJO | `C:\...\npm\node_modules\opencode-ai\**`, `~/.opencode/bin/opencode.exe` | **NUNCA TOCAR** |
 
 ### Verificación Obligatoria
 
 **Antes de CUALQUIER modificación:**
 1. ¿El archivo está en ZONA VERDE? → Proceder libremente
-2. ¿El archivo está en ZONA AMARILLO? → Documentar intención vMK
+2. ¿El archivo está en ZONA AMARILLO? → Documentar intención vMK (ver reglas arriba)
 3. ¿El archivo está en ZONA ROJA? → STOP. No modificar.
 
 **Post-build:**

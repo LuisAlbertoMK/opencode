@@ -2,6 +2,9 @@
 
 > Cómo medir el ahorro real de recursos de tu fork vMK.
 > Metodología verificada por 3 subagentes.
+>
+> **Baseline actual**: `docs/metricas/bench-baseline-vMK-dev.json`
+> **Rama activa**: `vMK-dev`
 
 ---
 
@@ -82,6 +85,19 @@ foreach ($version in @("vmk", "upstream")) {
 # - Menor binary size (drop + minify)
 # - Frame times más estables (useThread)
 ```
+
+---
+
+## Baseline registrado
+
+| Métrica | Valor | Fecha |
+|---------|-------|-------|
+| Binary size | 130.5 MB | 2026-06-30 |
+| Cold boot (--help) | 1889ms avg | 2026-06-30 |
+| Pre-consolidación | 155.8 MB (-16.2%) | vmk-containment |
+
+Próximas optimizaciones se comparan contra `docs/metricas/bench-baseline-vMK-dev.json`.
+Corré `.\scripts\vmk-bench.ps1` para generar un nuevo reporte y comparar deltas.
 
 ---
 
