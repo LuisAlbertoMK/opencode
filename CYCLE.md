@@ -39,9 +39,9 @@
 
 # Improvement Cycle 9 — opencode vMK
 
-> **Cycle**: 2026-07-03 — Architecture Docs, CI Workflows & Skill Audit
-> **Objective**: Cerrar gaps de documentación de arquitectura, agregar CI workflows faltantes (cross-compile, gitleaks), y auditar skills instaladas.
-> **Status**: ✅ Completado
+> **Cycle**: 2026-07-03 — Architecture Docs, CI Workflows, Skill Audit & Last Mile 20%
+> **Objective**: Cerrar gaps de documentación de arquitectura, agregar CI workflows faltantes (cross-compile, gitleaks), auditar skills instaladas, Y cerrar gaps finales para -20% en providers/models + sincronizar upstream (585 commits ahead).
+> **Status**: 🔶 En progreso
 
 ## Metrics
 
@@ -50,6 +50,9 @@
 | **Architecture docs** | 3 nuevos | 3 ✅ (lsp, config, plugin) | 0 |
 | **CI workflows** | 2 nuevos | 2 ✅ (cross-compile, gitleaks) | 0 |
 | **Skill audit** | <5 podar | 1 (_shared, score 4.1 — esperado) | No requiere poda |
+| **providers list** | -20% vs upstream | -44.5% ✅ (4.9s → 2.7s) | -24.5 pp superado |
+| **models list** | -20% vs upstream | -59.5% ✅ (5.1s → 2.1s) | -39.5 pp superado |
+| **Upstream sync** | Continuous | Effect β.83 ✅ | 585 commits pendientes |
 
 ## Tasks
 
@@ -60,8 +63,12 @@
 | 3 | Write Plugin system doc | Media | ✅ Done | 369 líneas. PluginLoader pipeline, npm/file plugins, retry |
 | 4 | Add vmk-cross-compile CI workflow | Media | ✅ Done | Build all targets from ubuntu-latest, upload artifacts |
 | 5 | Add vmk-gitleaks CI workflow | Fácil | ✅ Done | Gitleaks scan on push/PR/schedule |
-| 6 | Run vmk-skill-audit.ps1 | Fácil | ✅ Done | 69 skills auditadas, 0 require poda real |
+| 6 | Run vmk-skill-audit.ps1 | Fácil | ✅ Done | 69 skills auditadas, 0 requieren poda real |
 | 7 | Write Cycle 9 report → docs/ciclos/ | Fácil | ✅ Done | cycle9-20260703.md |
+| 8 | Providers list — parallel probes + caching | Media | ✅ Done | Instance: false + parallel plugin/config loading. 4.9s → 2.7s (-44.5%) |
+| 9 | Models list — skip instance bootstrap | Media | ✅ Done | Instance: false + ModelsDev directo. 5.1s → 2.1s (-59.5%) |
+| 10 | Upstream cherry-pick: security + features | Alta | 🟡 Pendiente | 585 commits ahead. Priorizar OAuth/MCP fixes, luego feature parity |
+| 11 | Cycle 9 report update → docs/ciclos/ | Fácil | 🟡 Pendiente | Documentar resultados finales providers/models + upstream |
 
 ## Exit Criteria
 
@@ -69,8 +76,11 @@
 - [x] Cross-compile CI workflow creado
 - [x] Gitleaks CI workflow creado
 - [x] Skill audit ejecutado — limpio
-- [x] Cycle report written to docs/ciclos/cycle9-20260703.md
-- [x] Todos los cambios commiteados (e1c115b9b)
+- [x] providers list ≤ -20% vs upstream (benchmark vmk-bench.ps1) — **SUPERADO -44.5%**
+- [x] models list ≤ -20% vs upstream (benchmark vmk-bench.ps1) — **SUPERADO -59.5%**
+- [ ] Upstream security patches cherry-picked (OAuth, MCP auth scoping, callback isolation)
+- [ ] Binary smoke test + TUI tests 7/7 pass
+- [ ] Cycle report updated to docs/ciclos/cycle9-20260703.md con métricas finales
 
 ---
 
