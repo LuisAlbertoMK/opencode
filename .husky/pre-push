@@ -22,7 +22,13 @@ bun typecheck
 echo "[pre-push] OK"
 
 echo "[pre-push] === Fase 3: Multi-agent verification ==="
-# 3a. Validar config personal (si pwsh disponible)
+# 3a. Binary smoke test (Windows only)
+if [ -f packages/opencode/dist/opencode-windows-x64/bin/opencode-vMK.exe ]; then
+  echo "[pre-push] Verifying compiled binary..."
+  packages/opencode/dist/opencode-windows-x64/bin/opencode-vMK.exe --version > /dev/null 2>&1 && echo "[pre-push] Binary smoke test OK" || echo "[pre-push] [WARN] Binary smoke test failed (rebuild needed)"
+fi
+
+# 3b. Validar config personal (si pwsh disponible)
 if command -v pwsh &> /dev/null; then
   SCRIPT_DIR="$(cd "$(dirname "$0")/../script" && pwd -W 2>/dev/null || pwd)"
   if [ -f "$SCRIPT_DIR/validate-config.ps1" ]; then

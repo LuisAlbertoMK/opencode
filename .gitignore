@@ -46,3 +46,10 @@ tsconfig.tsbuildinfo
 .vmk-config/
 .vmk-data/
 .vmk-cache/
+
+# vMK artifacts
+NUL2
+NUL3
+test-output.exe
+opencode-vmk.exe
+*.exe
