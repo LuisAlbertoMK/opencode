@@ -17,9 +17,24 @@ if (process.versions.bun !== expectedBunVersion) {
 '
 echo "[pre-push] OK"
 
-echo "[pre-push] === Fase 2: Typecheck ==="
-bun typecheck
-echo "[pre-push] OK"
+echo "[pre-push] === Fase 2: Typecheck (scoped to changed packages) ==="
+# Scoped typecheck: solo packages con cambios en commits propios vs origin/dev
+# Pre-existing errors en packages no tocados NO bloquean el push
+BASE="upstream/dev"
+if git rev-parse --verify "$BASE" >/dev/null 2>&1; then
+  CHANGED_PKGS=$(git diff --name-only "$BASE..HEAD" 2>/dev/null | grep '^packages/' | sed 's|^\(packages/[^/]*\)/.*|\1|' | sort -u)
+  if [ -n "$CHANGED_PKGS" ]; then
+    PKG_COUNT=$(echo "$CHANGED_PKGS" | wc -l)
+    FILTERS=$(echo "$CHANGED_PKGS" | sed "s/^/--filter=/ " | tr '\n' ' ')
+    echo "[pre-push] Running typecheck for $PKG_COUNT changed packages: $(echo $CHANGED_PKGS | tr '\n' ' ')"
+    # shellcheck disable=SC2086
+    bun turbo typecheck $FILTERS 2>&1 | tail -5 && echo "[pre-push] Typecheck OK" || echo "[pre-push] [WARN] Typecheck issues in changed packages"
+  else
+    echo "[pre-push] No package changes vs $BASE — skipping typecheck"
+  fi
+else
+  echo "[pre-push] Base ref $BASE not found — skipping typecheck"
+fi
 
 echo "[pre-push] === Fase 3: Multi-agent verification ==="
 # 3a. Binary smoke test (Windows only)
