@@ -7,7 +7,9 @@ import { EventV2 } from "./event"
 import { PluginV2 } from "./plugin"
 import { ProviderV2 } from "./provider"
 
-type SDK = any
+interface SDK {
+  languageModel(modelId: string): LanguageModelV3
+}
 
 function wrapSSE(res: Response, ms: number, ctl: AbortController) {
   if (typeof ms !== "number" || ms <= 0) return res
@@ -58,7 +60,7 @@ function wrapSSE(res: Response, ms: number, ctl: AbortController) {
 }
 
 function prepareOptions(model: ModelV2.Info, pkg: string) {
-  const options: Record<string, any> = {
+  const options: Record<string, unknown> = {
     name: model.providerID,
     ...(model.api.type === "aisdk" ? (model.api.settings ?? {}) : {}),
     ...model.request.body,
@@ -74,7 +76,7 @@ function prepareOptions(model: ModelV2.Info, pkg: string) {
       opts.signal,
       typeof chunkTimeout === "number" && chunkTimeout > 0 ? new AbortController() : undefined,
       options.timeout !== undefined && options.timeout !== null && options.timeout !== false
-        ? AbortSignal.timeout(options.timeout)
+        ? AbortSignal.timeout(options.timeout as number)
         : undefined,
     ].filter((item): item is AbortSignal | AbortController => Boolean(item))
     const chunkAbortCtl = signals.find((item): item is AbortController => item instanceof AbortController)
