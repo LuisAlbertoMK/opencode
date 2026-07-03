@@ -1,7 +1,7 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { Config } from "@/config/config"
 import { SessionV1 } from "@opencode-ai/core/v1/session"
-import photonWasm from "@silvia-odwyer/photon-node/photon_rs_bg.wasm" with { type: "file" }
+import type {} from "@silvia-odwyer/photon-node" // vMK: type-only to avoid runtime resolution when externalized
 import { Context, Effect, Layer, Schema } from "effect"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -60,12 +60,16 @@ export const layer = Layer.effect(
   Effect.gen(function* () {
     const config = yield* Config.Service
     const loadPhoton = yield* Effect.cached(
-      Effect.sync(() => {
+      Effect.tryPromise(async () => {
+        // vMK: dynamic import to avoid static resolution failure when externalized
+        const photonWasm = await import("@silvia-odwyer/photon-node/photon_rs_bg.wasm" as string, {
+          with: { type: "file" },
+        }).then((m) => m.default || m)
         // Patched photon-node reads this during module init so Bun compiled binaries use the embedded wasm path.
         ;(globalThis as typeof globalThis & { __OPENCODE_PHOTON_WASM_PATH?: string }).__OPENCODE_PHOTON_WASM_PATH =
           path.isAbsolute(photonWasm) ? photonWasm : fileURLToPath(new URL(photonWasm, import.meta.url))
+        return import("@silvia-odwyer/photon-node")
       }).pipe(
-        Effect.andThen(() => Effect.tryPromise(() => import("@silvia-odwyer/photon-node"))),
         Effect.tapError((error) => Effect.logWarning("failed to load photon", { error })),
         Effect.mapError(() => new ResizerUnavailableError()),
       ),

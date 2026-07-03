@@ -7,7 +7,7 @@ import path from "path"
 import { containsPath, type InstanceContext } from "../project/instance-context"
 import { InstanceState } from "@/effect/instance-state"
 import { lazy } from "@/util/lazy"
-import { Language, type Node } from "web-tree-sitter"
+import type { Language, Node } from "web-tree-sitter" // vMK: type-only to avoid runtime resolution when externalized
 
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { fileURLToPath } from "url"
@@ -256,8 +256,10 @@ function tail(text: string, maxLines: number, maxBytes: number) {
 }
 
 const parse = Effect.fn("ShellTool.parse")(function* (command: string, ps: boolean) {
-  const tree = yield* Effect.promise(() => parser().then((p) => (ps ? p.ps : p.bash).parse(command)))
-  if (!tree) throw new Error("Failed to parse command")
+  const p = yield* Effect.promise(() => parser())
+  if (!p) return undefined // vMK: parser unavailable (WASM externalized), skip parsing
+  const tree = (ps ? p.ps : p.bash).parse(command)
+  if (!tree) return undefined // vMK: parse failed, skip AST-based analysis
   return tree
 })
 
@@ -316,30 +318,35 @@ function cmd(shell: string, command: string, cwd: string, env: NodeJS.ProcessEnv
   })
 }
 const parser = lazy(async () => {
-  const { Parser } = await import("web-tree-sitter")
-  const { default: treeWasm } = await import("web-tree-sitter/tree-sitter.wasm" as string, {
-    with: { type: "wasm" },
-  })
-  const treePath = resolveWasm(treeWasm)
-  await Parser.init({
-    locateFile() {
-      return treePath
-    },
-  })
-  const { default: bashWasm } = await import("tree-sitter-bash/tree-sitter-bash.wasm" as string, {
-    with: { type: "wasm" },
-  })
-  const { default: psWasm } = await import("tree-sitter-powershell/tree-sitter-powershell.wasm" as string, {
-    with: { type: "wasm" },
-  })
-  const bashPath = resolveWasm(bashWasm)
-  const psPath = resolveWasm(psWasm)
-  const [bashLanguage, psLanguage] = await Promise.all([Language.load(bashPath), Language.load(psPath)])
-  const bash = new Parser()
-  bash.setLanguage(bashLanguage)
-  const ps = new Parser()
-  ps.setLanguage(psLanguage)
-  return { bash, ps }
+  try {
+    const { Parser } = await import("web-tree-sitter")
+    const { default: treeWasm } = await import("web-tree-sitter/tree-sitter.wasm" as string, {
+      with: { type: "wasm" },
+    })
+    const treePath = resolveWasm(treeWasm)
+    await Parser.init({
+      locateFile() {
+        return treePath
+      },
+    })
+    const { Language } = await import("web-tree-sitter") // vMK: dynamic import to avoid static resolution failure when externalized
+    const { default: bashWasm } = await import("tree-sitter-bash/tree-sitter-bash.wasm" as string, {
+      with: { type: "wasm" },
+    })
+    const { default: psWasm } = await import("tree-sitter-powershell/tree-sitter-powershell.wasm" as string, {
+      with: { type: "wasm" },
+    })
+    const bashPath = resolveWasm(bashWasm)
+    const psPath = resolveWasm(psWasm)
+    const [bashLanguage, psLanguage] = await Promise.all([Language.load(bashPath), Language.load(psPath)])
+    const bash = new Parser()
+    bash.setLanguage(bashLanguage)
+    const ps = new Parser()
+    ps.setLanguage(psLanguage)
+    return { bash, ps }
+  } catch {
+    return undefined // vMK: graceful degradation when WASM packages are unavailable
+  }
 })
 
 export const ShellTool = Tool.define(
@@ -641,16 +648,19 @@ export const ShellTool = Tool.define(
               }
               const timeout = params.timeout ?? defaultTimeoutMs
               const ps = Shell.ps(shell)
-              yield* Effect.scoped(
-                Effect.gen(function* () {
-                  const tree = yield* Effect.acquireRelease(parse(params.command, ps), (tree) =>
-                    Effect.sync(() => tree.delete()),
-                  )
-                  const scan = yield* collect(tree.rootNode, cwd, ps, shell, instanceCtx)
-                  if (!containsPath(cwd, instanceCtx)) scan.dirs.add(cwd)
-                  yield* ask(ctx, scan, params)
-                }),
-              )
+              const tree = yield* parse(params.command, ps) // vMK: returns undefined when WASM unavailable
+              if (tree) {
+                yield* Effect.scoped(
+                  Effect.gen(function* () {
+                    yield* Effect.acquireRelease(Effect.succeed(tree), (tree) =>
+                      Effect.sync(() => tree.delete()),
+                    )
+                    const scan = yield* collect(tree.rootNode, cwd, ps, shell, instanceCtx)
+                    if (!containsPath(cwd, instanceCtx)) scan.dirs.add(cwd)
+                    yield* ask(ctx, scan, params)
+                  }),
+                )
+              }
 
               return yield* run(
                 {
