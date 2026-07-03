@@ -1,0 +1,70 @@
+# vMK Cross-Compile CI — Build opencode-vMK for all target platforms
+# Triggers: push/PR to vMK-dev, manual dispatch
+# Runs: Install deps → build all targets → upload artifacts
+#
+# vMK: Fork-specific cross-compile workflow. Not intended for upstream.
+
+name: vmk-cross-compile
+
+on:
+  push:
+    branches: [vMK-dev]
+  pull_request:
+    branches: [vMK-dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  OPENCODE_DISABLE_EMBEDDED_WEB_UI: "1"
+
+jobs:
+  cross-compile:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Cross-compile all targets
+        run: |
+          OPENCODE_CHANNEL="vMK-dev" \
+            bun run packages/opencode/script/build.ts --skip-embed-web-ui
+        timeout-minutes: 30
+
+      - name: List compiled binaries
+        id: artifacts
+        run: |
+          echo "## Cross-compiled binaries" > $GITHUB_STEP_SUMMARY
+          echo "| Platform | Arch | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          for dir in packages/opencode/dist/*/; do
+            platform=$(basename "$dir")
+            bin="$dir/bin"
+            if [ -d "$bin" ]; then
+              for f in "$bin"/*; do
+                size=$(du -h "$f" | cut -f1)
+                echo "| $platform | $(file "$f" | grep -oP '\d{2}-bit|\barm64\b|x86_64' | head -1) | $size |" >> $GITHUB_STEP_SUMMARY
+              done
+            fi
+          done
+          echo "Done."
+
+      - name: Upload platform artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-vMK-all-platforms
+          path: packages/opencode/dist/*/bin/*
+          retention-days: 30
