@@ -48,7 +48,7 @@ function search<T>(items: T[], target: string, key: (item: T) => string) {
   let right = items.length - 1
   while (left <= right) {
     const middle = Math.floor((left + right) / 2)
-    const value = key(items[middle])
+    const value = key(items[middle]!)
     if (value === target) return { found: true, index: middle }
     if (value < target) left = middle + 1
     else right = middle - 1
@@ -320,9 +320,9 @@ export const {
               draft.splice(result.index, 0, event.properties.info)
             }),
           )
-          const updated = store.message[event.properties.info.sessionID]
+          const updated = store.message[event.properties.info.sessionID]!
           if (updated.length > MESSAGE_LIMIT) {
-            const oldest = updated[0]
+            const oldest = updated[0]!
             batch(() => {
               setStore(
                 "message",
@@ -343,7 +343,7 @@ export const {
         }
         case "message.removed": {
           touchMessage(event.properties.sessionID, event.properties.messageID)
-          const messages = store.message[event.properties.sessionID]
+          const messages = store.message[event.properties.sessionID]!
           const result = search(messages, event.properties.messageID, (m) => m.id)
           if (result.found) {
             setStore(
@@ -388,7 +388,7 @@ export const {
             "part",
             event.properties.messageID,
             produce((draft) => {
-              const part = draft[result.index]
+              const part = draft[result.index]!
               const field = event.properties.field as keyof typeof part
               const existing = part[field] as string | undefined
               ;(part[field] as string) = (existing ?? "") + event.properties.delta
@@ -399,7 +399,7 @@ export const {
 
         case "message.part.removed": {
           touchPart(event.properties.sessionID, event.properties.partID)
-          const parts = store.part[event.properties.messageID]
+          const parts = store.part[event.properties.messageID]!
           const result = search(parts, event.properties.partID, (p) => p.id)
           if (result.found) {
             setStore(

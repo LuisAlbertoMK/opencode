@@ -140,9 +140,9 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
         if (parts.length !== 4) continue
         const [sid, mid, pid, knd] = parts
         if (knd !== "text" && knd !== "reasoning") continue
-        let g = bySession.get(sid)
-        if (!g) { g = []; bySession.set(sid, g) }
-        g.push({ assistantMessageID: mid, partID: pid, text: acc, kind: knd })
+        let g = bySession.get(sid!)
+        if (!g) { g = []; bySession.set(sid!, g) }
+        g.push({ assistantMessageID: mid!, partID: pid!, text: acc, kind: knd! })
       }
       deltaBuf.clear()
       for (const [sessionID, entries] of bySession) {

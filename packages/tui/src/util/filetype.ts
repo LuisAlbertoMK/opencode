@@ -125,6 +125,6 @@ export const LANGUAGE_EXTENSIONS: Record<string, string> = {
 export function filetype(input?: string) {
   if (!input) return "none"
   const language = LANGUAGE_EXTENSIONS[path.extname(input)]
-  if (["typescriptreact", "javascriptreact", "javascript"].includes(language)) return "typescript"
-  return language
+  if (["typescriptreact", "javascriptreact", "javascript"].includes(language!)) return "typescript"
+  return language ?? "none"
 }

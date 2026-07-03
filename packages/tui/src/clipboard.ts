@@ -108,7 +108,7 @@ function getCopyMethod() {
     }
     if (native) {
       return async (text: string) => {
-        await command(native[0], native.slice(1), text).catch(() => undefined)
+        await command(native[0]!, native.slice(1), text).catch(() => undefined)
       }
     }
     return async (text: string) => {

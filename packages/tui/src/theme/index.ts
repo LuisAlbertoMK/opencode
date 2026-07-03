@@ -388,25 +388,25 @@ export function generateSystem(colors: TerminalColors, mode: "dark" | "light"): 
   }
 
   const diffAlpha = isDark ? 0.22 : 0.14
-  const diffAddedBg = tint(bg, ansiColors.green, diffAlpha)
-  const diffRemovedBg = tint(bg, ansiColors.red, diffAlpha)
-  const diffContextBg = grays[2]
-  const diffAddedLineNumberBg = tint(diffContextBg, ansiColors.green, diffAlpha)
-  const diffRemovedLineNumberBg = tint(diffContextBg, ansiColors.red, diffAlpha)
+  const diffAddedBg = tint(bg, ansiColors.green!, diffAlpha)
+  const diffRemovedBg = tint(bg, ansiColors.red!, diffAlpha)
+  const diffContextBg = grays[2]!
+  const diffAddedLineNumberBg = tint(diffContextBg, ansiColors.green!, diffAlpha)
+  const diffRemovedLineNumberBg = tint(diffContextBg, ansiColors.red!, diffAlpha)
   const diffLineNumber = textMuted
 
   return {
     theme: {
       // Primary colors using ANSI
-      primary: ansiColors.cyan,
-      secondary: ansiColors.magenta,
-      accent: ansiColors.cyan,
+      primary: ansiColors.cyan!,
+      secondary: ansiColors.magenta!,
+      accent: ansiColors.cyan!,
 
       // Status colors using ANSI
-      error: ansiColors.red,
-      warning: ansiColors.yellow,
-      success: ansiColors.green,
-      info: ansiColors.cyan,
+      error: ansiColors.red!,
+      warning: ansiColors.yellow!,
+      success: ansiColors.green!,
+      info: ansiColors.cyan!,
 
       // Text colors
       text: fg,
@@ -415,22 +415,22 @@ export function generateSystem(colors: TerminalColors, mode: "dark" | "light"): 
 
       // Background colors - use transparent to respect terminal transparency
       background: transparent,
-      backgroundPanel: grays[2],
-      backgroundElement: grays[3],
-      backgroundMenu: grays[3],
+      backgroundPanel: grays[2]!,
+      backgroundElement: grays[3]!,
+      backgroundMenu: grays[3]!,
 
       // Border colors
-      borderSubtle: grays[6],
-      border: grays[7],
-      borderActive: grays[8],
+      borderSubtle: grays[6]!,
+      border: grays[7]!,
+      borderActive: grays[8]!,
 
       // Diff colors
-      diffAdded: ansiColors.green,
-      diffRemoved: ansiColors.red,
-      diffContext: grays[7],
-      diffHunkHeader: grays[7],
-      diffHighlightAdded: ansiColors.greenBright,
-      diffHighlightRemoved: ansiColors.redBright,
+      diffAdded: ansiColors.green!,
+      diffRemoved: ansiColors.red!,
+      diffContext: grays[7]!,
+      diffHunkHeader: grays[7]!,
+      diffHighlightAdded: ansiColors.greenBright!,
+      diffHighlightRemoved: ansiColors.redBright!,
       diffAddedBg,
       diffRemovedBg,
       diffContextBg,
@@ -441,28 +441,28 @@ export function generateSystem(colors: TerminalColors, mode: "dark" | "light"): 
       // Markdown colors
       markdownText: fg,
       markdownHeading: fg,
-      markdownLink: ansiColors.blue,
-      markdownLinkText: ansiColors.cyan,
-      markdownCode: ansiColors.green,
-      markdownBlockQuote: ansiColors.yellow,
-      markdownEmph: ansiColors.yellow,
+      markdownLink: ansiColors.blue!,
+      markdownLinkText: ansiColors.cyan!,
+      markdownCode: ansiColors.green!,
+      markdownBlockQuote: ansiColors.yellow!,
+      markdownEmph: ansiColors.yellow!,
       markdownStrong: fg,
-      markdownHorizontalRule: grays[7],
-      markdownListItem: ansiColors.blue,
-      markdownListEnumeration: ansiColors.cyan,
-      markdownImage: ansiColors.blue,
-      markdownImageText: ansiColors.cyan,
+      markdownHorizontalRule: grays[7]!,
+      markdownListItem: ansiColors.blue!,
+      markdownListEnumeration: ansiColors.cyan!,
+      markdownImage: ansiColors.blue!,
+      markdownImageText: ansiColors.cyan!,
       markdownCodeBlock: fg,
 
       // Syntax colors
       syntaxComment: textMuted,
-      syntaxKeyword: ansiColors.magenta,
-      syntaxFunction: ansiColors.blue,
+      syntaxKeyword: ansiColors.magenta!,
+      syntaxFunction: ansiColors.blue!,
       syntaxVariable: fg,
-      syntaxString: ansiColors.green,
-      syntaxNumber: ansiColors.yellow,
-      syntaxType: ansiColors.cyan,
-      syntaxOperator: ansiColors.cyan,
+      syntaxString: ansiColors.green!,
+      syntaxNumber: ansiColors.yellow!,
+      syntaxType: ansiColors.cyan!,
+      syntaxOperator: ansiColors.cyan!,
       syntaxPunctuation: fg,
     },
   }

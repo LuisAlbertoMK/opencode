@@ -208,13 +208,13 @@ function route(list: Array<{ x: number; y: number }>) {
     left.delete(key(cur.x, cur.y))
     if (!left.size) return path
 
-    const next = NEAR.map(([dx, dy]) => left.get(key(cur.x + dx, cur.y + dy)))
+    const next = NEAR.map(([dx, dy]) => left.get(key(cur!.x + dx, cur!.y + dy)))
       .filter((item): item is { x: number; y: number } => !!item)
       .sort((a, b) => {
-        const ax = a.x - cur.x
-        const ay = a.y - cur.y
-        const bx = b.x - cur.x
-        const by = b.y - cur.y
+        const ax = a.x - cur!.x
+        const ay = a.y - cur!.y
+        const bx = b.x - cur!.x
+        const by = b.y - cur!.y
         const adot = ax * dir.x + ay * dir.y
         const bdot = bx * dir.x + by * dir.y
         if (adot !== bdot) return bdot - adot
@@ -223,10 +223,10 @@ function route(list: Array<{ x: number; y: number }>) {
 
     if (!next) {
       cur = [...left.values()].sort((a, b) => {
-        const da = (a.x - cur.x) ** 2 + (a.y - cur.y) ** 2
-        const db = (b.x - cur.x) ** 2 + (b.y - cur.y) ** 2
+        const da = (a.x - cur!.x) ** 2 + (a.y - cur!.y) ** 2
+        const db = (b.x - cur!.x) ** 2 + (b.y - cur!.y) ** 2
         return da - db
-      })[0]
+      })[0]!
       dir = { x: 1, y: 0 }
       continue
     }
@@ -861,7 +861,7 @@ export function Logo(props: { shape?: LogoShape; ink?: RGBA; idle?: boolean } = 
             </box>
             <box flexDirection="row">
               {renderLine(
-                ctx.shape.right[index()],
+                ctx.shape.right[index()]!,
                 index(),
                 props.ink ?? theme.text,
                 true,

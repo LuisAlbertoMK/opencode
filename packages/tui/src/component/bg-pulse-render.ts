@@ -315,7 +315,7 @@ export class GoUpsellArtPainter {
     const head2 = phase2 * this.reach
 
     for (let index = 0; index < distances.length; index++) {
-      const dist = distances[index]
+      const dist = distances[index]!
       const delta0 = dist - head0
       const abs0 = delta0 < 0 ? -delta0 : delta0
       const crest0 = abs0 < WIDTH ? 0.5 + 0.5 * Math.cos((delta0 / WIDTH) * Math.PI) : 0
@@ -335,7 +335,7 @@ export class GoUpsellArtPainter {
         (crest0 * AMP + tail0 * TAIL_AMP) * eased0 +
         (crest1 * AMP + tail1 * TAIL_AMP) * eased1 +
         (crest2 * AMP + tail2 * TAIL_AMP) * eased2
-      const rawStrength = (level * RING_SCALE + breath) * edgeFalloff[index]
+      const rawStrength = (level * RING_SCALE + breath) * edgeFalloff[index]!
       const strength = (rawStrength > 1 ? 1 : rawStrength) * 0.7
       const offset = index * 4
       const r = Math.round(baseR + deltaR * strength)

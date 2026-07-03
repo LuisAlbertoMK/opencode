@@ -479,7 +479,7 @@ export function Session() {
 
     if (next >= sessions.length) next = 0
     if (next < 0) next = sessions.length - 1
-    if (sessions[next]) enterChild(sessions[next].id)
+    if (sessions[next]) enterChild(sessions[next]!.id)
   }
 
   function childSessionHandler(func: () => void) {
@@ -657,7 +657,7 @@ export function Session() {
           })
         const parts = sync.data.part[message.id]
         prompt?.set(
-          parts.reduce(
+          (parts ?? []).reduce(
             (agg, part) => {
               if (part.type === "text") {
                 if (!part.synthetic) agg.input += part.text
@@ -1162,7 +1162,7 @@ export function Session() {
     // Single-pass: iterate once collecting matching messages
     const result: typeof msgs = []
     for (let i = 0; i < msgs.length; i++) {
-      const x = msgs[i]
+      const x = msgs[i]!
       if (x.id >= messageID && x.role === "user") result.push(x)
     }
     return result
@@ -1277,14 +1277,14 @@ export function Session() {
               <box flexShrink={0}>
                 <Show when={permissions().length > 0}>
                   <PermissionPrompt
-                    request={permissions()[0]}
-                    directory={sync.session.get(permissions()[0].sessionID)?.directory}
+                    request={permissions()[0]!}
+                    directory={sync.session.get(permissions()[0]!.sessionID)?.directory}
                   />
                 </Show>
                 <Show when={permissions().length === 0 && questions().length > 0}>
                   <QuestionPrompt
-                    request={questions()[0]}
-                    directory={sync.session.get(questions()[0].sessionID)?.directory}
+                    request={questions()[0]!}
+                    directory={sync.session.get(questions()[0]!.sessionID)?.directory}
                   />
                 </Show>
                 <Show when={session()?.parentID}>
@@ -1490,7 +1490,7 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
     if (!isFinal && created) {
       let totalChars = 0
       for (let i = 0; i < props.parts.length; i++) {
-        const p = props.parts[i]
+        const p = props.parts[i]!
         if (p.type === "text") totalChars += (p as TextPart).text?.length ?? 0
       }
       if (totalChars >= 10) {

@@ -126,7 +126,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     const result = fuzzysort
       .go(needle, options, {
         keys: ["title", "category"],
-        scoreFn: (r) => r[0].score * 2 + r[1].score,
+        scoreFn: (r) => r[0]!.score * 2 + r[1]!.score,
       })
       .map((x) => x.obj)
 
@@ -217,7 +217,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const optionIndex = createMemo(() => {
     const map = new Map<unknown, number>()
     const all = flat()
-    for (let i = 0; i < all.length; i++) map.set(all[i].value, i)
+    for (let i = 0; i < all.length; i++) map.set(all[i]!.value, i)
     return map
   })
 
@@ -288,7 +288,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       }
       if (y < 0) {
         scroll.scrollBy(y)
-        if (isDeepEqual(flat()[0].value, selected()?.value)) {
+        if (isDeepEqual(flat()[0]!.value, selected()?.value)) {
           scroll.scrollTo(0)
         }
       }

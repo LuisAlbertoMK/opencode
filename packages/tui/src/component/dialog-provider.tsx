@@ -174,7 +174,7 @@ export function createDialogProviderOptions() {
               })
             }
             if (index == null) return
-            const method = methods[index]
+            const method = methods[index]!
             if (method.type === "oauth") {
               let inputs: Record<string, string> | undefined
               if (method.prompts?.length) {

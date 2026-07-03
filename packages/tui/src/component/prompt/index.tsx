@@ -705,7 +705,7 @@ export function Prompt(props: PromptProps) {
     // Extmark positions shift on every edit but only the ID set matters for application logic.
     // Positions are synced before submit in submitInner().
     if (cachedExtmarkIds && cachedExtmarkIds.length === allExtmarks.length &&
-        cachedExtmarkIds.every((id, i) => id === allExtmarks[i].id)) return
+        cachedExtmarkIds.every((id, i) => id === allExtmarks[i]!.id)) return
     cachedExtmarkIds = allExtmarks.map(e => e.id)
 
     setStore(
@@ -1077,7 +1077,7 @@ export function Prompt(props: PromptProps) {
       setStore("mode", "normal")
     } else if (
       inputText.startsWith("/") &&
-      sync.data.command.some((x) => x.name === inputText.split("\n")[0].split(" ")[0].slice(1))
+      sync.data.command.some((x) => x.name === inputText.split("\n")[0]!.split(" ")[0]!.slice(1))
     ) {
       move.startSubmit()
       // Parse command from first line, preserve multi-line content in arguments
@@ -1089,7 +1089,7 @@ export function Prompt(props: PromptProps) {
 
       void sdk.client.session.command({
         sessionID,
-        command: command.slice(1),
+        command: command!.slice(1),
         arguments: args,
         agent: agent.name,
         model: `${selectedModel.providerID}/${selectedModel.modelID}`,
@@ -1313,7 +1313,7 @@ export function Prompt(props: PromptProps) {
     () => !!local.agent.current() && store.mode === "normal" && showVariant(),
     animationsEnabled,
   )
-  const borderHighlight = createMemo(() => tint(theme.border, highlight(), agentMetaAlpha()))
+  const borderHighlight = createMemo(() => tint(theme.border!, highlight()!, agentMetaAlpha()))
 
   const placeholderText = createMemo(() => {
     if (props.showPlaceholder === false) return undefined
@@ -1462,8 +1462,8 @@ export function Prompt(props: PromptProps) {
                 <Show when={local.agent.current()} fallback={<box height={1} />}>
                   {(agent) => (
                     <>
-                      <text fg={fadeColor(highlight(), agentMetaAlpha())}>
-                        {store.mode === "shell" ? "Shell" : Locale.titlecase(agent().name)}
+                      <text fg={fadeColor(highlight()!, agentMetaAlpha())}>
+                        {store.mode === "shell" ? "Shell" : Locale.titlecase(agent().name!)}
                       </text>
                       <Show when={store.mode === "normal"}>
                         <box flexDirection="row" gap={1}>

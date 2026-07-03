@@ -164,7 +164,7 @@ function errorMessage(error: unknown) {
 function isVersionGreater(left: string, right: string) {
   const parse = (value: string) => {
     const [core, prerelease] = value.replace(/^v/, "").split("-", 2)
-    return { core: core.split(".").map((part) => Number.parseInt(part, 10) || 0), prerelease }
+    return { core: core!.split(".").map((part) => Number.parseInt(part, 10) || 0), prerelease }
   }
   const a = parse(left)
   const b = parse(right)

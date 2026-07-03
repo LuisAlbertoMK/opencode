@@ -537,7 +537,7 @@ function Prompt<const T extends Record<string, string>>(props: {
   const dimensions = useTerminalDimensions()
   const keys = Object.keys(props.options) as (keyof T)[]
   const [store, setStore] = createStore({
-    selected: keys[0],
+    selected: keys[0]!,
     expanded: false,
   })
   const narrow = createMemo(() => dimensions().width < 80)
@@ -572,7 +572,7 @@ function Prompt<const T extends Record<string, string>>(props: {
         group: "Permission",
         cmd: () => {
           const idx = keys.indexOf(store.selected)
-          const next = keys[(idx - 1 + keys.length) % keys.length]
+          const next = keys[(idx - 1 + keys.length) % keys.length]!
           setStore("selected", next)
         },
       },
@@ -582,7 +582,7 @@ function Prompt<const T extends Record<string, string>>(props: {
         group: "Permission",
         cmd: () => {
           const idx = keys.indexOf(store.selected)
-          const next = keys[(idx - 1 + keys.length) % keys.length]
+          const next = keys[(idx - 1 + keys.length) % keys.length]!
           setStore("selected", next)
         },
       },
@@ -592,7 +592,7 @@ function Prompt<const T extends Record<string, string>>(props: {
         group: "Permission",
         cmd: () => {
           const idx = keys.indexOf(store.selected)
-          const next = keys[(idx + 1) % keys.length]
+          const next = keys[(idx + 1) % keys.length]!
           setStore("selected", next)
         },
       },
@@ -602,7 +602,7 @@ function Prompt<const T extends Record<string, string>>(props: {
         group: "Permission",
         cmd: () => {
           const idx = keys.indexOf(store.selected)
-          const next = keys[(idx + 1) % keys.length]
+          const next = keys[(idx + 1) % keys.length]!
           setStore("selected", next)
         },
       },
