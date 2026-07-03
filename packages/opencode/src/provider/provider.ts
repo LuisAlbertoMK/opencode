@@ -1206,24 +1206,41 @@ export const layer = Layer.effect(
           return true
         }
 
-        for (const hook of plugins) {
+        // vMK: parallel plugin model loading (was sequential for loop)
+        const pluginProviders = plugins.filter((hook) => {
           const p = hook.provider
-          const models = p?.models
-          if (!p || !models) continue
-
+          if (!p || !p.models) return false
           const providerID = ProviderV2.ID.make(p.id)
-          if (disabled.has(providerID)) continue
+          return !disabled.has(providerID)
+        })
 
-          const provider = database[providerID]
-          if (!provider) continue
-          const pluginAuth = yield* auth.get(providerID).pipe(Effect.orDie)
+        if (pluginProviders.length > 0) {
+          const pluginAuthMap = yield* Effect.all(
+            pluginProviders.map((hook) =>
+              Effect.map(auth.get(ProviderV2.ID.make(hook.provider!.id)), (a) => ({ hook, auth: a })),
+            ),
+            { concurrency: "unbounded" },
+          ).pipe(Effect.orDie)
 
-          provider.models = yield* Effect.promise(async () => {
-            const next = await models(toPublicInfo(provider), { auth: pluginAuth })
-            const result = {} as typeof provider.models
-            for (const [id, model] of Object.entries(next)) result[id] = { ...model, id: ModelV2.ID.make(id), providerID } as typeof result[string]
-            return result
-          })
+          yield* Effect.all(
+            pluginAuthMap.map(({ hook, auth: pluginAuth }) => {
+              const p = hook.provider!
+              const providerID = ProviderV2.ID.make(p.id)
+              const provider = database[providerID]
+              if (!provider) return Effect.void
+              return Effect.sync(() => {
+                provider.models = Effect.promise(async () => {
+                  const next = await p.models(toPublicInfo(provider), { auth: pluginAuth })
+                  const result = {} as typeof provider.models
+                  for (const [id, model] of Object.entries(next)) {
+                    result[id] = { ...model, id: ModelV2.ID.make(id), providerID } as typeof result[string]
+                  }
+                  return result
+                })
+              })
+            }),
+            { concurrency: "unbounded" },
+          )
         }
 
         // extend database from config

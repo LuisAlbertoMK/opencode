@@ -8,6 +8,8 @@ import { ProviderV2 } from "@opencode-ai/core/provider"
 export const ModelsCommand = effectCmd({
   command: "models [provider]",
   describe: "list all available models",
+  // Lists models from catalog; no project instance needed.
+  instance: false,
   builder: (yargs) =>
     yargs
       .positional("provider", {
@@ -24,17 +26,16 @@ export const ModelsCommand = effectCmd({
         type: "boolean",
       }),
   handler: Effect.fn("Cli.models")(function* (args) {
-    const { Provider } = yield* Effect.promise(() => import("@/provider/provider"))
     if (args.refresh) {
       yield* ModelsDev.Service.use((s) => s.refresh(true))
       UI.println(UI.Style.TEXT_SUCCESS_BOLD + "Models cache refreshed" + UI.Style.TEXT_NORMAL)
     }
 
-    const provider = yield* Provider.Service
-    const providers = yield* provider.list()
+    const database = yield* ModelsDev.Service.use((s) => s.get())
 
-    const print = (providerID: ProviderV2.ID, verbose?: boolean) => {
-      const p = providers[providerID]
+    const print = (providerID: string, verbose?: boolean) => {
+      const p = database[providerID]
+      if (!p) return
       const sorted = Object.entries(p.models).sort(([a], [b]) => a.localeCompare(b))
       for (const [modelID, model] of sorted) {
         process.stdout.write(`${providerID}/${modelID}`)
@@ -47,13 +48,12 @@ export const ModelsCommand = effectCmd({
     }
 
     if (args.provider) {
-      const providerID = ProviderV2.ID.make(args.provider)
-      if (!providers[providerID]) return yield* fail(`Provider not found: ${args.provider}`)
-      print(providerID, args.verbose)
+      if (!database[args.provider]) return yield* fail(`Provider not found: ${args.provider}`)
+      print(args.provider, args.verbose)
       return
     }
 
-    const ids = Object.keys(providers).sort((a, b) => {
+    const ids = Object.keys(database).sort((a, b) => {
       const aIsOpencode = a.startsWith("opencode")
       const bIsOpencode = b.startsWith("opencode")
       if (aIsOpencode && !bIsOpencode) return -1
@@ -61,6 +61,6 @@ export const ModelsCommand = effectCmd({
       return a.localeCompare(b)
     })
 
-    for (const providerID of ids) print(ProviderV2.ID.make(providerID), args.verbose)
+    for (const providerID of ids) print(providerID, args.verbose)
   }),
 })
