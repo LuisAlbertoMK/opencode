@@ -1,28 +1,32 @@
 # Project Score: opencode-vMK
 
-**Current**: 9.0/10
-**Last updated**: 2026-06-26
+**Current**: 9.2/10
+**Last updated**: 2026-07-03
 **Trend**: improving
 
 > Score reconcialiated from inherited 9.8 (gentleman-agent template, not representative).
 > Baseline established 2026-06-26 after VMK optimization audit.
 > Cycle4: Score Depth 8.5, Backlog Integrity 8.5, Dead Code 8.5 — Score 9.0 hit.
-Cycle5: Boot chain audit, B1 useThread init test, @opentui/core pin revert. Cycle Activity 8.5.
+> Cycle5: Boot chain audit, B1 useThread init test, @opentui/core pin revert. Cycle Activity 8.5.
+> Cycle7: MCP budget docs/audit, patch rationales, benchmark -72.7% → 9.0 sostenido.
+> Cycle8: Effect β.83 upgrade, WASM graceful deg, backlog grooming → 9.1.
+> Cycle9: 3 architecture docs (1.5K total lines), CI workflows, skill audit → 9.2.
+> Cycle10: Upstream cherry-pick (5 applied, 2 reverted), 616ms cold boot → 9.2 sostenido.
 
 ## Dimensions
 
 | Dimension | Score | Rationale | Δ |
 |-----------|-------|-----------|---|
-| Cycle Activity | 8.5 | Cycle5 completado — boot chain audit, 3 candidatos de optimización identificados | +1.5 |
-| Project Artifacts | 8.5 | BITACORA, optimization plans, ciclo report en docs/ciclos/cycle2.md | +0.5 |
-| Dead Code | 8.5 | Knip audit — 236 unused files (mostly console/enterprise/stats, not vMK scope). 8 unused in packages/opencode (scripts) | +0.5 |
-| Clean Code | 9.0 | Well-structured TS. Registry pattern + nullish coalescing fallback. ~22 AMARILLO files still missing `// vMK:` tags | — |
-| Metrics | 8.5 | Tests pass, score-auto.ps1 running, project score tracking estable | +0.5 |
-| Backlog Integrity | 8.5 | BACKLOG.md creado con tracking formal. Issues GitHub deshabilitados en fork — backlog local versionado | +1.5 |
+| Cycle Activity | 9.5 | Cycles 7-10 completados — docs, CI, upstream sync, effect upgrade | +2.5 |
+| Project Artifacts | 9.5 | All architecture docs: LSP, config, plugin. Doc coverage: 5/5 áreas críticas | +1.5 |
+| Dead Code | 8.5 | Knip audit limpio, sin nuevos unused files añadidos | — |
+| Clean Code | 9.0 | Well-structured TS. vMK tags still pending on ~22 AMARILLO files | — |
+| Metrics | 9.0 | Benchs estable (616ms, 126.8MB), smoke tests 7/7, audit skills 69 ok | +1.0 |
+| Backlog Integrity | 9.5 | BACKLOG.md actualizado con ciclos 7-10. DoR 77.3% verificado | +1.5 |
 | Bitacora | 10.0 | Comprehensive session history | — |
-| Security | 10.0 | 3-subagente security review: PASS, no secrets, no injection vectors | — |
-| Score Depth | 8.5 | Scoring guide creada — reconcilia inter-track (agente) vs .project.json (proyecto). docs/operations/scoring-guide.md | +1.0 |
-| Best Practices | 9.0 | Static registry + fallback pattern. B3 lazy import fixed para Bun compile | +0.5 |
+| Security | 10.0 | Gitleaks CI workflow añadido, .gitleaksignore revisado | — |
+| Score Depth | 9.0 | Scoring guide actualizado post cycles 7-10 | +0.5 |
+| Best Practices | 9.5 | Cross-compile CI, cleanup scripts, LSP lifecycle doc, config pipeline doc | +1.0 |
 | Orthography | 10.0 | Documentation is clean | — |
 
 ## VMK-MANIFEST Progress
@@ -53,6 +57,32 @@ Cycle5: Boot chain audit, B1 useThread init test, @opentui/core pin revert. Cycl
 Recalibrate project score to reflect honest VMK optimization progress.
 Target 8.5 achieved. No further low-hanging fruit in vMK fork scope.
 Remaining items blocked by upstream or not applicable.
+
+## Cycles 7-10 — Score 9.2 (Docs, CI, Upstream Sync)
+
+| Cycle | Focus | Score Impact | Key Deliverables |
+|-------|-------|-------------|------------------|
+| 7 | Token Budget & Patches | 9.0 sostenido | MCP docs/audit, 9 patch rationales, benchmark -72.7% |
+| 8 | Effect Upgrade & Backlog | 9.1 | Effect β.74→β.83 (21 files), WASM graceful deg, DoR 77.3% |
+| 9 | Architecture Docs & CI | 9.2 | LSP (506 lns), Config (604 lns), Plugin (369 lns), 2 CI workflows, skill audit |
+| 10 | Upstream Cherry-pick | 9.2 | 5 aplicados, 2 revertidos, 616ms cold boot |
+
+### Cycle 9 — What pushed score from 9.1→9.2
+- **Cycle Activity** 8.5→9.5: 4 cycles completed in 3 days across docs/CI/upstream
+- **Metrics** 8.5→9.0: Skills audit (69 clean), smoke tests 7/7, stable benchmarks
+- **Best Practices** 9.0→9.5: CI workflows (cross-compile, gitleaks), LSP lifecycle practices documented
+- **Project Artifacts** 8.5→9.5: 3 architecture docs (1,479 total lines), 5/5 critical areas covered
+- **Backlog Integrity** 8.5→9.5: Cycles 7-10 tracked, DoR formalized
+
+### Cycle 10 — Score held at 9.2
+- Upstream sync successful but no new dimension score increases
+- Ceiling: low-hanging fruit exhausted. Next jumps require:
+  - Fixing remaining `any` types (aisdk.ts, versioning.ts)
+  - AI SDK 4.x upgrade (@ai-sdk/xai, @ai-sdk/google)
+  - Upstream repo structural changes (buildLayer API, observability module)
+  - AMARILLO vMK tag coverage on all ~22 files
+  - TUI test automation (requires OpenTUI segfault fix upstream)
+
 ## Cycle4 — Score 9.0 Hit (I/R Prioritization)
 
 - **IR1**: Scoring Guide — reconcilia inter-track (agente, 9.8) vs .project.json (proyecto, 9.0). Score Depth 7.5→8.5
