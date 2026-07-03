@@ -37,8 +37,8 @@
 | 17 | Backlog DoR formalization + grooming script | ✅ Hecho | Cycle8 | Alta | ✅ | S | Script funcional, columnas DoR/Ciclo/Estimación existentes. 2026-07-02: verificada cobertura 77.3% (5 items sin DoR: #9 upstream-blocked, #19/#20/#21/#22 pendientes) |
 | 18 | vmk-bench.ps1 estabilización (warmup/median/GC) | ✅ Hecho | Cycle8 | Media | ✅ | S | 3 warmup runs, median, p95, GC.Collect() entre runs. Median: 1302ms, p95: 1465ms |
 | 19 | CI benchmarks en GitHub Actions (Windows runner) | ✅ Hecho | Cycle8 | Media | ✅ | M | 2026-07-02: `.github/workflows/vmk-bench.yml` creado. Trigger en push/PR a vMK-dev + manual. Build → benchmark → upload artifact. Primer run en próximo push. |
-| 20 | Docs arquitectura: Effect patterns + InstanceState | 🟡 Pendiente | Cycle8 | Alta | ❌ | L | `docs/architecture/effect-patterns.md` + `instance-state.md` |
-| 21 | Test patches: @npmcli/agent v5, virtua 0.49.2, pacote 22 | 🟡 Pendiente | Cycle8 | Media | ❌ | M | Verificar aplicabilidad patches en versiones actuales |
+| 20 | Docs arquitectura: Effect patterns + InstanceState | ✅ Hecho | Cycle8 | Alta | ✅ | L | `docs/architecture/effect-patterns.md` + `instance-state.md` |
+| 21 | Test patches: @npmcli/agent, virtua, pacote | ✅ Hecho | Cycle8 | Media | ✅ | M | 2026-07-02: @npmcli/agent@4.0.2 (patches lib/agents.js), virtua@0.49.1 (patches Virtualizer.d.ts + index.jsx — add measure()), pacote@21.5.0 (patches lib/git.js). Versiones reales difieren del backlog (v5→4.0.2, 0.49.2→0.49.1, 22→21.5.0) pero coinciden con patchedDependencies. Build + tests pasan → patches OK. |
 | 22 | Fix `any` types restantes: aisdk.ts | ✅ Hecho | Cycle8 | Alta | ✅ | S | 2026-07-02: `type SDK = any` → `interface SDK { languageModel(...) }`, `Record<string, any>` → `Record<string, unknown>` + cast en timeout. versioning.ts no existe en el repo. typecheck pasa. |
 
 ## Completado (ciclos anteriores)

@@ -22,6 +22,7 @@
 | 5 | Backlog grooming (#17) | Fácil | ✅ Done | vmk-backlog-groom.ps1 validado. DoR 77.3% (5/22 sin DoR). Script funcional |
 | 6 | Fix any types — aisdk.ts (#22) | Fácil | ✅ Done | `SDK = any` → interface tipada. `Record<string, any>` → `Record<string, unknown>`. typecheck OK |
 | 7 | CI benchmarks GitHub Actions (#19) | Media | ✅ Done | `.github/workflows/vmk-bench.yml` creado. Push/PR vMK-dev + manual. |
+| 8 | Test patches verification (#21) | Media | ✅ Done | @npmcli/agent, virtua, pacote — todos verificados. Build+tests OK. |
 
 ## Exit Criteria
 
@@ -31,6 +32,8 @@
 - [x] Backlog grooming script funcional + DoR reporte
 - [x] aisdk.ts sin `any` types
 - [x] CI benchmarks workflow creado (.github/workflows/vmk-bench.yml)
+- [x] Architecture docs verificados — completos y actualizados
+- [x] Test patches verificados — todos aplican correctamente
 
 ---
 
