@@ -5,7 +5,7 @@
     "jsx": "preserve",
     "jsxImportSource": "@opentui/solid",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "noUncheckedIndexedAccess": false,
+    "noUncheckedIndexedAccess": true,
     "paths": {
       "@/*": ["./src/*", "../core/src/*"]
     }
