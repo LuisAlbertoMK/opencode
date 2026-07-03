@@ -24,7 +24,7 @@ export function AnimatedCountList(props: { items: CountItem[]; fallback?: string
           const active = createMemo(() => item().count > 0)
           const hasPrev = createMemo(() => {
             for (let i = index - 1; i >= 0; i--) {
-              if (props.items[i].count > 0) return true
+              if (props.items[i]!.count > 0) return true
             }
             return false
           })

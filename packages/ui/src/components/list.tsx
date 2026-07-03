@@ -147,7 +147,7 @@ export function List<T>(props: ListProps<T> & { ref?: (ref: ListRef) => void }) 
     if (store.mouseActive || all.length === 0) return
     const scroll = scrollRef()
     if (!scroll) return
-    if (active() === props.key(all[0])) {
+    if (active() === props.key(all[0]!)) {
       scroll.scrollTo(0, 0)
       return
     }

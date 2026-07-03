@@ -41,9 +41,9 @@ export function mapV2Foreground(
   })
 
   const semantics = mapV2Semantics(isDark)
-  const bgBase = resolveGreyRef(semantics["v2-background-bg-base"], primitives)
-  const bgContrast = resolveGreyRef(semantics["v2-background-bg-contrast"], primitives)
-  const bgInverse = resolveGreyRef(semantics["v2-background-bg-inverse"], primitives)
+  const bgBase = resolveGreyRef(semantics["v2-background-bg-base"]!, primitives)
+  const bgContrast = resolveGreyRef(semantics["v2-background-bg-contrast"]!, primitives)
+  const bgInverse = resolveGreyRef(semantics["v2-background-bg-inverse"]!, primitives)
   const inverseTarget = hexToOklch(bgInverse).l > 0.55 ? 1100 : greyHex(primitives, 50) ? 50 : 100
 
   return {

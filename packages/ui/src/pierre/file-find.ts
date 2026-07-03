@@ -157,7 +157,7 @@ export function createFileFind(opts: CreateFileFindOptions) {
     for (let i = 0; i < hits.length; i++) {
       const range = hits[i]
       const active = i === currentIndex
-      for (const rect of Array.from(range.getClientRects())) {
+      for (const rect of Array.from(range!.getClientRects())) {
         if (!rect.width || !rect.height) continue
 
         const mark = document.createElement("div")
@@ -264,10 +264,10 @@ export function createFileFind(opts: CreateFileFindOptions) {
         let hi = ends.length - 1
         while (lo < hi) {
           const mid = (lo + hi) >> 1
-          if (ends[mid] >= offset) hi = mid
+          if (ends[mid]! >= offset) hi = mid
           else lo = mid + 1
         }
-        const prev = lo === 0 ? 0 : ends[lo - 1]
+        const prev = lo === 0 ? 0 : ends[lo - 1]!
         return { node: nodes[lo], offset: offset - prev }
       }
 
@@ -275,8 +275,8 @@ export function createFileFind(opts: CreateFileFindOptions) {
         const start = locate(at)
         const end = locate(at + value.length)
         const range = document.createRange()
-        range.setStart(start.node, start.offset)
-        range.setEnd(end.node, end.offset)
+        range.setStart(start.node!, start.offset)
+        range.setEnd(end.node!, end.offset)
         ranges.push(range)
         at = hay.indexOf(needle, at + value.length)
       }
