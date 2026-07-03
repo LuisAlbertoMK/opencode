@@ -1,0 +1,86 @@
+# vMK CI Benchmark — Windows cold boot + binary size
+# Triggers: push/PR to vMK-dev, manual dispatch
+# Runs: Build binary → benchmark cold boot → upload results
+#
+# vMK: Fork-specific benchmark workflow for tracking vMK performance
+# over time. Not intended for upstream.
+
+name: vmk-bench
+
+on:
+  push:
+    branches: [vMK-dev]
+  pull_request:
+    branches: [vMK-dev]
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "Number of benchmark timing runs"
+        required: true
+        default: 5
+        type: number
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  OPENCODE_DISABLE_EMBEDDED_WEB_UI: "1"
+
+jobs:
+  bench-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary (--single --skip-embed-web-ui)
+        run: |
+          bun run packages/opencode/script/build.ts --single --skip-embed-web-ui
+        timeout-minutes: 15
+
+      - name: Smoke test (--version)
+        run: |
+          $bin = "packages/opencode/dist/opencode-windows-x64/bin/opencode-vMK.exe"
+          if (-not (Test-Path $bin)) { throw "Binary not found: $bin" }
+          $ver = & $bin --version
+          if ($LASTEXITCODE -ne 0) { throw "Smoke test failed (exit $LASTEXITCODE)" }
+          Write-Host "Binary version: $ver"
+          $size = (Get-Item $bin).Length
+          Write-Host "Binary size: $([math]::Round($size / 1MB, 2)) MB"
+        shell: pwsh
+
+      - name: Run benchmark
+        id: bench
+        run: |
+          $runs = if ("${{ inputs.runs }}") { ${{ inputs.runs }} } else { 5 }
+          $label = "ci-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+          & "scripts/vmk-bench.ps1" -Runs $runs -WarmupRuns 2 -Label $label -Save
+          if ($LASTEXITCODE -ne 0) { throw "Benchmark failed" }
+          # Read saved result for summary
+          $latest = Get-ChildItem "docs/metricas/bench-*.json" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          $data = Get-Content $latest.FullName -Raw | ConvertFrom-Json
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "## vMK Benchmark Results"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Metric | Value |"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "|---|---|"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Binary Size | $($data.binary.size_mb) MB |"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Cold boot --help (avg) | $($data.performance.cold_boot_help_ms.avg) ms |"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Cold boot --help (p95) | $($data.performance.cold_boot_help_ms.p95) ms |"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Smoke test (--version) | $(if ($data.smoke.version) { 'PASS' } else { 'FAIL' }) |"
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value "| Runs | $($data.performance.cold_boot_help_ms.n) |"
+        shell: pwsh
+
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vmk-bench-results
+          path: docs/metricas/bench-*.json
+          retention-days: 90

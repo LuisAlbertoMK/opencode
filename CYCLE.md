@@ -21,7 +21,7 @@
 | 4 | Quality gate + TUI tests 7/7 | Media | ✅ Done | Binary smoke, CLI tests, providers, models, serve 5s. All green |
 | 5 | Backlog grooming (#17) | Fácil | ✅ Done | vmk-backlog-groom.ps1 validado. DoR 77.3% (5/22 sin DoR). Script funcional |
 | 6 | Fix any types — aisdk.ts (#22) | Fácil | ✅ Done | `SDK = any` → interface tipada. `Record<string, any>` → `Record<string, unknown>`. typecheck OK |
-| 7 | CI benchmarks GitHub Actions (#19) | Media | 🟡 Pendiente | — |
+| 7 | CI benchmarks GitHub Actions (#19) | Media | ✅ Done | `.github/workflows/vmk-bench.yml` creado. Push/PR vMK-dev + manual. |
 
 ## Exit Criteria
 
@@ -30,7 +30,7 @@
 - [x] Subagentes confirman 0 errores nuevos
 - [x] Backlog grooming script funcional + DoR reporte
 - [x] aisdk.ts sin `any` types
-- [ ] CI benchmarks workflow en GitHub Actions
+- [x] CI benchmarks workflow creado (.github/workflows/vmk-bench.yml)
 
 ---
 
