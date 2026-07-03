@@ -474,8 +474,11 @@ export class RunFooter implements FooterApi {
         return
       }
 
-      this.setSubagent(next.state)
-      this.applyHeight()
+      // vMK: batch setSubagent + applyHeight → 1 re-render
+      batch(() => {
+        this.setSubagent(next.state)
+        this.applyHeight()
+      })
       return
     }
 

@@ -7,12 +7,11 @@ import { FormatError } from "./cli/error"
 import { EOL } from "os"
 import { errorMessage } from "./util/error"
 import { Heap } from "./cli/heap"
-import { cmdRegistry } from "./cli/cmd/_registry"
+import { cmdLoaders } from "./cli/cmd/_registry"
 
-// vMK: lazy command — replaces 23 static imports with dynamic import()
-// vMK: defers builder + handler until the command actually matches
-// vMK: --help loads 0 command modules instead of 23; any command loads 1
-// vMK: uses cmdRegistry (static) for compiled binaries, falls back to dynamic import() for dev
+// vMK: lazy command — 23 static imports → 0 for --help/--version
+// vMK: cmdLoaders wraps import() in arrow functions so Bun bundles the module
+// vMK: but does NOT evaluate its top-level code until the command is invoked.
 function lazy<T, U>(
   command: string | readonly string[],
   describe: string | false | undefined,
@@ -25,12 +24,12 @@ function lazy<T, U>(
     describe,
     ...(aliases?.length ? { aliases } : {}),
     builder: async (yargs) => {
-      const mod = cmdRegistry[path] ?? (await import(path))
+      const mod = await cmdLoaders[path]()
       const cmd = mod[key] as CommandModule<T, U>
       return cmd.builder ? (cmd.builder as any)(yargs) : yargs
     },
     handler: async (args) => {
-      const mod = cmdRegistry[path] ?? (await import(path))
+      const mod = await cmdLoaders[path]()
       const cmd = mod[key] as CommandModule<T, U>
       if (cmd.handler) await cmd.handler(args as any)
     },
@@ -123,12 +122,17 @@ const cli = yargs(args)
   .strict()
 
 try {
+  // vMK: --version bypasses yargs's console.log (stripped by drop:["console"])
+  if (args.includes("-v") || args.includes("--version")) {
+    process.stdout.write(InstallationVersion + EOL)
+    process.exit(0)
+  }
+  // vMK: --help uses getHelp() instead of parse callback (bypasses yargs logger.log which
+  // vMK:      also wraps console.log — stripped by drop:["console"])
   if (args.includes("-h") || args.includes("--help")) {
-    await cli.parse(args, (err: Error | undefined, _argv: unknown, out: string) => {
-      if (err) throw err
-      if (!out) return
-      show(out)
-    })
+    const helpText = await cli.getHelp()
+    show(helpText)
+    process.exit(0)
   } else {
     await cli.parse()
   }
