@@ -52,9 +52,10 @@ function mergeConfigConcatArrays(target: Info, source: Info): Info {
 
 function normalizeLoadedConfig(data: unknown) {
   if (!isRecord(data)) return data
+  // Avoid the unconditional spread copy — only create one when we need to delete legacy fields.
+  // Saves ~15 spread copies worst case (one per config file).
+  if (!("theme" in data || "keybinds" in data || "tui" in data)) return data
   const copy = { ...data }
-  const hadLegacy = "theme" in copy || "keybinds" in copy || "tui" in copy
-  if (!hadLegacy) return copy
   delete copy.theme
   delete copy.keybinds
   delete copy.tui
@@ -230,7 +231,14 @@ export const layer = Layer.effect(
       if (!data.$schema) {
         data.$schema = "https://opencode.ai/config.json"
         const updated = text.replace(/^\s*\{/, '{\n  "$schema": "https://opencode.ai/config.json",')
-        yield* fs.writeFileString(options.path, updated).pipe(Effect.catch(() => Effect.void))
+        yield* fs.writeFileString(options.path, updated).pipe(
+          Effect.catch((e) =>
+            Effect.logWarning("failed to write $schema to config file, continuing", {
+              path: options.path,
+              error: String(e),
+            }),
+          ),
+        )
       }
       return data
     })
@@ -251,7 +259,14 @@ export const layer = Layer.effect(
         if (!existsSync(file)) {
           yield* fs
             .writeWithDirs(file, JSON.stringify({ $schema: "https://opencode.ai/config.json" }, null, 2))
-            .pipe(Effect.catch(() => Effect.void))
+            .pipe(
+              Effect.catch((e) =>
+                Effect.logWarning("failed to seed global config schema, continuing", {
+                  path: file,
+                  error: String(e),
+                }),
+              ),
+            )
         }
       }
       // Load all global config files in parallel to reduce startup time (~3x I/O overlap).
@@ -358,46 +373,59 @@ export const layer = Layer.effect(
           return mergePluginOrigins(source, next.plugin, kind)
         }
 
+        // vMK: Phase 1 — set up wellknown auth env vars (sync, no I/O)
+        const wellknownEntries: { key: string; value: typeof auth[string]; url: string }[] = []
         for (const [key, value] of Object.entries(auth)) {
           if (value.type === "wellknown") {
             const url = key.replace(/\/+$/, "")
             authEnv[value.key] = value.token
-            const wellknownURL = `${url}/.well-known/opencode`
-            yield* Effect.logDebug("fetching remote config", { url: wellknownURL })
-            const wellknown = yield* fetchRemoteJson(wellknownURL, undefined, ConfigV1.WellKnown, url)
-            const remote = yield* Effect.promise(() =>
-              substituteWellKnownRemoteConfig({
-                value: wellknown.remote_config,
-                dir: url,
-                source: wellknownURL,
-                env: authEnv,
-              }),
-            )
-            const fetchedConfig = remote
-              ? yield* Effect.gen(function* () {
-                  yield* Effect.logDebug("fetching remote config", { url: remote.url })
-                  const data = yield* fetchRemoteJson(remote.url, remote.headers, Schema.Json, url)
-                  if (isRecord(data) && isRecord(data.config)) return data.config
-                  if (isRecord(data)) return data
-                  return yield* Effect.die(
-                    new Error(`failed to decode remote config from ${remote.url}: expected object`),
-                  )
-                })
-              : {}
-            const remoteConfig = mergeConfig(isRecord(wellknown.config) ? wellknown.config : {}, fetchedConfig)
-            if (!remoteConfig.$schema) remoteConfig.$schema = "https://opencode.ai/config.json"
-            const source = wellknownURL
-            const next = yield* loadConfig(
-              JSON.stringify(remoteConfig),
-              {
+            wellknownEntries.push({ key, value, url })
+          }
+        }
+
+        // vMK: Phase 2 — fetch all wellknown/remote configs in parallel (HTTP-bound)
+        const wellknownResults = yield* Effect.all(
+          wellknownEntries.map(({ key, value, url }) =>
+            Effect.gen(function* () {
+              const wellknownURL = `${url}/.well-known/opencode`
+              yield* Effect.logDebug("fetching remote config", { url: wellknownURL })
+              const wellknown = yield* fetchRemoteJson(wellknownURL, undefined, ConfigV1.WellKnown, url)
+              const remote = yield* Effect.promise(() =>
+                substituteWellKnownRemoteConfig({
+                  value: wellknown.remote_config,
+                  dir: url,
+                  source: wellknownURL,
+                  env: authEnv,
+                }),
+              )
+              const fetchedConfig = remote
+                ? yield* Effect.gen(function* () {
+                    yield* Effect.logDebug("fetching remote config", { url: remote.url })
+                    const data = yield* fetchRemoteJson(remote.url, remote.headers, Schema.Json, url)
+                    if (isRecord(data) && isRecord(data.config)) return data.config
+                    if (isRecord(data)) return data
+                    return yield* Effect.die(
+                      new Error(`failed to decode remote config from ${remote.url}: expected object`),
+                    )
+                  })
+                : {}
+              const remoteConfig = mergeConfig(isRecord(wellknown.config) ? wellknown.config : {}, fetchedConfig)
+              if (!remoteConfig.$schema) remoteConfig.$schema = "https://opencode.ai/config.json"
+              const source = wellknownURL
+              const next = yield* loadConfig(JSON.stringify(remoteConfig), {
                 dir: path.dirname(source),
                 source,
-              },
-              authEnv,
-            )
-            yield* merge(source, next, "global")
-            yield* Effect.logDebug("loaded remote config from well-known", { url })
-          }
+              }, authEnv)
+              return { source, next }
+            }).pipe(Effect.withSpan("Config.loadWellknownRemote")),
+          ),
+          { concurrency: "unbounded" },
+        )
+
+        // vMK: Phase 3 — merge wellknown results sequentially (no I/O, order-independent for plugins)
+        for (const result of wellknownResults) {
+          yield* merge(result.source, result.next, "global")
+          yield* Effect.logDebug("loaded remote config from well-known", { url: result.source })
         }
 
         const global = Object.keys(authEnv).length ? yield* loadGlobal(authEnv) : yield* getGlobal()
@@ -409,8 +437,19 @@ export const layer = Layer.effect(
         }
 
         if (!Flag.OPENCODE_DISABLE_PROJECT_CONFIG) {
-          for (const file of yield* ConfigPaths.files("opencode", ctx.directory, ctx.worktree).pipe(Effect.orDie)) {
-            yield* merge(file, yield* loadFile(file, authEnv), "local")
+          const projectFiles = yield* ConfigPaths.files("opencode", ctx.directory, ctx.worktree).pipe(Effect.orDie)
+          // vMK: load project config files in parallel (I/O-bound), merge sequentially (order preserved)
+          const projectConfigs = yield* Effect.all(
+            projectFiles.map((file) =>
+              Effect.gen(function* () {
+                const loaded = yield* loadFile(file, authEnv)
+                return { file, loaded }
+              }),
+            ),
+            { concurrency: "unbounded" },
+          )
+          for (const { file, loaded } of projectConfigs) {
+            yield* merge(file, loaded, "local")
           }
         }
 
@@ -427,18 +466,37 @@ export const layer = Layer.effect(
         const deps: Fiber.Fiber<void>[] = []
 
         for (const dir of directories) {
+          // Phase 1: Config file loading (sequential — merge order matters per directory)
           if (dir.endsWith(".opencode") || dir === Flag.OPENCODE_CONFIG_DIR) {
             for (const file of ["opencode.json", "opencode.jsonc"]) {
               const source = path.join(dir, file)
               yield* Effect.logDebug(`loading config from ${source}`)
               yield* merge(source, yield* loadFile(source, authEnv))
-              result.agent ??= {}
-              result.mode ??= {}
-              result.plugin ??= []
             }
+            result.agent ??= {}
+            result.mode ??= {}
+            result.plugin ??= []
           }
 
-          yield* ensureGitignore(dir).pipe(Effect.orDie)
+          // Phase 2: Parallel I/O — glob scans and ensureGitignore are independent per directory
+          const ioSpan = `Config.perDirectoryIO.${path.basename(dir)}`
+          const [_ensureGitignore, command, agent, mode, pluginList] = yield* Effect.all(
+            [
+              ensureGitignore(dir).pipe(Effect.orDie),
+              Effect.promise(() => ConfigCommand.load(dir)),
+              Effect.promise(() => ConfigAgent.load(dir)),
+              Effect.promise(() => ConfigAgent.loadMode(dir)),
+              Effect.promise(() => ConfigPlugin.load(dir)),
+            ],
+            { concurrency: 10 },
+          ).pipe(Effect.withSpan(ioSpan))
+
+          result.command = mergeDeep(result.command ?? {}, command)
+          result.agent = mergeDeep(result.agent ?? {}, agent)
+          result.agent = mergeDeep(result.agent ?? {}, mode)
+          // Auto-discovered plugins under `.opencode/plugin(s)` are already local files, so ConfigPlugin.load
+          // returns normalized Specs and we only need to attach origin metadata here.
+          yield* mergePluginOrigins(dir, pluginList)
 
           const dep = yield* npmSvc
             .install(dir, {
@@ -460,14 +518,6 @@ export const layer = Layer.effect(
               Effect.forkDetach,
             )
           deps.push(dep)
-
-          result.command = mergeDeep(result.command ?? {}, yield* Effect.promise(() => ConfigCommand.load(dir)))
-          result.agent = mergeDeep(result.agent ?? {}, yield* Effect.promise(() => ConfigAgent.load(dir)))
-          result.agent = mergeDeep(result.agent ?? {}, yield* Effect.promise(() => ConfigAgent.loadMode(dir)))
-          // Auto-discovered plugins under `.opencode/plugin(s)` are already local files, so ConfigPlugin.load
-          // returns normalized Specs and we only need to attach origin metadata here.
-          const list = yield* Effect.promise(() => ConfigPlugin.load(dir))
-          yield* mergePluginOrigins(dir, list)
         }
 
         if (process.env.OPENCODE_CONFIG_CONTENT) {
@@ -481,7 +531,13 @@ export const layer = Layer.effect(
         }
 
         const activeAccount = Option.getOrUndefined(
-          yield* accountSvc.active().pipe(Effect.catch(() => Effect.succeed(Option.none()))),
+          yield* accountSvc.active().pipe(
+            Effect.catch((e) =>
+              Effect.logWarning("failed to get active account, assuming none").pipe(
+                Effect.as(Option.none<Account.Info>()),
+              ),
+            ),
+          ),
         )
         if (activeAccount?.active_org_id) {
           const accountID = activeAccount.id

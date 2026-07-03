@@ -34,7 +34,7 @@ function credentialFromRequest(request: HttpServerRequest.HttpServerRequest) {
   const token = url.searchParams.get(AUTH_TOKEN_QUERY)
   if (token) return decodeCredential(token)
   const match = /^Basic\s+(.+)$/i.exec(request.headers.authorization ?? "")
-  if (match) return decodeCredential(match[1])
+  if (match) return decodeCredential(match[1]!)
   return Effect.succeed(emptyCredential())
 }
 
