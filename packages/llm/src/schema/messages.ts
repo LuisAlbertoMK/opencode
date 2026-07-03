@@ -57,33 +57,35 @@ export type ToolFileContent = typeof ToolFileContent.Type
 export const ToolContent = Schema.Union([ToolTextContent, ToolFileContent]).pipe(Schema.toTaggedUnion("type"))
 export type ToolContent = Schema.Schema.Type<typeof ToolContent>
 
-const isToolResultValue = (value: unknown): value is ToolResultValue =>
-  isRecord(value) &&
-  (value.type === "text" || value.type === "json" || value.type === "error" || value.type === "content") &&
-  "value" in value
+// ToolResultValue schema definition (before Object.assign to avoid circular reference)
+const ToolResultValueSchema = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal("json"),
+    value: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("text"),
+    value: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("error"),
+    value: Schema.Unknown,
+  }),
+  Schema.Struct({
+    type: Schema.Literal("content"),
+    value: Schema.Array(ToolContent),
+  }),
+]).annotate({ identifier: "LLM.ToolResult" })
+
+// Type guard using Schema.is to avoid circular reference
+const isToolResultValue = (value: unknown): value is Schema.Schema.Type<typeof ToolResultValueSchema> =>
+  Schema.is(ToolResultValueSchema)(value)
 
 export const ToolResultValue = Object.assign(
-  Schema.Union([
-    Schema.Struct({
-      type: Schema.Literal("json"),
-      value: Schema.Unknown,
-    }),
-    Schema.Struct({
-      type: Schema.Literal("text"),
-      value: Schema.Unknown,
-    }),
-    Schema.Struct({
-      type: Schema.Literal("error"),
-      value: Schema.Unknown,
-    }),
-    Schema.Struct({
-      type: Schema.Literal("content"),
-      value: Schema.Array(ToolContent),
-    }),
-  ]).annotate({ identifier: "LLM.ToolResult" }),
+  ToolResultValueSchema,
   {
     is: isToolResultValue,
-    make: (value: unknown, type: ToolResultValue["type"] = "json"): ToolResultValue => {
+    make: (value: unknown, type: Schema.Schema.Type<typeof ToolResultValueSchema>["type"] = "json"): Schema.Schema.Type<typeof ToolResultValueSchema> => {
       if (isToolResultValue(value)) return value
       if (type === "content") return { type, value: Array.isArray(value) ? value : [] }
       return { type, value }
