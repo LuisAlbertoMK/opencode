@@ -82,18 +82,18 @@ describe("TUI orphan text detection", () => {
       const warnings: { line: number; text: string }[] = []
 
       for (let i = 0; i < lines.length; i++) {
-        const stripped = lines[i].replace(/\/\*.*?\*\//g, "").replace(/\/\/.*$/, "")
+        const stripped = lines[i]!.replace(/\/\*.*?\*\//g, "").replace(/\/\/.*$/, "")
 
         // 1. Inline raw text after <box> on same line
         if (RAW_TEXT_AFTER_BOX.test(stripped)) {
-          errors.push({ line: i + 1, text: lines[i].trim() })
+          errors.push({ line: i + 1, text: lines[i]!.trim() })
         }
 
         // 2. Multiline — <box> on line N, text on line N+1
         if (i < lines.length - 1) {
           const trimmed = stripped.trimEnd()
           if (BOX_END_RE.test(trimmed)) {
-            const nextLine = lines[i + 1].trim()
+            const nextLine = lines[i + 1]!.trim()
             if (
               nextLine.length > 0 &&
               !nextLine.startsWith("<") &&
@@ -117,7 +117,7 @@ describe("TUI orphan text detection", () => {
         for (const ln of fileRisks) {
           const idx = ln - 1
           if (idx >= 0 && idx < lines.length) {
-            warnings.push({ line: ln, text: `LOW RISK: "${lines[idx].trim()}"` })
+            warnings.push({ line: ln, text: `LOW RISK: "${lines[idx]!.trim()}"` })
           }
         }
       }

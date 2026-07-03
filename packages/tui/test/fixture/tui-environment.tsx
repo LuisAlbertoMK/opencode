@@ -5,7 +5,10 @@ import {
   TuiTerminalEnvironmentProvider,
   type TuiPaths,
 } from "../../src/context/runtime"
+import { TuiConfigProvider, resolve } from "../../src/config"
 import type { ParentProps } from "solid-js"
+
+const defaultConfig = resolve({}, { terminalSuspend: false })
 
 export function TestTuiContexts(
   props: ParentProps<{
@@ -25,7 +28,9 @@ export function TestTuiContexts(
       }}
     >
       <TuiTerminalEnvironmentProvider value={{ platform: "linux" }}>
-        <TuiStartupProvider value={{ skipInitialLoading: false }}>{props.children}</TuiStartupProvider>
+        <TuiStartupProvider value={{ skipInitialLoading: false }}>
+          <TuiConfigProvider config={defaultConfig}>{props.children}</TuiConfigProvider>
+        </TuiStartupProvider>
       </TuiTerminalEnvironmentProvider>
     </TuiPathsProvider>
   )

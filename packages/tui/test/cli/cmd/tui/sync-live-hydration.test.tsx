@@ -79,7 +79,7 @@ test("stale session hydration does not overwrite live message parts", async () =
     )
     await hydrate
 
-    expect(sync.data.part[messageID][0]).toMatchObject({ text: "visible live content" })
+    expect(sync.data.part[messageID]![0]!).toMatchObject({ text: "visible live content" })
   } finally {
     app.renderer.destroy()
   }
@@ -119,7 +119,7 @@ test("orphan live deltas do not suppress hydrated parts", async () => {
     )
     await hydrate
 
-    expect(sync.data.part[messageID][0]).toMatchObject({ text: "hydrated" })
+    expect(sync.data.part[messageID]![0]!).toMatchObject({ text: "hydrated" })
   } finally {
     app.renderer.destroy()
   }
@@ -170,7 +170,7 @@ test("hydration does not clear text streamed before it starts", async () => {
     resolveMessages(json([{ info: assistant, parts: [{ id: partID, sessionID, messageID, type: "text", text: "" }] }]))
     await hydrate
 
-    expect(sync.data.part[messageID][0]).toMatchObject({ text: "visible streamed content" })
+    expect(sync.data.part[messageID]![0]!).toMatchObject({ text: "visible streamed content" })
   } finally {
     app.renderer.destroy()
   }
@@ -215,8 +215,8 @@ test("live messages merged during hydration retain the 100 message window", asyn
     await hydrate
 
     expect(sync.data.message[sessionID]).toHaveLength(100)
-    expect(sync.data.message[sessionID].at(-1)?.id).toBe(live.id)
-    expect(sync.data.message[sessionID].some((message) => message.id === "msg_000")).toBe(false)
+    expect(sync.data.message[sessionID]!.at(-1)?.id).toBe(live.id)
+    expect(sync.data.message[sessionID]!.some((message) => message.id === "msg_000")).toBe(false)
     expect(sync.data.part.msg_000).toBeUndefined()
   } finally {
     app.renderer.destroy()

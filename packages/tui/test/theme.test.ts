@@ -14,8 +14,8 @@ test("addTheme writes into module theme store", () => {
 
 test("addTheme keeps first theme for duplicate names", () => {
   const name = `plugin-theme-keep-${Date.now()}`
-  const one = structuredClone(DEFAULT_THEMES.opencode)
-  const two = structuredClone(DEFAULT_THEMES.opencode)
+  const one = structuredClone(DEFAULT_THEMES.opencode)!
+  const two = structuredClone(DEFAULT_THEMES.opencode)!
   one.theme.primary = "#101010"
   two.theme.primary = "#fefefe"
 
@@ -38,7 +38,7 @@ test("hasTheme checks theme presence", () => {
 })
 
 test("resolveTheme rejects circular color refs", () => {
-  const item = structuredClone(DEFAULT_THEMES.opencode)
+  const item = structuredClone(DEFAULT_THEMES.opencode)!
   item.defs = { ...item.defs, one: "two", two: "one" }
   item.theme.primary = "one"
   expect(() => resolveTheme(item, "dark")).toThrow("Circular color reference")

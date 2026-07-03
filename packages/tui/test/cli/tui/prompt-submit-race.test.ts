@@ -93,6 +93,6 @@ describe("Prompt.submit race", () => {
     await submit(h)
 
     expect(h.submissions).toHaveLength(1)
-    expect(h.submissions[0].text).toBe("Hello there.")
+    expect(h.submissions[0]!.text).toBe("Hello there.")
   })
 })
