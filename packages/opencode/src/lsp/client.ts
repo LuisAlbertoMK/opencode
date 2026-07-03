@@ -144,6 +144,7 @@ export async function create(input: {
   const diagnosticListeners = new Set<(input: { path: string; serverID: string }) => void>()
   const MAX_FILES = 128
 
+  // vMK: LRU eviction via Map insertion order — re-add current file to tail
   function pruneFiles(currentPath: string) {
     const keys = Object.keys(files)
     if (keys.length <= MAX_FILES) return
@@ -151,12 +152,23 @@ export async function create(input: {
     let removed = 0
     for (const key of keys) {
       if (key === currentPath) continue
+      const entry = files[key]
       delete files[key]
+      // Notify server the file is closed so it doesn't hold stale state
+      connection.sendNotification("textDocument/didClose", {
+        textDocument: { uri: pathToFileURL(key).href },
+      }).catch(() => {})
       pushDiagnostics.delete(key)
       pullDiagnostics.delete(key)
       published.delete(key)
       removed++
       if (removed >= toRemove) break
+    }
+    // Re-insert current file at tail (most recently used)
+    if (files[currentPath]) {
+      const entry = files[currentPath]
+      delete files[currentPath]
+      files[currentPath] = entry
     }
   }
 

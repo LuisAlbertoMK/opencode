@@ -9,7 +9,7 @@ import * as LSPServer from "./server"
 import { Config } from "@/config/config"
 import { Process } from "@/util/process"
 import { spawn as lspspawn } from "./launch"
-import { Effect, Layer, Context, Schema } from "effect"
+import { Duration, Effect, Layer, Context, Schema } from "effect"
 import { InstanceState } from "@/effect/instance-state"
 import { containsPath } from "@/project/instance-context"
 import { NonNegativeInt } from "@opencode-ai/core/schema"
@@ -122,8 +122,18 @@ const filterExperimentalServers = (servers: Record<string, LSPServer.Info>, flag
 
 type LocInput = { file: string; line: number; character: number }
 
+// vMK: wrapped client entry with last-used timestamp for idle eviction
+interface ClientEntry {
+  client: LSPClient.Info
+  lastUsed: number
+}
+
+// vMK: evict idle LSP clients after 30 min of inactivity
+const CLIENT_IDLE_TTL_MS = 30 * 60_000
+const CLIENT_IDLE_SCAN_INTERVAL_MS = 5 * 60_000
+
 interface State {
-  clients: LSPClient.Info[]
+  clients: ClientEntry[]
   servers: Record<string, LSPServer.Info>
   broken: Map<string, number>
   spawning: Map<string, Promise<LSPClient.Info | undefined>>
@@ -209,11 +219,28 @@ export const layer = Layer.effect(
           spawning: new Map(),
         }
 
-        yield* Effect.addFinalizer(() =>
-          Effect.promise(async () => {
-            await Promise.all(s.clients.map((client) => client.shutdown()))
-          }),
-        )
+          yield* Effect.addFinalizer(() =>
+            Effect.promise(async () => {
+              await Promise.all(s.clients.map((entry) => entry.client.shutdown()))
+            }),
+          )
+
+          // vMK: background fiber to periodically evict idle LSP clients
+          yield* Effect.forkScoped(
+            Effect.gen(function* evictIdleClients() {
+              while (true) {
+                yield* Effect.sleep(Duration.millis(CLIENT_IDLE_SCAN_INTERVAL_MS))
+                const now = Date.now()
+                for (let i = s.clients.length - 1; i >= 0; i--) {
+                  const entry = s.clients[i]!
+                  if (now - entry.lastUsed > CLIENT_IDLE_TTL_MS) {
+                    entry.client.shutdown().catch(() => {})
+                    s.clients.splice(i, 1)
+                  }
+                }
+              }
+            }),
+          )
 
         return s
       }),
@@ -255,13 +282,14 @@ export const layer = Layer.effect(
 
           if (!client) return undefined
 
-          const existing = s.clients.find((x) => x.root === root && x.serverID === server.id)
+          const existing = s.clients.find((x) => x.client.root === root && x.client.serverID === server.id)
           if (existing) {
+            existing.lastUsed = Date.now()
             await Process.stop(handle.process)
-            return existing
+            return existing.client
           }
 
-          s.clients.push(client)
+          s.clients.push({ client, lastUsed: Date.now() })
           return client
         }
 
@@ -272,9 +300,10 @@ export const layer = Layer.effect(
           if (!root) continue
           if (isBroken(s.broken, root + server.id)) continue
 
-          const match = s.clients.find((x) => x.root === root && x.serverID === server.id)
+          const match = s.clients.find((x) => x.client.root === root && x.client.serverID === server.id)
           if (match) {
-            result.push(match)
+            match.lastUsed = Date.now()
+            result.push(match.client)
             continue
           }
 
@@ -317,7 +346,7 @@ export const layer = Layer.effect(
 
     const runAll = Effect.fnUntraced(function* <T>(fn: (client: LSPClient.Info) => Promise<T>) {
       const s = yield* InstanceState.get(state)
-      return yield* Effect.promise(() => Promise.all(s.clients.map((x) => fn(x))))
+      return yield* Effect.promise(() => Promise.all(s.clients.map((x) => fn(x.client))))
     })
 
     const init = Effect.fn("LSP.init")(function* () {
@@ -328,10 +357,12 @@ export const layer = Layer.effect(
       const ctx = yield* InstanceState.context
       const s = yield* InstanceState.get(state)
       const result: Status[] = []
-      for (const client of s.clients) {
+      for (const entry of s.clients) {
+        const client = entry.client
+        const serverInfo = s.servers[client.serverID]
         result.push({
           id: client.serverID,
-          name: s.servers[client.serverID].id,
+          name: serverInfo?.id ?? client.serverID,
           root: path.relative(ctx.directory, client.root),
           status: "connected",
         })
