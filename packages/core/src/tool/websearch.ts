@@ -1,20 +1,32 @@
 export * as WebSearchTool from "./websearch"
 
 import { ToolFailure } from "@opencode-ai/llm"
-import { Context, Duration, Effect, Layer, Schema } from "effect"
-import { HttpClient, HttpClientRequest } from "effect/unstable/http"
+import { Context, Effect, Layer, Schema } from "effect"
+import { HttpClient } from "effect/unstable/http"
 import { truthy } from "../flag/flag"
 import { InstallationVersion } from "../installation/version"
 import { PositiveInt } from "../schema"
 import { PermissionV2 } from "../permission"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
-import { checksum } from "../util/encode"
+// vMK: shared MCP protocol + provider selection
+import {
+  callMcpTool,
+  ExaSearchArgs,
+  ParallelSearchArgs,
+  selectWebSearchProvider as sharedSelectProvider,
+  EXA_URL as SHARED_EXA_URL,
+  PARALLEL_URL as SHARED_PARALLEL_URL,
+  parseMcpResponse,
+} from "./shared/websearch-mcp-utils"
 
 export const name = "websearch"
 export const NO_RESULTS = "No search results found. Please try a different query."
-export const EXA_URL = "https://mcp.exa.ai/mcp"
-export const PARALLEL_URL = "https://search.parallel.ai/mcp"
+
+/** @deprecated use `EXA_URL` from `@opencode-ai/core/tool/shared/websearch-mcp-utils` */
+export const EXA_URL = SHARED_EXA_URL
+/** @deprecated use `PARALLEL_URL` from `@opencode-ai/core/tool/shared/websearch-mcp-utils` */
+export const PARALLEL_URL = SHARED_PARALLEL_URL
 export const MAX_NUM_RESULTS = 20
 export const MAX_CONTEXT_CHARACTERS = 50_000
 export const MAX_RESPONSE_BYTES = 256 * 1024
@@ -79,95 +91,17 @@ export const defaultConfigLayer = Layer.sync(ConfigService, () =>
   }),
 )
 
+/** @deprecated use `selectWebSearchProvider` from `@opencode-ai/core/tool/shared/websearch-mcp-utils` */
 export function selectProvider(
   sessionID: string,
   flags: Pick<Config, "enableExa" | "enableParallel"> = { enableExa: false, enableParallel: false },
   override?: Provider,
 ): Provider {
-  if (override) return override
-  if (flags.enableParallel) return "parallel"
-  if (flags.enableExa) return "exa"
-  return Number.parseInt(checksum(sessionID) ?? "0", 36) % 2 === 0 ? "exa" : "parallel"
+  return sharedSelectProvider(sessionID, { exa: flags.enableExa, parallel: flags.enableParallel }, override)
 }
 
-const McpResult = Schema.Struct({
-  result: Schema.Struct({
-    content: Schema.Array(Schema.Struct({ type: Schema.String, text: Schema.String })),
-  }),
-})
-const decodeMcpResult = Schema.decodeUnknownEffect(Schema.fromJsonString(McpResult))
-
-const parsePayload = (payload: string) =>
-  Effect.gen(function* () {
-    const trimmed = payload.trim()
-    if (!trimmed.startsWith("{")) return undefined
-    return (yield* decodeMcpResult(trimmed)).result.content.find((item) => item.text)?.text
-  })
-
-export const parseResponse = Effect.fn("WebSearchTool.parseResponse")(function* (body: string) {
-  const trimmed = body.trim()
-  const direct = trimmed ? yield* parsePayload(trimmed) : undefined
-  if (direct) return direct
-  for (const line of body.split("\n")) {
-    if (!line.startsWith("data: ")) continue
-    const data = yield* parsePayload(line.substring(6))
-    if (data) return data
-  }
-  return undefined
-})
-
-const ExaArgs = Schema.Struct({
-  query: Schema.String,
-  type: Schema.String,
-  numResults: Schema.Number,
-  livecrawl: Schema.String,
-  contextMaxCharacters: Schema.optional(Schema.Number),
-})
-const ParallelArgs = Schema.Struct({
-  objective: Schema.String,
-  search_queries: Schema.Array(Schema.String),
-  session_id: Schema.String,
-})
-const McpRequest = <F extends Schema.Struct.Fields>(args: Schema.Struct<F>) =>
-  Schema.Struct({
-    jsonrpc: Schema.Literal("2.0"),
-    id: Schema.Literal(1),
-    method: Schema.Literal("tools/call"),
-    params: Schema.Struct({ name: Schema.String, arguments: args }),
-  })
-
-const callMcp = <F extends Schema.Struct.Fields>(
-  http: HttpClient.HttpClient,
-  url: string,
-  tool: string,
-  args: Schema.Struct<F>,
-  value: Schema.Struct.Type<F>,
-  headers: Record<string, string> = {},
-) =>
-  Effect.gen(function* () {
-    const request = yield* HttpClientRequest.post(url).pipe(
-      HttpClientRequest.accept("application/json, text/event-stream"),
-      HttpClientRequest.setHeaders(headers),
-      HttpClientRequest.schemaBodyJson(McpRequest(args))({
-        jsonrpc: "2.0" as const,
-        id: 1 as const,
-        method: "tools/call" as const,
-        params: { name: tool, arguments: value },
-      }),
-    )
-    return yield* Effect.gen(function* () {
-      const response = yield* HttpClient.filterStatusOk(http).execute(request)
-      const body = yield* response.text
-      if (Buffer.byteLength(body, "utf8") > MAX_RESPONSE_BYTES)
-        return yield* Effect.fail(new Error(`${tool} response exceeded ${MAX_RESPONSE_BYTES} bytes`))
-      return yield* parseResponse(body)
-    }).pipe(
-      Effect.timeoutOrElse({
-        duration: Duration.seconds(25),
-        orElse: () => Effect.fail(new Error(`${tool} request timed out`)),
-      }),
-    )
-  })
+/** @deprecated use `parseMcpResponse` from `@opencode-ai/core/tool/shared/websearch-mcp-utils` */
+export const parseResponse = parseMcpResponse
 
 const Output = Schema.Struct({
   provider: Provider,
@@ -203,19 +137,22 @@ export const layer = Layer.effectDiscard(
 
               const text =
                 provider === "exa"
-                  ? yield* callMcp(http, EXA_URL, "web_search_exa", ExaArgs, {
+                  ? yield* callMcpTool(http, EXA_URL, "web_search_exa", ExaSearchArgs, {
                       query: input.query,
                       type: input.type || "auto",
                       numResults: input.numResults || 8,
                       livecrawl: input.livecrawl || "fallback",
                       contextMaxCharacters: input.contextMaxCharacters,
                     },
-                    config.exaApiKey ? { "x-api-key": config.exaApiKey } : {})
-                  : yield* callMcp(
+                    {
+                      maxBytes: MAX_RESPONSE_BYTES,
+                      headers: config.exaApiKey ? { "x-api-key": config.exaApiKey } : {},
+                    })
+                  : yield* callMcpTool(
                       http,
                       PARALLEL_URL,
                       "web_search",
-                      ParallelArgs,
+                      ParallelSearchArgs,
                       {
                         objective: input.query,
                         search_queries: [input.query],
@@ -223,8 +160,11 @@ export const layer = Layer.effectDiscard(
                         // V2 invocation context does not safely expose the model yet.
                       },
                       {
-                        "User-Agent": `opencode/${InstallationVersion}`,
-                        ...(config.parallelApiKey ? { Authorization: `Bearer ${config.parallelApiKey}` } : {}),
+                        maxBytes: MAX_RESPONSE_BYTES,
+                        headers: {
+                          "User-Agent": `opencode/${InstallationVersion}`,
+                          ...(config.parallelApiKey ? { Authorization: `Bearer ${config.parallelApiKey}` } : {}),
+                        },
                       },
                     )
               return {

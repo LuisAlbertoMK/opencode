@@ -1,11 +1,19 @@
 import { Effect, Schema } from "effect"
 import { HttpClient } from "effect/unstable/http"
 import * as Tool from "./tool"
-import * as McpWebSearch from "./mcp-websearch"
 import DESCRIPTION from "./websearch.txt"
-import { checksum } from "@opencode-ai/core/util/encode"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+// vMK: shared MCP protocol + provider selection
+import {
+  callMcpTool,
+  ExaSearchArgs,
+  ParallelSearchArgs,
+  selectWebSearchProvider as sharedSelectProvider,
+  EXA_URL,
+  PARALLEL_URL,
+  parseMcpResponse,
+} from "@opencode-ai/core/tool/shared/websearch-mcp-utils"
 
 export const Parameters = Schema.Struct({
   query: Schema.String.annotate({ description: "Websearch query" }),
@@ -28,13 +36,13 @@ const WebSearchProviderSchema = Schema.Literals(["exa", "parallel"])
 export type WebSearchProvider = Schema.Schema.Type<typeof WebSearchProviderSchema>
 
 export function selectWebSearchProvider(sessionID: string, flags = { exa: false, parallel: false }): WebSearchProvider {
-  const override = process.env.OPENCODE_WEBSEARCH_PROVIDER
-  if (override === "exa" || override === "parallel") return override
-  if (flags.parallel) return "parallel"
-  if (flags.exa) return "exa"
-
-  return Number.parseInt(checksum(sessionID) ?? "0", 36) % 2 === 0 ? "exa" : "parallel"
+  const wsProvider = process.env.OPENCODE_WEBSEARCH_PROVIDER
+  const override = wsProvider === "exa" || wsProvider === "parallel" ? wsProvider : undefined
+  return sharedSelectProvider(sessionID, flags, override)
 }
+
+/** @deprecated use `parseMcpResponse` from `@opencode-ai/core/tool/shared/websearch-mcp-utils` */
+export const parseResponse = parseMcpResponse
 
 export function webSearchProviderLabel(provider: unknown) {
   if (provider === "parallel") return "Parallel Web Search"
@@ -64,27 +72,26 @@ function callProvider(
   ctx: Tool.Context,
 ) {
   if (provider === "parallel") {
-    return McpWebSearch.call(
+    return callMcpTool(
       http,
-      McpWebSearch.PARALLEL_URL,
+      PARALLEL_URL,
       "web_search",
-      McpWebSearch.ParallelSearchArgs,
+      ParallelSearchArgs,
       {
         objective: params.query,
         search_queries: [params.query],
         session_id: ctx.sessionID,
         model_name: webSearchModelName(ctx.extra),
       },
-      "25 seconds",
-      parallelAuthHeaders(),
+      { timeout: "25 seconds", headers: parallelAuthHeaders() },
     )
   }
 
-  return McpWebSearch.call(
+  return callMcpTool(
     http,
-    McpWebSearch.EXA_URL,
+    EXA_URL,
     "web_search_exa",
-    McpWebSearch.SearchArgs,
+    ExaSearchArgs,
     {
       query: params.query,
       type: params.type || "auto",
@@ -92,7 +99,7 @@ function callProvider(
       livecrawl: params.livecrawl || "fallback",
       contextMaxCharacters: params.contextMaxCharacters,
     },
-    "25 seconds",
+    { timeout: "25 seconds" },
   )
 }
 

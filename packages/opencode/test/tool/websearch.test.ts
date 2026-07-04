@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { Effect } from "effect"
-import { parseResponse } from "../../src/tool/mcp-websearch"
+import { parseResponse } from "../../src/tool/websearch"
 import { selectWebSearchProvider, webSearchModelName, webSearchProviderLabel } from "../../src/tool/websearch"
 
 import { webSearchEnabled } from "../../src/tool/registry"
