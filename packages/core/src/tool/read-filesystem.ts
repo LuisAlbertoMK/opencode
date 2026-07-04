@@ -8,16 +8,26 @@ import { FSUtil } from "../fs-util"
 import { AbsolutePath, PositiveInt, RelativePath } from "../schema"
 import { LruCache } from "../lru-cache"
 import { Config } from "../config"
+// vMK: shared read utilities
+import {
+  isBinaryFile,
+  matchesMagicBytes,
+  DEFAULT_READ_LIMIT,
+  MAX_READ_BYTES as SHARED_MAX_READ_BYTES,
+  MAX_LINE_LENGTH,
+  MAX_LINE_SUFFIX,
+} from "./shared/read-utils"
 
 // Cache keyed by canonical path for full (non-paged) file reads.
 // Size and TTL are configured via the experimental config (lru_cache_size, lru_cache_ttl_ms).
 let fullReadCache: LruCache<string, { content: FileSystem.Content; mtimeMs: number }> | undefined
 
-export const MAX_READ_LINES = 2_000
-export const MAX_READ_BYTES = 50 * 1024
+/** @deprecated use `DEFAULT_READ_LIMIT` from `@opencode-ai/core/tool/shared/read-utils` */
+export const MAX_READ_LINES = DEFAULT_READ_LIMIT
+
+/** @deprecated use `MAX_READ_BYTES` from `@opencode-ai/core/tool/shared/read-utils` */
+export const MAX_READ_BYTES = SHARED_MAX_READ_BYTES
 export const MAX_MEDIA_INGEST_BYTES = 20 * 1024 * 1024
-const MAX_LINE_LENGTH = 2_000
-const MAX_LINE_SUFFIX = `... (line truncated to ${MAX_LINE_LENGTH} chars)`
 
 export class BinaryFileError extends Error {
   constructor(readonly resource: string) {
@@ -38,7 +48,7 @@ export class MediaIngestLimitError extends Error {
 
 export const PageInput = Schema.Struct({
   offset: PositiveInt.pipe(Schema.optional),
-  limit: PositiveInt.check(Schema.isLessThanOrEqualTo(MAX_READ_LINES)).pipe(Schema.optional),
+  limit: PositiveInt.check(Schema.isLessThanOrEqualTo(DEFAULT_READ_LIMIT)).pipe(Schema.optional),
 })
 export type PageInput = typeof PageInput.Type
 
@@ -69,53 +79,13 @@ export interface Interface {
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/ReadToolFileSystem") {}
 
-const extensions = new Set([
-  ".zip",
-  ".tar",
-  ".gz",
-  ".exe",
-  ".dll",
-  ".so",
-  ".class",
-  ".jar",
-  ".war",
-  ".7z",
-  ".doc",
-  ".docx",
-  ".xls",
-  ".xlsx",
-  ".ppt",
-  ".pptx",
-  ".odt",
-  ".ods",
-  ".odp",
-  ".bin",
-  ".dat",
-  ".obj",
-  ".o",
-  ".a",
-  ".lib",
-  ".wasm",
-  ".pyc",
-  ".pyo",
-])
-const startsWith = (bytes: Uint8Array, prefix: number[]) => prefix.every((value, index) => bytes[index] === value)
+const startsWith = matchesMagicBytes
 const imageMime = (bytes: Uint8Array) => {
   if (startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) return "image/png"
   if (startsWith(bytes, [0xff, 0xd8, 0xff])) return "image/jpeg"
   if (startsWith(bytes, [0x47, 0x49, 0x46, 0x38])) return "image/gif"
   if (startsWith(bytes, [0x52, 0x49, 0x46, 0x46]) && startsWith(bytes.subarray(8), [0x57, 0x45, 0x42, 0x50]))
     return "image/webp"
-}
-const binary = (resource: string, bytes: Uint8Array) => {
-  if (extensions.has(path.extname(resource).toLowerCase())) return true
-  if (bytes.length === 0) return false
-  let nonPrintable = 0
-  for (const byte of bytes) {
-    if (byte === 0) return true
-    if (byte < 9 || (byte > 13 && byte < 32)) nonPrintable++
-  }
-  return nonPrintable / bytes.length > 0.3
 }
 
 export const inspect = Effect.fn("ReadTool.inspect")(function* (fs: FSUtil.Interface, input: string) {
@@ -168,7 +138,7 @@ export const read = Effect.fn("ReadTool.read")(function* (
           mime,
         }
       }
-      if (startsWith(first, [0x25, 0x50, 0x44, 0x46]) || binary(resource, first))
+      if (startsWith(first, [0x25, 0x50, 0x44, 0x46]) || isBinaryFile(resource, first))
         return yield* Effect.die(new BinaryFileError(resource))
       const paged = info.size > MAX_READ_BYTES || page.offset !== undefined || page.limit !== undefined
       if (!paged) {
@@ -199,7 +169,7 @@ export const read = Effect.fn("ReadTool.read")(function* (
         return content
       }
       const offset = page.offset ?? 1
-      const limit = Math.min(page.limit ?? MAX_READ_LINES, MAX_READ_LINES)
+      const limit = Math.min(page.limit ?? DEFAULT_READ_LIMIT, DEFAULT_READ_LIMIT)
       const lines: string[] = []
       const decoder = new TextDecoder("utf-8", { fatal: true })
       let pending = ""
@@ -279,7 +249,8 @@ export const list = Effect.fn("ReadTool.list")(function* (fs: FSUtil.Interface, 
   const real = yield* fs.realPath(input).pipe(Effect.orDie)
   const items = yield* fs.readDirectoryEntries(real).pipe(Effect.orDie)
   const offset = page.offset ?? 1
-  const limit = Math.min(page.limit ?? MAX_READ_LINES, MAX_READ_LINES)
+  const limit = Math.min(page.limit ?? DEFAULT_READ_LIMIT, DEFAULT_READ_LIMIT)
+
   const entries = yield* Effect.forEach(
     items,
     (item) =>

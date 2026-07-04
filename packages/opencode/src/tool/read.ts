@@ -10,14 +10,18 @@ import { InstanceState } from "@/effect/instance-state"
 import { assertExternalDirectoryEffect } from "./external-directory"
 import { Instruction } from "../session/instruction"
 import { isPdfAttachment, sniffAttachmentMime } from "@/util/media"
+// vMK: shared read utilities
+import {
+  isBinaryFile as isBinaryFileImpl,
+  DEFAULT_READ_LIMIT,
+  MAX_READ_BYTES,
+  MAX_LINE_LENGTH,
+  MAX_LINE_SUFFIX,
+  SUPPORTED_IMAGE_MIMES,
+} from "@opencode-ai/core/tool/shared/read-utils"
 
-const DEFAULT_READ_LIMIT = 2000
-const MAX_LINE_LENGTH = 2000
-const MAX_LINE_SUFFIX = `... (line truncated to ${MAX_LINE_LENGTH} chars)`
-const MAX_BYTES = 50 * 1024
-const MAX_BYTES_LABEL = `${MAX_BYTES / 1024} KB`
 const SAMPLE_BYTES = 4096
-const SUPPORTED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"])
+const MAX_BYTES_LABEL = `${MAX_READ_BYTES / 1024} KB`
 
 class ReadStop extends Schema.TaggedErrorClass<ReadStop>()("ReadStop", {}) {}
 
@@ -162,7 +166,7 @@ export const ReadTool = Tool.define<
 
             const line = text.length > MAX_LINE_LENGTH ? text.substring(0, MAX_LINE_LENGTH) + MAX_LINE_SUFFIX : text
             const size = Buffer.byteLength(line, "utf-8") + (raw.length > 0 ? 1 : 0)
-            if (flags.bytes + size <= MAX_BYTES) {
+            if (flags.bytes + size <= MAX_READ_BYTES) {
               raw.push(line)
               flags.bytes += size
               return
@@ -181,50 +185,7 @@ export const ReadTool = Tool.define<
     })
 
     const isBinaryFile = (filepath: string, bytes: Uint8Array) => {
-      const ext = path.extname(filepath).toLowerCase()
-      switch (ext) {
-        case ".zip":
-        case ".tar":
-        case ".gz":
-        case ".exe":
-        case ".dll":
-        case ".so":
-        case ".class":
-        case ".jar":
-        case ".war":
-        case ".7z":
-        case ".doc":
-        case ".docx":
-        case ".xls":
-        case ".xlsx":
-        case ".ppt":
-        case ".pptx":
-        case ".odt":
-        case ".ods":
-        case ".odp":
-        case ".bin":
-        case ".dat":
-        case ".obj":
-        case ".o":
-        case ".a":
-        case ".lib":
-        case ".wasm":
-        case ".pyc":
-        case ".pyo":
-          return true
-      }
-
-      if (bytes.length === 0) return false
-
-      let nonPrintableCount = 0
-      for (let i = 0; i < bytes.length; i++) {
-        if (bytes[i] === 0) return true
-        if (bytes[i] < 9 || (bytes[i] > 13 && bytes[i] < 32)) {
-          nonPrintableCount++
-        }
-      }
-
-      return nonPrintableCount / bytes.length > 0.3
+      return isBinaryFileImpl(filepath, bytes)
     }
 
     const run = Effect.fn("ReadTool.execute")(function* (

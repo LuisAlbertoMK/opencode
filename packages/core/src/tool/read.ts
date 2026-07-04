@@ -12,9 +12,10 @@ import { AbsolutePath } from "../schema"
 import { ReadToolFileSystem } from "./read-filesystem"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
+// vMK: shared read utility
+import { SUPPORTED_IMAGE_MIMES } from "./shared/read-utils"
 
 export const name = "read"
-const SUPPORTED_IMAGE_MIMES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp"])
 const LocationInput = Schema.Struct({
   path: Schema.String,
   offset: ReadToolFileSystem.PageInput.fields.offset.annotate({
