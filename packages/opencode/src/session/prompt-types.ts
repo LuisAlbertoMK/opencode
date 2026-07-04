@@ -86,7 +86,7 @@ IMPORTANT:
 
 /** @internal Exported for testing */
 export function createStructuredOutputTool(input: {
-  schema: Record<string, any>
+    schema: Record<string, unknown> // vMK:
   onSuccess: (output: unknown) => void
 }): AITool {
   // Remove $schema property if present (not needed for tool input)

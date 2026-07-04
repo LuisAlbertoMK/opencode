@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions on array access
 import fuzzysort from "fuzzysort"
 import { entries, flatMap, groupBy, map, pipe } from "remeda"
 import { createEffect, createMemo, createResource, on } from "solid-js"

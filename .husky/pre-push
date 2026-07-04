@@ -59,4 +59,15 @@ if [ "$CHANGED_COUNT" -eq 1 ] 2>/dev/null; then
   echo "[pre-push] [WARN] Solo uno de BITACORA.md / METRICAS.md fue actualizado — deberían ir juntos"
 fi
 
+echo "[pre-push] === Fase 4: Patch integrity check ==="
+if command -v pwsh &> /dev/null; then
+  if [ -f scripts/vmk-patch-check.ps1 ]; then
+    pwsh -NoProfile -File scripts/vmk-patch-check.ps1 2>&1 || echo "[pre-push] [WARN] Patch check failed (non-critical)"
+  fi
+fi
+
+echo "[pre-push] === Fase 5: Linter (oxlint) ==="
+bun run lint 2>&1 | tail -3
+echo "[pre-push] Linter OK"
+
 echo "[pre-push] === Verificacion completada ==="

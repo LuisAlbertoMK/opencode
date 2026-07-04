@@ -1,3 +1,4 @@
+// vMK: new file — debug info dialog (Ctrl+D)
 import { TextAttributes } from "@opentui/core"
 import { createMemo, createSignal, For } from "solid-js"
 import { InstallationChannel, InstallationVersion } from "@opencode-ai/core/installation/version"

@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions in parseModel destructuring
 import { createStore } from "solid-js/store"
 import { createSimpleContext } from "./helper"
 import { batch, createEffect, createMemo, onCleanup } from "solid-js"

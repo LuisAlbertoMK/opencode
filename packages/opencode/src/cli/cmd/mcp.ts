@@ -1,3 +1,4 @@
+// vMK: MCP debug — early authInfo effect evaluation with short-circuit
 import { cmd } from "./cmd"
 import { ConfigV1 } from "@opencode-ai/core/v1/config/config"
 import { effectCmd } from "../effect-cmd"

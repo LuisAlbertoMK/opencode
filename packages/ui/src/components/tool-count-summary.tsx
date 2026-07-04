@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion
 import { Index, createMemo } from "solid-js"
 import { AnimatedCountLabel } from "./tool-count-label"
 

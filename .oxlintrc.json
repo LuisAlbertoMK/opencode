@@ -4,17 +4,21 @@
     "typeAware": false
   },
   "categories": {
-    "suspicious": "warn"
+    "correctness": "warn",
+    "suspicious": "warn",
+    "pedantic": "warn"
   },
   "rules": {
     "typescript/no-base-to-string": "warn",
-    "unicorn/no-unused-vars": [
+    "typescript/no-unused-vars": [
       "warn",
       {
         "varsIgnorePattern": "^_",
         "argsIgnorePattern": "^_"
       }
     ],
+    "typescript/prefer-function-type": "warn",
+    "typescript/consistent-type-definitions": ["warn", "type"],
     "require-yield": "off",
     "no-unassigned-vars": "off",
     "no-unused-expressions": "off",
@@ -29,8 +33,7 @@
     "unicorn/require-post-message-target-origin": "off",
     "no-new": "off",
     "typescript/no-floating-promises": "warn",
-    "typescript/no-misused-spread": "warn",
-    "no-underscore-dangle": ["warn", { "allow": ["_tag", "_meta", "_zod", "_exhaustive", "_blockStates", "_stableBlockCount"] }]
+    "typescript/no-misused-spread": "warn"
   },
   "ignorePatterns": ["**/node_modules", "**/dist", "**/.build", "**/.sst", "**/*.d.ts", "**/sdk.gen.ts"]
 }

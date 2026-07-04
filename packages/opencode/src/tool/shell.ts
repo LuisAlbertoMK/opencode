@@ -428,14 +428,17 @@ export const ShellTool = Tool.define(
     })
 
     // Env vars managed by opencode that should NOT propagate to user shell commands.
-    // They are intentionally passed to workspace subprocesses via OPENCODE_AUTH_CONTENT,
-    // but arbitrary shell commands should not inherit credential material.
+    // OPENCODE_AUTH_CONTENT was removed in Fase 1.1 (subprocess reads encrypted file).
+    // Keep the deny list for defense-in-depth — any leftover or future auth env vars.
+    // vMK: +PARALLEL_API_KEY +CLOUDFLARE_API_TOKEN from audit findings 0.2
     const SHELL_ENV_DENY = new Set([
       "AWS_BEARER_TOKEN_BEDROCK",
       "AICORE_SERVICE_KEY",
       "OPENCODE_AUTH_CONTENT",
       "OPENCODE_SERVER_PASSWORD",
       "OPENCODE_SERVER_USERNAME",
+      "PARALLEL_API_KEY",
+      "CLOUDFLARE_API_TOKEN",
     ])
 
     const shellEnv = Effect.fn("ShellTool.shellEnv")(function* (ctx: Tool.Context, cwd: string) {

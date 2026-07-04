@@ -83,7 +83,7 @@ export function DialogPrompt(props: DialogPromptProps) {
         </text>
       </box>
       <box gap={1}>
-        {props.description?.()}
+        {props.description?.()} {/* vMK: description is now a function getter */}
         <textarea
           height={3}
           ref={(val: TextareaRenderable) => {

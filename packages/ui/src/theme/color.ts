@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions
 import type { HexColor, OklchColor } from "./types"
 
 function clamp(v: number, min: number, max: number) {

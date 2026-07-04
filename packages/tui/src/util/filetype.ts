@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion, nullish coalescing fallback
 import path from "node:path"
 
 export const LANGUAGE_EXTENSIONS: Record<string, string> = {

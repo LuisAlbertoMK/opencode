@@ -131,7 +131,7 @@ export class SyncTimeoutError extends Schema.TaggedErrorClass<SyncTimeoutError>(
 
 export class SyncAbortedError extends Schema.TaggedErrorClass<SyncAbortedError>()("WorkspaceSyncAbortedError", {
   message: Schema.String,
-  cause: Schema.optional(Schema.Defect()),
+  cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {}
 
 type CreateError = Auth.AuthError
@@ -169,7 +169,7 @@ export const use = serviceUse(Service)
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
-    const auth = yield* Auth.Service
+    // vMK: removed auth — OPENCODE_AUTH_CONTENT env var eliminated (Fase 1.1)
     const session = yield* Session.Service
     const prompt = yield* SessionPrompt.Service
     const http = yield* HttpClient.HttpClient
@@ -542,8 +542,8 @@ export const layer = Layer.effect(
         .run()
         .pipe(Effect.orDie)
 
+      // vMK: removed OPENCODE_AUTH_CONTENT — subprocess reads encrypted auth.json directly (Fase 1.1)
       const env = {
-        OPENCODE_AUTH_CONTENT: JSON.stringify(yield* auth.all()),
         OPENCODE_WORKSPACE_ID: config.id,
         OPENCODE_EXPERIMENTAL_WORKSPACES: "true",
         OTEL_EXPORTER_OTLP_HEADERS: process.env.OTEL_EXPORTER_OTLP_HEADERS,

@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion on msg.id access
 import { createMemo } from "solid-js"
 import { useSync } from "../../context/sync"
 import { DialogSelect } from "../../ui/dialog-select"

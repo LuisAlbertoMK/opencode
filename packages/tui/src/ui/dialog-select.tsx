@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions, fuzzy sort scoreFn fix, option margin wrap
 import {
   InputRenderable,
   RGBA,

@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions
 import { OptimizedBuffer, RGBA, TextAttributes } from "@opentui/core"
 import { go } from "../logo"
 

@@ -12,11 +12,11 @@ export const id = ProviderID.make("github-copilot")
 export type ModelOptions = Omit<RouteDefaultsInput, "providerOptions"> &
   ProviderAuthOption<"optional"> & {
     readonly baseURL: string
-    readonly endpoint?: "chat" | "responses"
+    readonly endpoint?: "chat" | "responses" // vMK: Copilot V2 — endpoint selection (chat vs responses)
     readonly providerOptions?: OpenAIProviderOptionsInput
   }
 
-export const shouldUseResponsesApi = (modelID: string | ModelID, endpoint?: ModelOptions["endpoint"]) => {
+export const shouldUseResponsesApi = (modelID: string | ModelID, endpoint?: ModelOptions["endpoint"]) => { // vMK: optional endpoint param overrides GPT version heuristic
   if (endpoint) return endpoint === "responses"
   const model = String(modelID)
   const match = /^gpt-(\d+)/.exec(model)
@@ -30,7 +30,7 @@ const chatRoute = OpenAIChat.route.with({ provider: id })
 const responsesRoute = OpenAIResponses.route.with({ provider: id })
 
 const defaults = (options: ModelOptions) => {
-  const { apiKey: _, auth: _auth, baseURL: _baseURL, endpoint: _endpoint, ...rest } = options
+  const { apiKey: _, auth: _auth, baseURL: _baseURL, endpoint: _endpoint, ...rest } = options // vMK: strip endpoint from rest before passing to route
   return rest
 }
 

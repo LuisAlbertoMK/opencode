@@ -1,3 +1,4 @@
+// vMK: new file — OS/terminal info helpers for debug dialog
 import { release } from "node:os"
 
 export function describeOS() {

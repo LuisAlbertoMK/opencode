@@ -20,7 +20,7 @@ export const Local = Schema.Struct({
   timeout: Schema.optional(PositiveInt).annotate({
     description: "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.",
   }),
-  truncateLimit: Schema.optional(PositiveInt).annotate({
+  truncateLimit: Schema.optional(PositiveInt).annotate({ // vMK: per-server truncation limit for MCP tool output
     description:
       "Maximum output size in bytes for tool results from this server. Results exceeding this limit will be truncated. Overrides the global tool_output.max_bytes.",
   }),
@@ -60,7 +60,7 @@ export const Remote = Schema.Struct({
   timeout: Schema.optional(PositiveInt).annotate({
     description: "Timeout in ms for MCP server requests. Defaults to 5000 (5 seconds) if not specified.",
   }),
-  truncateLimit: Schema.optional(PositiveInt).annotate({
+  truncateLimit: Schema.optional(PositiveInt).annotate({ // vMK: per-server truncation limit for MCP tool output
     description:
       "Maximum output size in bytes for tool results from this server. Results exceeding this limit will be truncated. Overrides the global tool_output.max_bytes.",
   }),

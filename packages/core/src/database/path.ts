@@ -88,7 +88,8 @@ export const absoluteArrayColumn = customType<{
   },
   fromDriver(input) {
     let items: string[]
-    try { items = JSON.parse(input) as string[] } catch { return [] }
+    // vMK: log parse failure — silent data corruption risk
+    try { items = JSON.parse(input) as string[] } catch (e) { console.warn("absoluteArrayColumn.fromDriver JSON parse failed:", e); return [] }
     return items.map((item) => AbsolutePath.make(toPlatform(absolute(item))))
   },
 })

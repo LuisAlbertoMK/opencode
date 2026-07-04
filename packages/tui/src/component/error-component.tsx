@@ -1,3 +1,4 @@
+// vMK: redesigned crash screen — report builder, action buttons, scrollable stack trace
 import { TextAttributes, type ScrollBoxRenderable } from "@opentui/core"
 import { useKeyboard, useTerminalDimensions } from "@opentui/solid"
 import { createSignal, For, Show } from "solid-js"

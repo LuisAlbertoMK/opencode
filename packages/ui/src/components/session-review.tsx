@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions on diff() access
 import { Accordion } from "./accordion"
 import { Button } from "./button"
 import { DropdownMenu } from "./dropdown-menu"

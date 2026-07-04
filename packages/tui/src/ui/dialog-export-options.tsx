@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion
 import { TextareaRenderable, TextAttributes } from "@opentui/core"
 import { useTheme } from "../context/theme"
 import { useDialog, type DialogContext } from "./dialog"

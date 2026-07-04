@@ -372,7 +372,7 @@ function isTrustedRendererUrl(value?: string) {
   return isRendererUrl(value)
 }
 
-function addRendererHeaders(value: string, headers: Record<string, any>) {
+function addRendererHeaders(value: string, headers: Record<string, unknown>) { // vMK:
   upsertKeyValue(headers, "Access-Control-Allow-Origin", ["*"])
   upsertKeyValue(headers, "Access-Control-Allow-Headers", ["*"])
   if (isRendererUrl(value, true)) upsertKeyValue(headers, documentPolicyHeader, [jsCallStacksDocumentPolicy])
@@ -412,7 +412,7 @@ function updateZoom(win: BrowserWindow) {
   win.webContents.send("zoom-factor-changed", win.webContents.getZoomFactor())
 }
 
-function upsertKeyValue(obj: Record<string, any>, keyToChange: string, value: any) {
+function upsertKeyValue(obj: Record<string, unknown>, keyToChange: string, value: any) { // vMK:
   const keyToChangeLower = keyToChange.toLowerCase()
   for (const key of Object.keys(obj)) {
     if (key.toLowerCase() === keyToChangeLower) {

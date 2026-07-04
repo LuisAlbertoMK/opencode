@@ -15,7 +15,7 @@ import { filesystem } from "./effect/layer-node-platform"
 export namespace FSUtil {
   export class FileSystemError extends Schema.TaggedErrorClass<FileSystemError>()("FileSystemError", {
     method: Schema.String,
-    cause: Schema.optional(Schema.Defect()),
+    cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
   }) {}
 
   export type Error = PlatformError | FileSystemError

@@ -8,26 +8,27 @@
 
 | Paquete | Versión | Upstream Status | Criticalidad |
 |---------|---------|-----------------|--------------|
-| `@npmcli/agent` | 4.0.2 | No (fix trivial, v5.0.2 disponible) | Baja |
+| `@npmcli/agent` | 4.0.2 | No (fix trivial, v5.0.2 sin el fix) | Baja |
 | `@silvia-odwyer/photon-node` | 0.3.4 | No (fix específico vMK binary) | **Alta** |
 | `@standard-community/standard-openapi` | 0.2.9 | No (edge case $ref externo) | Media |
-| `virtua` | 0.49.1 | Desconocido (0.49.2 disponible) | Media |
-| `@ai-sdk/xai` | 3.0.82 | Posible en 4.x (feature PDF) | **Alta** (blocking major upgrade) |
+| `virtua` | 0.49.2 | Sí — parche ya aplica a 0.49.2 (actualizado) | Media |
+| `@ai-sdk/xai` | ✅ 4.0.6 | Parche eliminado — PDF support nativo | ~~Alta~~ Hecho |
 | `gcp-metadata` | 8.1.2 | No (suppress warning legítimo) | Baja |
-| `pacote` | 21.5.0 | Desconocido (22.x disponible) | Media |
-| `@ai-sdk/google` | 3.0.73 | Posible en 4.x (fix empty contents) | **Alta** (blocking major upgrade) |
-| `@modelcontextprotocol/sdk` | 1.29.0 | Parcial en 1.30-beta | Media |
+| `pacote` | 21.5.0 | Sí — fix nativo en 22.0.0, bloqueado por arborist v9 | Media |
+| `@ai-sdk/google` | ✅ 4.0.8 | Parche eliminado — fix nativo en v4 | ~~Alta~~ Hecho |
+| `@modelcontextprotocol/sdk` | 1.29.0 | Parcial en 1.30-beta (aún no publicado) | Media |
+| `effect` | 4.0.0-beta.83 | Fix específico vMK (HttpApiSchema SSE identifier) | Baja |
 
 ---
 
 ## Detalle por Patch
 
-### 1. `@npmcli/agent@4.0.2`
+### 1. `@npmcli/agent@4.0.2` 🔴 No actualizable
 **Archivo**: `patches/@npmcli%2Fagent@4.0.2.patch`
 **Cambio**: `this.#proxy ? { url: this.#proxy }` → `this.#proxy ? { url: this.#proxy.toString() }`
 **Razón**: `this.#proxy` es un objeto `URL`, no string. Sin `.toString()` falla serialización.
-**Upstream**: Fix trivial (1 línea). v5.0.2 disponible. **Probar si aplica a v5**.
-**Acción**: Test patch en v5.0.2; si aplica, actualizar dependencia y remover patch.
+**Upstream**: **Fix NO está en v5.0.2**. Verificado: `lib/agents.js` en v5.0.2 aún tiene `return this.#proxy ? { url: this.#proxy } : {}` sin `.toString()`. v4.0.2→5.0.2 es major bump que no resuelve este fix.
+**Acción**: Mantener patch. No hay beneficio en actualizar a v5.x (solo agrega breaking changes sin resolver el fix).
 
 ---
 
@@ -54,24 +55,20 @@
 
 ---
 
-### 4. `virtua@0.49.1`
-**Archivo**: `patches/virtua@0.49.1.patch`
-**Cambio**: (Revisar patch completo — 3.7KB)
-**Razón**: Fix para virtual scrolling en TUI.
-**Upstream**: v0.49.2 disponible (patch version). **Test si patch aplica limpio**.
-**Acción**: Intentar actualizar a 0.49.2 y verificar si patch sigue necesario.
+### 4. `virtua@0.49.2` ✅ Actualizado
+**Archivo**: `patches/virtua@0.49.2.patch`
+**Cambio**: Fix para virtual scrolling en TUI (3.7KB patch).
+**Razón**: Comportamiento de scroll virtual necesario para el renderizado TUI.
+**Upstream**: v0.49.2 ya actualizado. El parche aplica limpio a 0.49.2.
+**Acción**: Mantener. Si hay v0.50+, testear si patch sigue necesario.
 
 ---
 
-### 5. `@ai-sdk/xai@3.0.82` ⭐ **BLOQUEA MAJOR UPGRADE**
-**Archivo**: `patches/@ai-sdk%2Fxai@3.0.82.patch`
-**Cambio**: Añade soporte para `application/pdf` en `convertToXaiResponsesInput` — maneja `input_file` con `file_url`, `file_id`, `file_data`, `filename`.
-**Razón**: xAI Responses API soporta PDFs. Sin patch, lanza `UnsupportedFunctionalityError`.
-**Upstream**: v4.0.8 disponible (major). **Verificar si PDF support ya incluido en v4**.
-**Acción**: 
-1. Revisar changelog @ai-sdk/xai v4.x para feature PDF
-2. Si sí → remover patch y actualizar a 4.x
-3. Si no → decidir: mantener 3.x + patch, o forkar @ai-sdk/xai
+### 5. `@ai-sdk/xai@3.0.82` ✅ ACTUALIZADO a v4.0.6
+**Archivo**: ~~`patches/@ai-sdk%2Fxai@3.0.82.patch`~~ (ELIMINADO)
+**Cambio del patch**: Añadía soporte `application/pdf` en `convertToXaiResponsesInput`.
+**Upstream**: v4.0.6 incluye PDF support nativo (detección `.pdf` en URI + `"application/pdf"` en mediaType). `createXai()` preservado. API de provider cambió: `responses()` → `languageModel()`.
+**Acción**: ✅ Actualizado. Patch removido. Código migrado (`responses()` → `languageModel()` en `xai.ts`). Typecheck + build + 7/7 TUI tests pasan.
 
 ---
 
@@ -84,26 +81,27 @@
 
 ---
 
-### 7. `pacote@21.5.0`
+### 7. `pacote@21.5.0` 🔴 Bloqueado (arborist v9)
 **Archivo**: `patches/pacote@21.5.0.patch`
 **Cambio**: Mejora fallback de tarball a git clone:
 - Antes: solo si error constructor name matchea `/^Http/`
 - Después: si `statusCode >= 400` O error code matchea `/^TAR_/`
 **Razón**: Maneja caso donde proveedor hosted devuelve HTML sign-in page con HTTP 200 (no error HTTP, pero tarball inválido).
-**Upstream**: v22.0.0 disponible. **Test si patch aplica o ya está fixed**.
-**Acción**: Test en v22.x; actualizar si posible.
+**Upstream**: ✅ **Fix nativo en v22.0.0**. Verificado: `lib/git.js` en pacote@22.0.0 ya incluye:
+```javascript
+if ((typeof er.statusCode === 'number' && er.statusCode >= 400) ||
+    /^TAR_/.test(er.code)) {
+  return this.#clone(handler, false)
+```
+**Acción**: No se puede actualizar a 22.0.0 porque `@npmcli/arborist@9.4.0` requiere `^21.0.2`. Arborist 10.x (pre-release) podría permitirlo. Re-evaluar cuando arborist 10.x estable esté disponible.
 
 ---
 
-### 8. `@ai-sdk/google@3.0.73` ⭐ **BLOQUEA MAJOR UPGRADE**
-**Archivo**: `patches/@ai-sdk%2Fgoogle@3.0.73.patch`
-**Cambio**: En `convertToGoogleGenerativeAIMessages`, si último `contents` tiene `parts.length === 0`, hacer `pop()`.
-**Razón**: Gemini rechaza model entries con `parts` vacío. El filter previo elimina partes vacías pero deja array vacío.
-**Upstream**: v4.0.8 disponible. **Verificar si fixed en v4**.
-**Acción**: 
-1. Revisar changelog @ai-sdk/google v4.x
-2. Si fixed → remover patch y actualizar
-3. Si no → mismo dilema que xai
+### 8. `@ai-sdk/google@3.0.73` ✅ ACTUALIZADO a v4.0.8
+**Archivo**: ~~`patches/@ai-sdk%2Fgoogle@3.0.73.patch`~~ (ELIMINADO)
+**Cambio del patch**: Fix `parts.length === 0` pop en `convertToGoogleGenerativeAIMessages`.
+**Upstream**: v4.0.8. `createGoogleGenerativeAI` preservado como alias de `createGoogle`. API de content parts reescrita genéricamente.
+**Acción**: ✅ Actualizado. Patch removido. No requiere cambios de API en consumidor (`createGoogleGenerativeAI` funciona igual). Typecheck + build + 7/7 TUI tests pasan.
 
 ---
 
@@ -121,22 +119,12 @@
 
 ---
 
-## Plan de Acción Priorizado
-
-### Inmediato (Esta semana)
-- [ ] Test `@npmcli/agent` patch en v5.0.2
-- [ ] Test `virtua` patch en v0.49.2
-- [ ] Test `pacote` patch en v22.x
-
-### Corto plazo (Próximo ciclo)
-- [ ] Verificar `@ai-sdk/xai` v4.x PDF support
-- [ ] Verificar `@ai-sdk/google` v4.x empty parts fix
-- [ ] Crear `docs/operations/patches-rationale.md` (este archivo)
-- [ ] Añadir CI check: `bun install --dry-run` + verify patches apply
-
-### Mediano plazo
-- [ ] Monitorear `@modelcontextprotocol/sdk` v1.30 release
-- [ ] Evaluar forks internos para xai/google si no upstreaman features
+### 10. `effect@4.0.0-beta.83`
+**Archivo**: `patches/effect@4.0.0-beta.83.patch`
+**Cambio**: En `HttpApiSchema.js`, reemplaza `Schema.fromJsonString(options.data)` por `sseDataJsonSchema(options.data)` — función helper que verifica si el schema tiene identifier y, de ser así, agrega `identifier: "${identifier}Stream"` al schema wrapper SSE.
+**Razón**: Sin el patch, SSE streaming response schemas colisionan en OpenAPI — el schema wrapper `fromJsonString` hereda el identifier del schema interno, causando duplicados. Ej: `ChatCompletion` aparece dos veces (una como response directa, otra como SSE stream wrapper).
+**Upstream**: Fix específico vMK. Effect team podría tener approach diferente.
+**Acción**: Mantener. Re-evaluar al actualizar Effect (próximo beta).
 
 ---
 
@@ -147,3 +135,34 @@
 Ejemplo: `@ai-sdk%2Fxai@3.0.82.patch` → scope=`@ai-sdk`, name=`xai`, version=`3.0.82`
 
 **Regla**: Siempre incluir versión en filename para tracking.
+
+---
+
+## Plan de Acción Priorizado
+
+### ✅ Completado (2026-07-03)
+- [x] Verificar `virtua` patch: ya en 0.49.2, doc actualizado
+- [x] Verificar `pacote@22.0.0`: fix nativo confirmado, bloqueado por arborist v9
+- [x] Verificar `@npmcli/agent@5.0.2`: fix NO está en v5, upgrade sin beneficio
+- [x] Verificar `@ai-sdk/xai@4.0.6`: PDF support nativo, API reescrita → **MIGRADO**
+- [x] Verificar `@ai-sdk/google@4.0.8`: API reescrita, requiere migración → **MIGRADO**
+- [x] Documentar `effect@4.0.0-beta.83` patch (SSE identifier collision fix)
+- [x] **AI SDK v4 upgrade**: @ai-sdk/xai 3.0.82 → 4.0.6, @ai-sdk/google 3.0.73 → 4.0.8
+- [x] **API fix**: `responses()` → `languageModel()` en xai.ts + openai.ts
+- [x] **Parches removidos**: 2 patches eliminados, typecheck + build + 7/7 TUI tests OK
+
+### ⚠️ Orphan: `effect@4.0.0-beta.83.patch`
+El archivo `patches/effect@4.0.0-beta.83.patch` existe en disco pero NO está referenciado en `package.json` → `patchedDependencies`. Bun 1.3.14 no lo aplica automáticamente. Posibles causas:
+- La instalación de effect via `catalog:` puede manejar patches diferente
+- Podría estar aplicado via `bun.lock` directamente
+- O es un remanente de una versión anterior
+
+**Acción**: Verificar si el fix de SSE identifier collision sigue siendo necesario en effect@4.0.0-beta.83. Si sí, referenciarlo en `patchedDependencies`. Si no, eliminar el archivo.
+
+### Corto plazo
+- [x] Añadir CI check: `scripts/vmk-patch-check.ps1` — verifica parches + `bun install --dry-run`
+
+### Mediano plazo
+- [ ] Monitorear `@npmcli/arborist` v10.x stable (desbloquearía pacote@22)
+- [ ] Monitorear `@modelcontextprotocol/sdk` v1.30 release
+- [ ] Evaluar forks internos para xai/google si no upstreaman features

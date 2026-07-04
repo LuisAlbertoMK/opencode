@@ -12,7 +12,7 @@ export class Local extends Schema.Class<Local>("ConfigV2.MCP.Local")({
   environment: Schema.Record(Schema.String, Schema.String).pipe(Schema.optional),
   disabled: Schema.Boolean.pipe(Schema.optional),
   timeout: PositiveInt.pipe(Schema.optional),
-  truncateLimit: PositiveInt.pipe(Schema.optional).annotate({
+  truncateLimit: PositiveInt.pipe(Schema.optional).annotate({ // vMK: per-server truncation limit for MCP tool output
     description:
       "Maximum output size in bytes for tool results from this server. Results exceeding this limit will be truncated. Overrides the global tool_output.max_bytes.",
   }),
@@ -33,7 +33,7 @@ export class Remote extends Schema.Class<Remote>("ConfigV2.MCP.Remote")({
   oauth: Schema.Union([OAuth, Schema.Literal(false)]).pipe(Schema.optional),
   disabled: Schema.Boolean.pipe(Schema.optional),
   timeout: PositiveInt.pipe(Schema.optional),
-  truncateLimit: PositiveInt.pipe(Schema.optional).annotate({
+  truncateLimit: PositiveInt.pipe(Schema.optional).annotate({ // vMK: per-server truncation limit for MCP tool output
     description:
       "Maximum output size in bytes for tool results from this server. Results exceeding this limit will be truncated. Overrides the global tool_output.max_bytes.",
   }),

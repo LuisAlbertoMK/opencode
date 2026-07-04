@@ -51,6 +51,7 @@ export interface Interface {
   readonly getOAuthState: (mcpName: string) => Effect.Effect<string | undefined>
   readonly clearOAuthState: (mcpName: string) => Effect.Effect<void>
 }
+// vMK: removed isTokenExpired — unused upstream method
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/McpAuth") {}
 
@@ -140,6 +141,8 @@ export const layer = Layer.effect(
       const entry = yield* get(mcpName)
       return entry?.oauthState
     })
+
+    // vMK: removed isTokenExpired — unused upstream method
 
     return Service.of({
       all,

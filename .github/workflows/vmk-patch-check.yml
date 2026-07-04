@@ -1,0 +1,38 @@
+# vMK Patch Integrity Check — Verify all patches apply correctly
+# Triggers: push/PR to vMK-dev, manual dispatch
+#
+# vMK: Fork-specific patch verification. Checks that every entry in
+# patchedDependencies has a matching file and runs bun install --dry-run
+# to catch stale or conflicting patches before they break builds.
+
+name: vmk-patch-check
+
+on:
+  push:
+    branches: [vMK-dev]
+  pull_request:
+    branches: [vMK-dev]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify patch integrity
+        run: bun run scripts/vmk-patch-check.ps1
+        shell: pwsh

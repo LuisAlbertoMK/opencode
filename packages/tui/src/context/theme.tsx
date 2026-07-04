@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion (store.themes.opencode!)
 import { CliRenderEvents, SyntaxStyle, type TerminalColors } from "@opentui/core"
 import { useRenderer } from "@opentui/solid"
 import {

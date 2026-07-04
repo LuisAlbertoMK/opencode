@@ -1,3 +1,4 @@
+// vMK: LSP status — bullet icons with a11y labels, non-null assertions
 import { TextAttributes } from "@opentui/core"
 import { fileURLToPath } from "bun"
 import { useTheme } from "../context/theme"

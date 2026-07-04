@@ -398,10 +398,11 @@ export const getUsage = (input: { model: Provider.Model; usage: Usage; metadata?
         // google-vertex-anthropic returns metadata under "vertex" key
         // (AnthropicMessagesLanguageModel custom provider key from 'vertex.anthropic.messages')
         input.metadata?.["vertex"]?.["cacheCreationInputTokens"] ??
-        // @ts-expect-error
-        input.metadata?.["bedrock"]?.["usage"]?.["cacheWriteInputTokens"] ??
-        // @ts-expect-error
-        input.metadata?.["venice"]?.["usage"]?.["cacheCreationInputTokens"] ??
+        // vMK: cast unknown metadata values to avoid @ts-expect-error
+        (input.metadata?.["bedrock"] as { usage?: { cacheWriteInputTokens?: number } } | undefined)
+          ?.usage?.cacheWriteInputTokens ??
+        (input.metadata?.["venice"] as { usage?: { cacheCreationInputTokens?: number } } | undefined)
+          ?.usage?.cacheCreationInputTokens ??
         0,
     ),
   )

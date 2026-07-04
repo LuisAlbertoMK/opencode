@@ -80,7 +80,7 @@ export const Definitions = {
   sidebar_toggle: keybind("<leader>b", "Toggle sidebar"),
   scrollbar_toggle: keybind("none", "Toggle session scrollbar"),
   status_view: keybind("<leader>s", "View status"),
-  debug_view: keybind("none", "View debug info"),
+  debug_view: keybind("none", "View debug info"), // vMK: add debug_view keybinding
 
   session_export: keybind("<leader>x", "Export session to editor"),
   session_copy: keybind("none", "Copy session transcript"),

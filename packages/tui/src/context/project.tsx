@@ -72,7 +72,7 @@ export const { use: useProject, provider: ProjectProvider } = createSimpleContex
         setStore("workspace", "status", event.payload.properties.workspaceID, event.payload.properties.status)
       }
     })
-    onCleanup(unsubProjectEvent)
+    onCleanup(unsubProjectEvent) // vMK: event subscription uses onCleanup
 
     return {
       data: store,

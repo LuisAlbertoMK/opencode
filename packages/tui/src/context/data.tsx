@@ -491,7 +491,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
           break
       }
     })
-    onCleanup(unsubEvent)
+    onCleanup(unsubEvent) // vMK: event subscription uses onCleanup instead of custom cleanup
 
     const result = {
       session: {

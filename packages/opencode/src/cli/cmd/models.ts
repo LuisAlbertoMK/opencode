@@ -53,6 +53,7 @@ export const ModelsCommand = effectCmd({
       return
     }
 
+    // vMK: models command uses database map directly instead of provider list
     const ids = Object.keys(database).sort((a, b) => {
       const aIsOpencode = a.startsWith("opencode")
       const bIsOpencode = b.startsWith("opencode")

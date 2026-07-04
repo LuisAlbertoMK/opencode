@@ -310,7 +310,7 @@ export const layer = Layer.effect(
           callID: part.callID,
           extra: { bypassAgentCheck: true, promptOps },
           messages: msgs,
-          metadata: (val: { title?: string; metadata?: Record<string, any> }) =>
+          metadata: (val: { title?: string; metadata?: Record<string, unknown> }) => // vMK:
             Effect.gen(function* () {
               part = yield* sessions.updatePart({
                 ...part,

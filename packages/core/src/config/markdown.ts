@@ -1,10 +1,13 @@
 export * as ConfigMarkdown from "./markdown"
 
+import { inspect } from "node:util"
 import matter from "gray-matter"
 export function parse(content: string) {
   try {
     return matter(content)
-  } catch {
+  } catch (e) {
+    // vMK: log parse error before retry with sanitized content
+    console.warn("ConfigMarkdown.parse failed, retrying with sanitized content:", inspect(e))
     return matter(sanitize(content))
   }
 }
@@ -12,7 +15,9 @@ export function parse(content: string) {
 export function parseOption(content: string) {
   try {
     return parse(content)
-  } catch {
+  } catch (e) {
+    // vMK: log parse failure before returning undefined
+    console.warn("ConfigMarkdown.parseOption failed, returning undefined:", inspect(e))
     return undefined
   }
 }

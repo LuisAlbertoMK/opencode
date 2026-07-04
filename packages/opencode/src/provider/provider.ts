@@ -117,7 +117,7 @@ type BundledSDK = {
   messages?: (modelId: string) => LanguageModelV3
 }
 
-const BUNDLED_PROVIDERS: Record<string, () => Promise<(opts: any) => BundledSDK>> = {
+const BUNDLED_PROVIDERS: Record<string, () => Promise<(opts: Record<string, unknown>) => BundledSDK>> = { // vMK:
   "@ai-sdk/amazon-bedrock": () => import("@ai-sdk/amazon-bedrock").then((m) => m.createAmazonBedrock),
   "@ai-sdk/amazon-bedrock/mantle": () => import("@ai-sdk/amazon-bedrock/mantle").then((m) => m.createBedrockMantle),
   "@ai-sdk/anthropic": () => import("@ai-sdk/anthropic").then((m) => m.createAnthropic),
@@ -146,14 +146,14 @@ const BUNDLED_PROVIDERS: Record<string, () => Promise<(opts: any) => BundledSDK>
   "venice-ai-sdk-provider": () => import("venice-ai-sdk-provider").then((m) => m.createVenice),
 }
 
-type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>, model?: Model) => Promise<any>
-type CustomVarsLoader = (options: Record<string, any>) => Record<string, string>
+type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, unknown>, model?: Model) => Promise<any> // vMK:
+type CustomVarsLoader = (options: Record<string, unknown>) => Record<string, string> // vMK:
 type CustomDiscoverModels = () => Promise<Record<string, Model>>
 type CustomLoader = (provider: Info) => Effect.Effect<{
   autoload: boolean
   getModel?: CustomModelLoader
   vars?: CustomVarsLoader
-  options?: Record<string, any>
+  options?: Record<string, unknown> // vMK:
   discoverModels?: CustomDiscoverModels
 }>
 
@@ -215,7 +215,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     openai: () =>
       Effect.succeed({
         autoload: false,
-        async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
+        async getModel(sdk: any, modelID: string, _options?: Record<string, unknown>) { // vMK:
           return sdk.responses(modelID)
         },
         options: { headerTimeout: OPENAI_HEADER_TIMEOUT_DEFAULT },
@@ -223,7 +223,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     xai: () =>
       Effect.succeed({
         autoload: false,
-        async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
+        async getModel(sdk: any, modelID: string, _options?: Record<string, unknown>) { // vMK:
           return sdk.responses(modelID)
         },
         options: {},
@@ -231,7 +231,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
     "github-copilot": () =>
       Effect.succeed({
         autoload: false,
-        async getModel(sdk: any, modelID: string, _options?: Record<string, any>, model?: Model) {
+        async getModel(sdk: any, modelID: string, _options?: Record<string, unknown>, model?: Model) { // vMK:
           if (sdk.responses === undefined && sdk.chat === undefined) return sdk.languageModel(modelID)
           if (model && "endpoint" in model.api) {
             if (model.api.endpoint === "responses" && sdk.responses) return sdk.responses(modelID)
@@ -267,7 +267,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
 
       return {
         autoload: false,
-        async getModel(sdk: any, modelID: string, options?: Record<string, any>) {
+        async getModel(sdk: any, modelID: string, options?: Record<string, unknown>) { // vMK:
           return selectAzureLanguageModel(sdk, modelID, Boolean(options?.["useCompletionUrls"]))
         },
         options: {
@@ -287,7 +287,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       const resourceName = yield* dep.get("AZURE_COGNITIVE_SERVICES_RESOURCE_NAME")
       return {
         autoload: false,
-        async getModel(sdk: any, modelID: string, options?: Record<string, any>) {
+        async getModel(sdk: any, modelID: string, options?: Record<string, unknown>) { // vMK:
           return selectAzureLanguageModel(sdk, modelID, Boolean(options?.["useCompletionUrls"]))
         },
         options: {
@@ -341,7 +341,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
 
       const { fromNodeProviderChain } = yield* Effect.promise(() => import("@aws-sdk/credential-providers"))
 
-      const providerOptions: Record<string, any> = {
+      const providerOptions: Record<string, unknown> = { // vMK:
         region: defaultRegion,
       }
 
@@ -363,10 +363,10 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       return {
         autoload: true,
         options: providerOptions,
-        vars(options: Record<string, any>) {
+        vars(options: Record<string, unknown>) { // vMK:
           return { AWS_REGION: options.region ?? defaultRegion }
         },
-        async getModel(sdk: any, modelID: string, options?: Record<string, any>, model?: Model) {
+        async getModel(sdk: any, modelID: string, options?: Record<string, unknown>, model?: Model) { // vMK:
           if (model?.api.npm === "@ai-sdk/amazon-bedrock/mantle") return selectBedrockMantleLanguageModel(sdk, modelID)
 
           // Skip region prefixing if model already has a cross-region inference profile prefix
@@ -528,7 +528,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
       if (!autoload) return { autoload: false }
       return {
         autoload: true,
-        vars(_options: Record<string, any>) {
+        vars(_options: Record<string, unknown>) { // vMK:
           const endpoint = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`
           return {
             ...(project && { GOOGLE_VERTEX_PROJECT: project }),
@@ -650,7 +650,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           aiGatewayHeaders,
           featureFlags,
         },
-        async getModel(sdk: any, modelID: string, options?: Record<string, any>) {
+        async getModel(sdk: any, modelID: string, options?: Record<string, unknown>) { // vMK:
           if (modelID.startsWith("duo-workflow-")) {
             const workflowRef = typeof options?.workflowRef === "string" ? options.workflowRef : undefined
             // Use the static mapping if it exists, otherwise use duo-workflow with selectedModelRef
@@ -846,7 +846,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
 
       return {
         autoload: true,
-        async getModel(_sdk: any, modelID: string, _options?: Record<string, any>) {
+        async getModel(_sdk: any, modelID: string, _options?: Record<string, unknown>) { // vMK:
           // Model IDs use Unified API format: provider/model (e.g., "anthropic/claude-sonnet-4-5")
           return aigateway(unified(modelID))
         },
@@ -903,7 +903,7 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
 
       const baseURL = `https://${account}.snowflakecomputing.com/api/v2/cortex/v1`
 
-      const options: Record<string, any> = { baseURL, apiKey: token }
+      const options: Record<string, unknown> = { baseURL, apiKey: token } // vMK:
 
       // Only skip provider-level fetch when the token is from OAuth with no override.
       // For OAuth tokens, the plugin auth loader's combined fetch handles
@@ -1562,7 +1562,7 @@ export const layer = Layer.effect(
         delete options["chunkTimeout"]
         delete options["headerTimeout"]
 
-        options["fetch"] = async (input: any, init?: BunFetchRequestInit) => {
+        options["fetch"] = async (input: RequestInfo | URL, init?: BunFetchRequestInit) => { // vMK:
           const fetchFn = customFetch ?? fetch
           const opts = init ?? {}
           const chunkAbortCtl = typeof chunkTimeout === "number" && chunkTimeout > 0 ? new AbortController() : undefined

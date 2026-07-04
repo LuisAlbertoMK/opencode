@@ -3,6 +3,69 @@
 > Entry point for project-level agent rules. Sections are modularized for
 > maintainability — see each file below for full details.
 
+<!-- vMK: anchored-summary -->
+## Anchored Summary — opencode-vMK
+
+> **Última actualización**: 2026-07-03 | **Cycle**: 11 | **Estado**: Fase 2.2 completada (core export map)
+
+### Goal
+Ejecutar Fase 2.2 del plan de implementación: reemplazar `./*` wildcard con exports explícitos en `@opencode-ai/core`.
+
+### Next up
+Fase 2.3 — Consolidar tool pairs (grep, question).
+
+### Key Accomplishments
+- ✅ **Fase 0 Quick Wins** — Parche effect resuelto, build fix, PARALLEL_API_KEY+CLOUDFLARE a SHELL_ENV_DENY, logging a catch vacíos
+- ✅ **Fase 1 Seguridad** — OPENCODE_AUTH_CONTENT eliminado de env vars (#1 riesgo 🔴), 16 patrones peligrosos bloqueados en bash.ts (deny-list Fase 1.3)
+- ✅ **Fase 4.1: Linter configurado** — oxlint activado con categorías `correctness`, `suspicious`, `pedantic` + reglas custom (7655 warnings, 0 errors)
+- ✅ **Fase 4.2: `any` elimination** — ~50 instancias de `Record<string, any>` → `Record<string, unknown>` (43 directas + 24 nested), 4 callback params, 3 type annotations fijados. `sdk: any` postergado (requiere refactor mayor). `as any` casts (14) documentados como legítimos (system boundaries)
+- ✅ **Fase 4.3: `@ts-expect-error`** — 2 fijados (llm.ts, session.ts), 9 legítimos/legacy mantenidos
+- ✅ **Fase 4.4: CI gate** — `bun run lint` agregado como Fase 5 en `.husky/pre-push`
+- ✅ **Fase 1.1: OPENCODE_AUTH_CONTENT eliminado** — workspace.ts ya no expone API keys a subprocesos
+- ✅ **Fase 1.3: Shell deny-list** — `isDangerous()` con 16 patrones en bash.ts
+- ✅ **Fase 2 PoC: Shared utility extracted** — `packages/core/src/tool/shared/glob-utils.ts` (resolveGlobDirectory + formatGlobOutput)
+- ✅ **Fase 2.2: Core export map** — Reemplazado `"./*": "./src/*.ts"` con 28 wildcards por subdirectorio + 49 entradas explícitas para archivos toplevel. Build y lint OK. Typecheck pre-existentes sin cambios.
+- ✅ **Audit docs consolidated** — `docs/00-resumen/auditoria-completa.md` con todos los hallazgos (~194 items)
+- ✅ **Plan de Fase 2** — `docs/10-plan/fase2-consolidacion-tools.md` con 11 tool pairs priorizados
+
+### Estado actual
+| Fase | Estado | Notas |
+|------|--------|-------|
+| Fase 0 | ✅ Completa | Quick Wins + parche effect |
+| Fase 1 | 🟡 Parcial | 1.1 ✅ 1.2 🔲 1.3 ✅ 1.4 🔲 1.5 WNF |
+| Fase 2 | 🟡 En progreso | PoC shared utility ✅ — export map ✅ — consolidation 🔲 |
+| Fase 3 | 🔲 Pendiente | Migración V2 |
+| Fase 4 | ✅ Completa | Linter + any |
+| Fase 5 | 🔲 Pendiente | Virtual scrolling |
+| Fase 6 | 🔲 Pendiente | UI/UX |
+| Fase 7 | 🔲 Pendiente | Upstream sync |
+| Fase 8 | 🔲 Pendiente | Dependencias |
+
+### Next Steps
+- 🔲 **Fase 1.2**: Migrar cifrado auth.json a OS keychain (5-7 días)
+- 🔲 **Fase 1.4**: Tree-sitter AST shell parsing (3-5 días)
+- 🔲 **Fase 2.3**: Consolidar tool pairs (grep, question) — 2-4h c/u
+- 🔲 **Fase 5**: Virtual scrolling en TUI (3-5 días)
+
+### Documentación de auditoría (docs/)
+| Archivo | Contenido |
+|---------|-----------|
+| `00-resumen/auditoria-completa.md` | ✅ Consolidación maestra (~194 hallazgos, 8 dimensiones) |
+| `00-resumen-ejecutivo.md` | Resumen ejecutivo con matriz de severidad |
+| `01-gaps/funcional.md` | Gaps funcionales (40 hallazgos) |
+| `02-seguridad/` | Seguridad (3 reportes: auth, secretos, inyección) |
+| `03-optimizacion/` | Arquitectura + dependencias |
+| `04-ui-ux/` | UI/UX (consistencia visual + flujos) |
+| `05-rendimiento/` | Performance backend |
+| `08-revision-lineal/` | Código muerto + linting |
+| `09-otros/` | Recomendaciones extra |
+| `10-plan-implementacion.md` | Plan general (8 fases, 60-95 días-hombre) |
+| `10-plan/index.md` | Índice del plan |
+| `10-plan/fase2-consolidacion-tools.md` | Plan detallado Fase 2 |
+| `ciclos/cycle11-20260703.md` | Reporte de este ciclo |
+
+---
+
 ## Project Quick Reference
 
 - To regenerate the JavaScript SDK, run `./packages/sdk/js/script/build.ts`.

@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions
 import { blend, contrastRatio, hexToOklch, shift } from "../color"
 import { mapV2Semantics } from "./mapping"
 import type { ColorValue, HexColor, V2ColorValue } from "../types"

@@ -57,7 +57,7 @@ export type ToolFileContent = typeof ToolFileContent.Type
 export const ToolContent = Schema.Union([ToolTextContent, ToolFileContent]).pipe(Schema.toTaggedUnion("type"))
 export type ToolContent = Schema.Schema.Type<typeof ToolContent>
 
-// ToolResultValue schema definition (before Object.assign to avoid circular reference)
+// ToolResultValue schema definition (before Object.assign to avoid circular reference) // vMK: extracted to avoid circular ref in Schema.is
 const ToolResultValueSchema = Schema.Union([
   Schema.Struct({
     type: Schema.Literal("json"),
@@ -77,12 +77,12 @@ const ToolResultValueSchema = Schema.Union([
   }),
 ]).annotate({ identifier: "LLM.ToolResult" })
 
-// Type guard using Schema.is to avoid circular reference
+// Type guard using Schema.is to avoid circular reference // vMK: Schema.is-based guard replaces manual isRecord check
 const isToolResultValue = (value: unknown): value is Schema.Schema.Type<typeof ToolResultValueSchema> =>
   Schema.is(ToolResultValueSchema)(value)
 
 export const ToolResultValue = Object.assign(
-  ToolResultValueSchema,
+  ToolResultValueSchema, // vMK: Object.assign with schema to avoid circular ref
   {
     is: isToolResultValue,
     make: (value: unknown, type: Schema.Schema.Type<typeof ToolResultValueSchema>["type"] = "json"): Schema.Schema.Type<typeof ToolResultValueSchema> => {

@@ -2,6 +2,7 @@ import { Filesystem } from "@/util/filesystem"
 import { FrontmatterError } from "@opencode-ai/core/v1/config/error"
 import { ConfigMarkdown as ConfigMarkdownCore } from "@opencode-ai/core/config/markdown"
 
+// vMK: made regex exports private (no external consumers); removed fallbackSanitization
 const FILE_REGEX = /(?<![\w`])@(\.?[^\s`,.]*(?:\.[^\s`,.]+)*)/g
 const SHELL_REGEX = /!`([^`]+)`/g
 

@@ -9,6 +9,7 @@ const MODES: readonly ThinkingMode[] = ["show", "hide"] as const
 // title block: "**Inspecting PR workflow**\n\n<body>". Treat that first block,
 // or a complete title still awaiting its body while streaming, as disclosure
 // metadata so the TUI can style its header independently from the markdown body.
+// vMK: strict non-null assertions on regex match result
 export function reasoningSummary(text: string) {
   const content = text.trim()
   const match = content.match(/^\*\*([^*\n]+)\*\*(?:\r?\n\r?\n|$)/)

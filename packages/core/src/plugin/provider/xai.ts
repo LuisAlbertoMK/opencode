@@ -13,7 +13,7 @@ export const XAIPlugin = PluginV2.define({
       }),
       "aisdk.language": Effect.fn("XAIPlugin.aisdkLanguage")(function* (evt) {
         if (evt.model.providerID !== ProviderV2.ID.make("xai")) return
-        evt.language = evt.sdk.responses(evt.model.api.id)
+        evt.language = evt.sdk.languageModel(evt.model.api.id) // vMK: AI SDK v4 — responses() → languageModel()
       }),
     }
   }),

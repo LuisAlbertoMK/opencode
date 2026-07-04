@@ -35,19 +35,19 @@ export class Org extends Schema.Class<Org>("Org")({
 
 export class AccountRepoError extends Schema.TaggedErrorClass<AccountRepoError>()("AccountRepoError", {
   message: Schema.String,
-  cause: Schema.optional(Schema.Defect()),
+  cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {}
 
 export class AccountServiceError extends Schema.TaggedErrorClass<AccountServiceError>()("AccountServiceError", {
   message: Schema.String,
-  cause: Schema.optional(Schema.Defect()),
+  cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {}
 
 export class AccountTransportError extends Schema.TaggedErrorClass<AccountTransportError>()("AccountTransportError", {
   method: Schema.String,
   url: Schema.String,
   description: Schema.optional(Schema.String),
-  cause: Schema.optional(Schema.Defect()),
+  cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {
   static fromHttpClientError(error: HttpClientError.TransportError): AccountTransportError {
     return new AccountTransportError({
@@ -94,7 +94,7 @@ export class PollExpired extends Schema.TaggedClass<PollExpired>()("PollExpired"
 export class PollDenied extends Schema.TaggedClass<PollDenied>()("PollDenied", {}) {}
 
 export class PollError extends Schema.TaggedClass<PollError>()("PollError", {
-  cause: Schema.Defect(),
+  cause: Schema.Defect(), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {}
 
 export const PollResult = Schema.Union([PollSuccess, PollPending, PollSlow, PollExpired, PollDenied, PollError])

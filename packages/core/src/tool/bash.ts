@@ -78,6 +78,33 @@ const isTimeout = (error: AppProcess.AppProcessError) =>
  * Minimal V2 core shell boundary. Keep parity debt visible without pulling the
  * legacy shell runtime into core.
  */
+// vMK: deny-list for obviously dangerous shell commands (Fase 1.3)
+const DANGER_PATTERNS: Array<{ pattern: RegExp; hint: string }> = [
+  { pattern: /\brm\s+(-rf?|--recursive)\s+\/\s*(\||;|$|&&)/, hint: "rm -rf / (recursive root delete)" },
+  { pattern: /\brm\s+(-rf?|--recursive)\s+--no-preserve-root\b/, hint: "rm --no-preserve-root (bypasses safety)" },
+  { pattern: /:\(\)\s*\{[^}]*\};\s*:/, hint: "fork bomb" },
+  { pattern: /\bdestroy\s+-?all\s+(data|disk|volume)\b/i, hint: "data destruction" },
+  { pattern: /\bdd\s+if=\/dev\/zero\s+of=\//, hint: "disk fill with dd" },
+  { pattern: /\b(>|>>)\s*\/dev\/(sda|sdb|sdc|nvme|hda|zero|random)\b/, hint: "direct block device write" },
+  { pattern: /\bmkfs\b/, hint: "filesystem creation" },
+  { pattern: /\bmkswap\b/, hint: "swap creation" },
+  { pattern: /\bshutdown\s/, hint: "system shutdown" },
+  { pattern: /\breboot\s/, hint: "system reboot" },
+  { pattern: /\bhalt\s/, hint: "system halt" },
+  { pattern: /\bpoweroff\s/, hint: "system poweroff" },
+  { pattern: /\bchmod\s+-R\s+777\s+\//, hint: "recursive world-writable root" },
+  { pattern: /\bchown\s+-R\s+\/\s/, hint: "recursive root ownership change" },
+  { pattern: /\bwget\s+--(mirror|recursive)\s+\S+\s*\|\s*(ba|z)?sh\b/, hint: "pipe remote script to shell" },
+  { pattern: /\bcurl\s+\S+\s*\|\s*(ba|z)?sh\b/, hint: "pipe remote script to shell" },
+]
+const isDangerous = (command: string): string | undefined => {
+  const stripped = command.replace(/#.*$/gm, "").trim()
+  for (const { pattern, hint } of DANGER_PATTERNS) {
+    if (pattern.test(stripped)) return hint
+  }
+  return undefined
+}
+
 // TODO: Port tree-sitter bash / PowerShell parser-based approval reduction.
 // TODO: Port BashArity reusable command-prefix approvals.
 // TODO: Replace token-based command-argument external-directory advisories with parser-based detection.
@@ -124,6 +151,13 @@ export const layer = Layer.effectDiscard(
           toModelOutput: ({ output }) => [{ type: "text", text: modelOutput(output) }],
           execute: (input, context) =>
             Effect.gen(function* () {
+              // vMK: deny-list check before any side effects (Fase 1.3)
+              const danger = isDangerous(input.command)
+              if (danger) {
+                return yield* Effect.fail(
+                  new Error(`Command blocked by safety deny-list: ${danger}. Command: ${input.command.slice(0, 200)}`),
+                )
+              }
               const source = {
                 type: "tool" as const,
                 messageID: context.assistantMessageID,

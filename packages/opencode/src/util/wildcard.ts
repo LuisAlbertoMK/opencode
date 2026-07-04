@@ -19,7 +19,7 @@ export function match(str: string, pattern: string) {
   return new RegExp("^" + escaped + "$", flags).test(str)
 }
 
-export function all(input: string, patterns: Record<string, any>) {
+export function all(input: string, patterns: Record<string, unknown>) { // vMK:
   const sorted = pipe(patterns, Object.entries, sortBy([([key]) => key.length, "asc"], [([key]) => key, "asc"]))
   let result = undefined
   for (const [pattern, value] of sorted) {
@@ -31,7 +31,7 @@ export function all(input: string, patterns: Record<string, any>) {
   return result
 }
 
-export function allStructured(input: { head: string; tail: string[] }, patterns: Record<string, any>) {
+export function allStructured(input: { head: string; tail: string[] }, patterns: Record<string, unknown>) { // vMK:
   const sorted = pipe(patterns, Object.entries, sortBy([([key]) => key.length, "asc"], [([key]) => key, "asc"]))
   let result = undefined
   for (const [pattern, value] of sorted) {

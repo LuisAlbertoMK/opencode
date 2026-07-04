@@ -8,6 +8,7 @@ import { Location } from "../location"
 import { Ripgrep } from "../ripgrep"
 import { RelativePath } from "../schema"
 import { PermissionV2 } from "../permission"
+import { resolveGlobDirectory } from "./shared/glob-utils"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
 
@@ -70,7 +71,7 @@ export const layer = Layer.effectDiscard(
                 agent: context.agent,
                 source: { type: "tool", messageID: context.assistantMessageID, callID: context.toolCallID },
               })
-              const cwd = path.resolve(location.directory, input.path ?? ".")
+              const cwd = resolveGlobDirectory(location.directory, input.path) // vMK: shared utility
               return yield* ripgrep
                 .glob({
                   cwd,

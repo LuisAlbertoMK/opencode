@@ -133,7 +133,7 @@ export const experimentalHandlers = HttpApiBuilder.group(InstanceHttpApi, "exper
 
     const session = Effect.fn("ExperimentalHttpApi.session")(function* (ctx: { query: typeof SessionListQuery.Type }) {
       const limit = ctx.query.limit ?? 100
-      const directory = ctx.query.directory ? yield* InstanceState.directory : undefined
+      const directory = ctx.query.directory ? yield* InstanceState.directory : undefined // vMK: resolve directory via InstanceState
       const all = yield* sessions.listGlobal({
         directory,
         roots: ctx.query.roots,

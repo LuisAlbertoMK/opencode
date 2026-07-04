@@ -1,3 +1,4 @@
+// vMK: strict non-null assertions on range/array access
 import { createEffect, createSignal, onCleanup, onMount } from "solid-js"
 import { makeEventListener } from "@solid-primitives/event-listener"
 import { createResizeObserver } from "@solid-primitives/resize-observer"

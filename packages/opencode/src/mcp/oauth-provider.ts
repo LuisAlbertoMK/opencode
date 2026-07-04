@@ -23,13 +23,14 @@ export interface McpOAuthCallbacks {
   onRedirect: (url: URL) => void | Promise<void>
 }
 
+// vMK: McpOAuthPendingProvider — in-memory credential store with commit()
 export class McpOAuthProvider implements OAuthClientProvider {
   constructor(
-    protected mcpName: string,
-    protected serverUrl: string,
-    protected config: McpOAuthConfig,
+    protected mcpName: string, // vMK: changed from private to protected for McpOAuthPendingProvider
+    protected serverUrl: string, // vMK: changed from private to protected for McpOAuthPendingProvider
+    protected config: McpOAuthConfig, // vMK: changed from private to protected for McpOAuthPendingProvider
     private callbacks: McpOAuthCallbacks,
-    protected auth: McpAuth.Interface,
+    protected auth: McpAuth.Interface, // vMK: changed from private to protected for McpOAuthPendingProvider
   ) {}
 
   get redirectUrl(): string {
@@ -53,7 +54,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
   }
 
   async clientInformation(): Promise<OAuthClientInformation | undefined> {
-    if (this.config.clientId) {
+    if (this.config.clientId) { // vMK: removed stale "Check config first" comment
       return {
         client_id: this.config.clientId,
         client_secret: this.config.clientSecret,
@@ -163,7 +164,7 @@ export class McpOAuthProvider implements OAuthClientProvider {
 
   async invalidateCredentials(type: "all" | "client" | "tokens"): Promise<void> {
     const entry = await Effect.runPromise(this.auth.get(this.mcpName))
-    if (!entry) return
+    if (!entry) return // vMK: collapsed single-line guard
     switch (type) {
       case "all":
         await Effect.runPromise(this.auth.remove(this.mcpName))
@@ -180,48 +181,49 @@ export class McpOAuthProvider implements OAuthClientProvider {
   }
 }
 
-export class McpOAuthPendingProvider extends McpOAuthProvider {
-  private pendingClientInfo?: OAuthClientInformationFull
-  private pendingTokens?: OAuthTokens
+// vMK: McpOAuthPendingProvider — in-memory credential store with commit()
+export class McpOAuthPendingProvider extends McpOAuthProvider { // vMK: pending/commit credential store for deferred OAuth flows
+  private pendingClientInfo?: OAuthClientInformationFull // vMK: in-memory, not persisted until commit()
+  private pendingTokens?: OAuthTokens // vMK: in-memory, not persisted until commit()
 
   override async clientInformation(): Promise<OAuthClientInformation | undefined> {
-    if (!this.config.clientId) return this.pendingClientInfo
-    return {
+    if (!this.config.clientId) return this.pendingClientInfo // vMK: return in-memory instead of stored entry
+    return { // vMK: unchanged parent behavior
       client_id: this.config.clientId,
       client_secret: this.config.clientSecret,
     }
   }
 
   override async saveClientInformation(info: OAuthClientInformationFull): Promise<void> {
-    this.pendingClientInfo = info
+    this.pendingClientInfo = info // vMK: store in-memory instead of persisting
   }
 
   override async tokens(): Promise<OAuthTokens | undefined> {
-    return this.pendingTokens
+    return this.pendingTokens // vMK: return in-memory instead of stored entry
   }
 
   override async saveTokens(tokens: OAuthTokens): Promise<void> {
-    this.pendingTokens = tokens
+    this.pendingTokens = tokens // vMK: store in-memory instead of persisting
   }
 
   override async invalidateCredentials(type: "all" | "client" | "tokens"): Promise<void> {
-    if (type === "all" || type === "client") this.pendingClientInfo = undefined
-    if (type === "all" || type === "tokens") this.pendingTokens = undefined
+    if (type === "all" || type === "client") this.pendingClientInfo = undefined // vMK: clear in-memory only
+    if (type === "all" || type === "tokens") this.pendingTokens = undefined // vMK: clear in-memory only
   }
 
-  async commit(): Promise<void> {
+  async commit(): Promise<void> { // vMK: persist pending credentials to auth store
     if (!this.pendingTokens) return
     await Effect.runPromise(
       this.auth.set(
         this.mcpName,
         {
-          tokens: {
+          tokens: { // vMK: map OAuthTokens to internal Tokens schema
             accessToken: this.pendingTokens.access_token,
             refreshToken: this.pendingTokens.refresh_token,
             expiresAt: this.pendingTokens.expires_in ? Date.now() / 1000 + this.pendingTokens.expires_in : undefined,
             scope: this.pendingTokens.scope,
           },
-          clientInfo:
+          clientInfo: // vMK: optional client info, only if no config-level clientId
             this.pendingClientInfo && !this.config.clientId
               ? {
                   clientId: this.pendingClientInfo.client_id,

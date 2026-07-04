@@ -45,7 +45,7 @@ export interface Handle {
     toolCallID: string,
     output: {
       title: string
-      metadata: Record<string, any>
+      metadata: Record<string, unknown> // vMK:
       output: string
       attachments?: SessionV1.FilePart[]
     },
@@ -204,7 +204,7 @@ export const layer = Layer.effect(
         toolCallID: string,
         output: {
           title: string
-          metadata: Record<string, any>
+          metadata: Record<string, unknown> // vMK:
           output: string
           attachments?: SessionV1.FilePart[]
         },
@@ -349,7 +349,7 @@ export const layer = Layer.effect(
 
       const toolResultOutput = (
         value: Extract<StreamEvent, { type: "tool-result" }>,
-      ): { title: string; metadata: Record<string, any>; output: string; attachments?: SessionV1.FilePart[] } => {
+      ): { title: string; metadata: Record<string, unknown>; output: string; attachments?: SessionV1.FilePart[] } => { // vMK:
         if (isRecord(value.result.value) && typeof value.result.value.output === "string") {
           return {
             title: typeof value.result.value.title === "string" ? value.result.value.title : value.name,

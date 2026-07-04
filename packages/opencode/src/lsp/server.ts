@@ -25,7 +25,7 @@ const output = (cmd: string[], opts: Process.RunOptions = {}) => Process.text(cm
 
 export interface Handle {
   process: ChildProcessWithoutNullStreams
-  initialization?: Record<string, any>
+  initialization?: Record<string, unknown> // vMK:
 }
 
 type RootFunction = (file: string, ctx: InstanceContext) => Promise<string | undefined>

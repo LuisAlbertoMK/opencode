@@ -291,11 +291,11 @@ function normalizeMessages(
     const field = model.capabilities.interleaved.field
     return msgs.map((msg) => {
       if (msg.role === "assistant" && Array.isArray(msg.content)) {
-        const reasoningParts = msg.content.filter((part: any) => part.type === "reasoning")
-        const reasoningText = reasoningParts.map((part: any) => part.text).join("")
+        const reasoningParts = msg.content.filter((part) => typeof part === "object" && part !== null && (part as { type: string }).type === "reasoning") // vMK:
+        const reasoningText = reasoningParts.map((part) => (part as { text?: string }).text ?? "").join("") // vMK:
 
         // Filter out reasoning parts from content
-        const filteredContent = msg.content.filter((part: any) => part.type !== "reasoning")
+        const filteredContent = msg.content.filter((part) => typeof part === "object" && part !== null && (part as { type: string }).type !== "reasoning") // vMK:
 
         // Include reasoning_content | reasoning_details directly on the message for all assistant messages.
         // Always set the field even when empty — some providers (e.g. DeepSeek) may return empty
@@ -411,7 +411,7 @@ function unsupportedParts(msgs: ModelMessage[], model: Provider.Model): ModelMes
 
 function mapProviderOptions(
   msgs: ModelMessage[],
-  transform: (options: Record<string, any> | undefined) => Record<string, any> | undefined,
+  transform: (options: Record<string, unknown> | undefined) => Record<string, unknown> | undefined, // vMK:
 ) {
   return msgs.map((msg) => {
     if (!Array.isArray(msg.content)) return { ...msg, providerOptions: transform(msg.providerOptions) }
@@ -447,7 +447,7 @@ export function message(msgs: ModelMessage[], model: Provider.Model, options: Re
   // Remap providerOptions keys from stored providerID to expected SDK key
   const key = sdkKey(model.api.npm)
   if (key && key !== model.providerID) {
-    const remap = (opts: Record<string, any> | undefined) => {
+    const remap = (opts: Record<string, unknown> | undefined) => { // vMK:
       if (!opts) return opts
       if (!(model.providerID in opts)) return opts
       const result = { ...opts }
@@ -640,15 +640,15 @@ function googleThinkingBudgetMax(apiId: string) {
 
 // SAP's Zod schema drops unknown top-level keys; reasoning controls survive
 // only via `modelParams` (catchall), forwarded verbatim by the SAP SDKs.
-function wrapInSapModelParams(variants: Record<string, Record<string, any>>): Record<string, Record<string, any>> {
-  const result: Record<string, Record<string, any>> = {}
+function wrapInSapModelParams(variants: Record<string, Record<string, unknown>>): Record<string, Record<string, unknown>> { // vMK:
+  const result: Record<string, Record<string, unknown>> = {} // vMK:
   for (const [k, v] of Object.entries(variants)) {
     result[k] = { modelParams: v }
   }
   return result
 }
 
-function googleThinkingVariants(model: Provider.Model): Record<string, Record<string, any>> {
+function googleThinkingVariants(model: Provider.Model): Record<string, Record<string, unknown>> { // vMK:
   const id = model.api.id.toLowerCase()
   if (id.includes("2.5")) {
     return {
@@ -658,14 +658,14 @@ function googleThinkingVariants(model: Provider.Model): Record<string, Record<st
       },
     }
   }
-  const result: Record<string, Record<string, any>> = {}
+  const result: Record<string, Record<string, unknown>> = {} // vMK:
   for (const effort of googleThinkingLevelEfforts(id)) {
     result[effort] = { thinkingConfig: { includeThoughts: true, thinkingLevel: effort } }
   }
   return result
 }
 
-export function variants(model: Provider.Model): Record<string, Record<string, any>> {
+export function variants(model: Provider.Model): Record<string, Record<string, unknown>> { // vMK:
   if (!model.capabilities.reasoning) return {}
 
   const id = model.id.toLowerCase()
@@ -714,7 +714,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       const openrouterEfforts = model.api.id.startsWith("openai/") || id.includes("gpt")
         ? openaiCompatibleReasoningEfforts(model.api.id)
         : WIDELY_SUPPORTED_EFFORTS
-      const result: Record<string, Record<string, any>> = {}
+      const result: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of openrouterEfforts) {
         result[effort] = { reasoning: { effort } }
       }
@@ -731,7 +731,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       const gatewayEfforts = model.api.id.startsWith("openai/")
         ? openaiReasoningEfforts(model.api.id, model.release_date)
         : WIDELY_SUPPORTED_EFFORTS
-      const result: Record<string, Record<string, any>> = {}
+      const result: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of gatewayEfforts) {
         result[effort] = { reasoningEffort: effort }
       }
@@ -741,7 +741,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/gateway":
       if (model.id.includes("anthropic")) {
         if (adaptiveEfforts) {
-          const gatewayAnthropicResult: Record<string, Record<string, any>> = {}
+          const gatewayAnthropicResult: Record<string, Record<string, unknown>> = {} // vMK:
           for (const effort of adaptiveEfforts) {
             gatewayAnthropicResult[effort] = {
               thinking: {
@@ -788,13 +788,13 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
             },
           }
         }
-        const googleResult: Record<string, Record<string, any>> = {}
+        const googleResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of ["low", "high"]) {
           googleResult[effort] = { includeThoughts: true, thinkingLevel: effort }
         }
         return googleResult
       }
-      const defaultGatewayResult: Record<string, Record<string, any>> = {}
+      const defaultGatewayResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of openaiCompatibleReasoningEfforts(model.api.id)) {
         defaultGatewayResult[effort] = { reasoningEffort: effort }
       }
@@ -806,7 +806,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         return {}
       }
       if (model.id.includes("claude")) {
-        const claudeResult: Record<string, Record<string, any>> = {}
+        const claudeResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of WIDELY_SUPPORTED_EFFORTS) {
           claudeResult[effort] = { reasoningEffort: effort }
         }
@@ -819,7 +819,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         if (id.includes("gpt-5") && model.release_date >= "2025-12-04") arr.push("xhigh")
         return arr
       })
-      const copilotResult: Record<string, Record<string, any>> = {}
+      const copilotResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of copilotEfforts) {
         copilotResult[effort] = {
           reasoningEffort: effort,
@@ -841,7 +841,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     // https://docs.venice.ai/overview/guides/reasoning-models#reasoning-effort
     case "@ai-sdk/openai-compatible":
       if (model.api.id.toLowerCase().includes("north-mini-code")) {
-        const northResult: Record<string, Record<string, any>> = {}
+        const northResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of ["none", "high"]) {
           northResult[effort] = { reasoningEffort: effort }
         }
@@ -851,7 +851,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       if (model.api.id.toLowerCase().includes("deepseek-v4")) {
         compatibleEfforts.push("max")
       }
-      const compatibleResult: Record<string, Record<string, any>> = {}
+      const compatibleResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of compatibleEfforts) {
         compatibleResult[effort] = { reasoningEffort: effort }
       }
@@ -860,7 +860,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/azure":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/azure
       if (id === "o1-mini") return {}
-      const azureResult: Record<string, Record<string, any>> = {}
+      const azureResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of openaiReasoningEfforts(id, model.release_date)) {
         azureResult[effort] = {
           reasoningEffort: effort,
@@ -873,7 +873,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/openai": {
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/openai
       const oaiEfforts = openaiReasoningEfforts(model.api.id, model.release_date)
-      const oaiResult: Record<string, Record<string, any>> = {}
+      const oaiResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of oaiEfforts) {
         oaiResult[effort] = {
           reasoningEffort: effort,
@@ -897,7 +897,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
           // Efforts currently supported are: low, medium, high
           adaptedEfforts = adaptedEfforts.filter((v) => v !== "max" && v !== "xhigh")
         }
-        const anthropicResult: Record<string, Record<string, any>> = {}
+        const anthropicResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of adaptedEfforts) {
           anthropicResult[effort] = {
             thinking: {
@@ -911,7 +911,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       }
 
       if (["opus-4-5", "opus-4.5"].some((v) => model.api.id.includes(v))) {
-        const opusResult: Record<string, Record<string, any>> = {}
+        const opusResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of WIDELY_SUPPORTED_EFFORTS) {
           opusResult[effort] = { effort }
         }
@@ -936,7 +936,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/amazon-bedrock":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/amazon-bedrock
       if (adaptiveEfforts) {
-        const bedrockAdaptiveResult: Record<string, Record<string, any>> = {}
+        const bedrockAdaptiveResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of adaptiveEfforts) {
           bedrockAdaptiveResult[effort] = {
             reasoningConfig: {
@@ -967,7 +967,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       }
 
       // For Amazon Nova models, use reasoningConfig with maxReasoningEffort
-      const novaResult: Record<string, Record<string, any>> = {}
+      const novaResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of WIDELY_SUPPORTED_EFFORTS) {
         novaResult[effort] = {
           reasoningConfig: {
@@ -1008,7 +1008,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
     case "@ai-sdk/groq":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/groq
       const groqEffort = ["none", ...WIDELY_SUPPORTED_EFFORTS]
-      const groqResult: Record<string, Record<string, any>> = {}
+      const groqResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of groqEffort) {
         groqResult[effort] = { reasoningEffort: effort }
       }
@@ -1023,7 +1023,7 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
         if (adaptiveEfforts) {
           // Bedrock adaptive splits `effort` out into `output_config` (vs Anthropic
           // native which inlines it). Opus 4.7+ flipped `display` default to "omitted".
-          const sapAnthropicResult: Record<string, Record<string, any>> = {}
+          const sapAnthropicResult: Record<string, Record<string, unknown>> = {} // vMK:
           for (const effort of adaptiveEfforts) {
             sapAnthropicResult[effort] = {
               thinking: { type: "adaptive", ...(adaptiveThinkingOmitted ? { display: "summarized" } : {}) },
@@ -1042,13 +1042,13 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
       }
       if (id.includes("gpt") || /\bo[1-9]/.test(id)) {
         const sapOaiEfforts = openaiReasoningEfforts(id, model.release_date)
-        const sapOaiResult: Record<string, Record<string, any>> = {}
+        const sapOaiResult: Record<string, Record<string, unknown>> = {} // vMK:
         for (const effort of sapOaiEfforts) {
           sapOaiResult[effort] = { reasoning_effort: effort }
         }
         return wrapInSapModelParams(sapOaiResult)
       }
-      const sapDefaultResult: Record<string, Record<string, any>> = {}
+      const sapDefaultResult: Record<string, Record<string, unknown>> = {} // vMK:
       for (const effort of ["low", "medium", "high"]) {
         sapDefaultResult[effort] = { reasoning_effort: effort }
       }
@@ -1061,9 +1061,9 @@ export function variants(model: Provider.Model): Record<string, Record<string, a
 export function options(input: {
   model: Provider.Model
   sessionID: string
-  providerOptions?: Record<string, any>
-}): Record<string, any> {
-  const result: Record<string, any> = {}
+  providerOptions?: Record<string, unknown> // vMK:
+}): Record<string, unknown> { // vMK:
+  const result: Record<string, unknown> = {} // vMK:
 
   if (
     input.model.api.npm === "@ai-sdk/google-vertex/anthropic" ||
@@ -1259,13 +1259,13 @@ export function providerOptions(model: Provider.Model, options: Record<string, u
     const rawSlug = i > 0 ? model.api.id.slice(0, i) : undefined
     const slug = rawSlug ? (SLUG_OVERRIDES[rawSlug] ?? rawSlug) : undefined
     const gateway = options.gateway
-    const rest: Record<string, any> = {}
+    const rest: Record<string, unknown> = {} // vMK:
     for (const [k, v] of Object.entries(options)) {
       if (k !== "gateway") rest[k] = v
     }
     const has = Object.keys(rest).length > 0
 
-    const result: Record<string, any> = {}
+    const result: Record<string, unknown> = {} // vMK:
     if (gateway !== undefined) result.gateway = gateway
 
     if (has) {
@@ -1442,7 +1442,7 @@ export function schema(model: Provider.Model, schema: JSONSchema7): JSONSchema7 
 
   // Convert integer enums to string enums for Google/Gemini
   if (model.providerID === "google" || model.api.id.includes("gemini")) {
-    const isPlainObject = (node: unknown): node is Record<string, any> =>
+    const isPlainObject = (node: unknown): node is Record<string, unknown> => // vMK:
       typeof node === "object" && node !== null && !Array.isArray(node)
     const hasCombiner = (node: unknown) =>
       isPlainObject(node) && (Array.isArray(node.anyOf) || Array.isArray(node.oneOf) || Array.isArray(node.allOf))
@@ -1476,7 +1476,7 @@ export function schema(model: Provider.Model, schema: JSONSchema7): JSONSchema7 
         return obj.map(sanitizeGemini)
       }
 
-      const result: any = {}
+      const result: Record<string, unknown> = {} // vMK:
       for (const [key, value] of Object.entries(obj)) {
         if (key === "enum" && Array.isArray(value)) {
           // Convert all enum values to strings
@@ -1512,7 +1512,7 @@ export function schema(model: Provider.Model, schema: JSONSchema7): JSONSchema7 
 
       // Filter required array to only include fields that exist in properties
       if (result.type === "object" && result.properties && Array.isArray(result.required)) {
-        result.required = result.required.filter((field: any) => field in result.properties)
+        result.required = result.required.filter((field: string) => field in result.properties) // vMK:
       }
 
       if (result.type === "array" && !hasCombiner(result)) {

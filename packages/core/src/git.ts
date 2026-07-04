@@ -32,14 +32,14 @@ export class WorktreeError extends Schema.TaggedErrorClass<WorktreeError>()("Git
   message: Schema.String,
   directory: Schema.optional(AbsolutePath),
   forceRequired: Schema.optional(Schema.Boolean),
-  cause: Schema.optional(Schema.Defect()),
+  cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {}
 
 export class PatchError extends Schema.TaggedErrorClass<PatchError>()("Git.PatchError", {
   operation: Schema.Literals(["capture", "apply", "reset"]),
   directory: AbsolutePath,
   message: Schema.String,
-  cause: Schema.optional(Schema.Defect()),
+  cause: Schema.optional(Schema.Defect()), // vMK: Schema v2 migration — Schema.Defect() is now a function call
 }) {}
 
 export interface Interface {

@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion
 import { execFile, spawn } from "node:child_process"
 import { readFile, rm } from "node:fs/promises"
 import { platform, release, tmpdir } from "node:os"

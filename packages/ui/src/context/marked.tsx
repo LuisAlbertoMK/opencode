@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion on escapedCode
 import { marked } from "marked"
 import markedKatex from "marked-katex-extension"
 import markedShiki from "marked-shiki"

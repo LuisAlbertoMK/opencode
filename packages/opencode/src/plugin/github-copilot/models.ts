@@ -72,8 +72,9 @@ type SelectableItem = Item & {
     }
   }
 }
+// vMK: CopilotEndpoint — endpoint routing from supported_endpoints
 type CopilotEndpoint = "chat" | "responses" | "messages"
-type CopilotModel = Omit<Model, "api"> & {
+type CopilotModel = Omit<Model, "api"> & { // vMK: CopilotModel with optional endpoint
   api: Model["api"] & { endpoint?: CopilotEndpoint }
 }
 const decodeModels = Schema.decodeUnknownSync(schema)

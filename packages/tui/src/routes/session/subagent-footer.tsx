@@ -1,3 +1,4 @@
+// vMK: strict non-null assertion on match result
 import { createMemo, createSignal, Show } from "solid-js"
 import { useRouteData } from "../../context/route"
 import { useSync } from "../../context/sync"

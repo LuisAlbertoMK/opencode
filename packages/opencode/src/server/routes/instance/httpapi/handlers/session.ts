@@ -62,9 +62,9 @@ export const sessionHandlers = HttpApiBuilder.group(InstanceHttpApi, "session", 
     const scope = yield* Scope.Scope
 
     const list = Effect.fn("SessionHttpApi.list")(function* (ctx: { query: typeof ListQuery.Type }) {
-      const directory = ctx.query.directory ? yield* InstanceState.directory : undefined
+      const directory = ctx.query.directory ? yield* InstanceState.directory : undefined // vMK: resolve directory via InstanceState
       return yield* session.list({
-        directory: ctx.query.scope === "project" ? undefined : directory,
+        directory: ctx.query.scope === "project" ? undefined : directory, // vMK: use resolved directory
         scope: ctx.query.scope,
         path: ctx.query.path,
         roots: ctx.query.roots,

@@ -3,6 +3,7 @@ import { ModelV2 } from "../../model"
 import { ProviderV2 } from "../../provider"
 import type { PluginContext } from "@opencode-ai/plugin/v2/effect"
 
+// vMK: PluginV2 migration — Effect-generator pattern, aisdk/language endpoint routing
 export const GithubCopilotPlugin = {
   id: "github-copilot",
   effect: Effect.fn(function* (ctx: PluginContext) {
