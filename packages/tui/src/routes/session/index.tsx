@@ -47,6 +47,7 @@ import { openEditor } from "../../editor"
 import { useDialog } from "../../ui/dialog"
 import { DialogAlert } from "../../ui/dialog-alert"
 import { TodoItem } from "../../component/todo-item"
+import { VirtualList } from "../../component/virtual-list" // vMK: virtual scrolling
 import { DialogMessage } from "./dialog-message"
 import type { PromptInfo } from "../../component/prompt/history"
 import { DialogConfirm } from "../../ui/dialog-confirm"
@@ -1230,8 +1231,12 @@ export function Session() {
                 flexGrow={1}
                 scrollAcceleration={scrollAcceleration()}
               >
-                <box height={1} />
-                <For each={messages()}>
+                <VirtualList
+                  items={messages}
+                  scrollRef={() => scroll}
+                  estimatedHeight={3}
+                  overscan={3}
+                >
                   {(message, index) => {
                     // Read revert once per outer render, not N times per message
                     const msgRevert = revertValue()
@@ -1246,7 +1251,7 @@ export function Session() {
                       </Match>
                       <Match when={message.role === "user"}>
                         <UserMessage
-                          index={index()}
+                          index={index}
                           onMouseUp={() => {
                             if (renderer.getSelection()?.getSelectedText()) return
                             dialog.replace(() => (
@@ -1272,7 +1277,7 @@ export function Session() {
                     </Switch>
                   )}
                 }
-                </For>
+                </VirtualList>
               </scrollbox>
               <box flexShrink={0}>
                 <Show when={permissions().length > 0}>

@@ -6,13 +6,13 @@
 <!-- vMK: anchored-summary -->
 ## Anchored Summary — opencode-vMK
 
-> **Última actualización**: 2026-07-03 | **Cycle**: 11 | **Estado**: Fase 2.2 completada (core export map)
+> **Última actualización**: 2026-07-04 | **Cycle**: 11 | **Estado**: Fase 5.1 completada (VirtualList component)
 
 ### Goal
-Ejecutar Fase 2.2 del plan de implementación: reemplazar `./*` wildcard con exports explícitos en `@opencode-ai/core`.
+Ejecutar Fase 5 del plan de implementación: Virtual scrolling en TUI.
 
 ### Next up
-Fase 2.3 — Consolidar tool pairs (grep, question).
+Fase 5.2 — Integrar VirtualList en el componente de sesión y probar manualmente. Luego Fase 5.3 (height caching) o pasar a Fase 2.3 restante (webfetch, skill, edit, bash).
 
 ### Key Accomplishments
 - ✅ **Fase 0 Quick Wins** — Parche effect resuelto, build fix, PARALLEL_API_KEY+CLOUDFLARE a SHELL_ENV_DENY, logging a catch vacíos
@@ -25,6 +25,9 @@ Fase 2.3 — Consolidar tool pairs (grep, question).
 - ✅ **Fase 1.3: Shell deny-list** — `isDangerous()` con 16 patrones en bash.ts
 - ✅ **Fase 2 PoC: Shared utility extracted** — `packages/core/src/tool/shared/glob-utils.ts` (resolveGlobDirectory + formatGlobOutput)
 - ✅ **Fase 2.2: Core export map** — Reemplazado `"./*": "./src/*.ts"` con 28 wildcards por subdirectorio + 49 entradas explícitas para archivos toplevel. Build y lint OK. Typecheck pre-existentes sin cambios.
+- ✅ **Fase 2.3: grep consolidation** — `formatGrepOutput()` extraído a shared grep-utils.ts. V1 y V2 refactorizados (~18 líneas de duplicación eliminadas).
+- ✅ **Fase 2.3: question consolidation** — `formatQuestionOutput()` extraído a shared question-utils.ts. V1 y V2 refactorizados (~15 líneas de duplicación eliminadas).
+- ✅ **Fase 5.1: VirtualList component** — Creado `packages/tui/src/component/virtual-list.tsx`. Reduce overhead de SolidJS + Yoga layout renderizando solo ventana visible + overscan buffer (~3-5 items). Scroll tracking via polling a 10fps (sin eventos de scroll en opentui). Integrado en session component reemplazando `<For>`. Build y lint OK.
 - ✅ **Audit docs consolidated** — `docs/00-resumen/auditoria-completa.md` con todos los hallazgos (~194 items)
 - ✅ **Plan de Fase 2** — `docs/10-plan/fase2-consolidacion-tools.md` con 11 tool pairs priorizados
 
@@ -33,10 +36,10 @@ Fase 2.3 — Consolidar tool pairs (grep, question).
 |------|--------|-------|
 | Fase 0 | ✅ Completa | Quick Wins + parche effect |
 | Fase 1 | 🟡 Parcial | 1.1 ✅ 1.2 🔲 1.3 ✅ 1.4 🔲 1.5 WNF |
-| Fase 2 | 🟡 En progreso | PoC shared utility ✅ — export map ✅ — consolidation 🔲 |
+| Fase 2 | 🟡 En progreso | PoC shared utility ✅ — export map ✅ — consolidation 🔲 (grep+question✅) |
 | Fase 3 | 🔲 Pendiente | Migración V2 |
 | Fase 4 | ✅ Completa | Linter + any |
-| Fase 5 | 🔲 Pendiente | Virtual scrolling |
+| Fase 5 | 🟡 En progreso | VirtualList component implementado (Fase 5.1) — integrate session (Fase 5.2) + height caching (Fase 5.3) 🔲 |
 | Fase 6 | 🔲 Pendiente | UI/UX |
 | Fase 7 | 🔲 Pendiente | Upstream sync |
 | Fase 8 | 🔲 Pendiente | Dependencias |
@@ -44,8 +47,9 @@ Fase 2.3 — Consolidar tool pairs (grep, question).
 ### Next Steps
 - 🔲 **Fase 1.2**: Migrar cifrado auth.json a OS keychain (5-7 días)
 - 🔲 **Fase 1.4**: Tree-sitter AST shell parsing (3-5 días)
-- 🔲 **Fase 2.3**: Consolidar tool pairs (grep, question) — 2-4h c/u
-- 🔲 **Fase 5**: Virtual scrolling en TUI (3-5 días)
+- 🔲 **Fase 2.3**: Consolidar tool pairs (webfetch, skill, read) — 2-4h c/u
+- 🔲 **Fase 5**: Virtual scrolling en TUI (Fase 5.2: integration test, Fase 5.3: height caching) — 3-5 días
+- 🔲 **Fase 7**: Upstream sync
 
 ### Documentación de auditoría (docs/)
 | Archivo | Contenido |
