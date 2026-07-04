@@ -1,10 +1,15 @@
+// vMK: Refactored to use shared webfetch-utils (Fase 2.3 consolidation)
 import { Effect, Schema } from "effect"
 import { HttpClient, HttpClientRequest } from "effect/unstable/http"
-import { Parser } from "htmlparser2"
 import * as Tool from "./tool"
-import TurndownService from "turndown"
 import DESCRIPTION from "./webfetch.txt"
 import { isImageAttachment } from "@/util/media"
+import {
+  acceptHeader,
+  browserUserAgent,
+  convertHTMLToMarkdown,
+  extractTextFromHTML,
+} from "@opencode-ai/core/tool/shared/webfetch-utils" // vMK: shared utility
 
 const MAX_RESPONSE_SIZE = 5 * 1024 * 1024 // 5MB
 const DEFAULT_TIMEOUT = 30 * 1000 // 30 seconds
@@ -49,27 +54,9 @@ export const WebFetchTool = Tool.define(
 
           const timeout = Math.min((params.timeout ?? DEFAULT_TIMEOUT / 1000) * 1000, MAX_TIMEOUT)
 
-          // Build Accept header based on requested format with q parameters for fallbacks
-          let acceptHeader = "*/*"
-          switch (params.format) {
-            case "markdown":
-              acceptHeader = "text/markdown;q=1.0, text/x-markdown;q=0.9, text/plain;q=0.8, text/html;q=0.7, */*;q=0.1"
-              break
-            case "text":
-              acceptHeader = "text/plain;q=1.0, text/markdown;q=0.9, text/html;q=0.8, */*;q=0.1"
-              break
-            case "html":
-              acceptHeader =
-                "text/html;q=1.0, application/xhtml+xml;q=0.9, text/plain;q=0.8, text/markdown;q=0.7, */*;q=0.1"
-              break
-            default:
-              acceptHeader =
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
-          }
           const headers = {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-            Accept: acceptHeader,
+            "User-Agent": browserUserAgent,
+            Accept: acceptHeader(params.format),
             "Accept-Language": "en-US,en;q=0.9",
           }
 
@@ -154,39 +141,3 @@ export const WebFetchTool = Tool.define(
     }
   }),
 )
-
-function extractTextFromHTML(html: string) {
-  let text = ""
-  let skipDepth = 0
-
-  const parser = new Parser({
-    onopentag(name) {
-      if (skipDepth > 0 || ["script", "style", "noscript", "iframe", "object", "embed"].includes(name)) {
-        skipDepth++
-      }
-    },
-    ontext(input) {
-      if (skipDepth === 0) text += input
-    },
-    onclosetag() {
-      if (skipDepth > 0) skipDepth--
-    },
-  })
-
-  parser.write(html)
-  parser.end()
-
-  return text.trim()
-}
-
-function convertHTMLToMarkdown(html: string): string {
-  const turndownService = new TurndownService({
-    headingStyle: "atx",
-    hr: "---",
-    bulletListMarker: "-",
-    codeBlockStyle: "fenced",
-    emDelimiter: "*",
-  })
-  turndownService.remove(["script", "style", "meta", "link"])
-  return turndownService.turndown(html)
-}
