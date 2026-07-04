@@ -27,7 +27,8 @@ Fase 5.2 — Integrar VirtualList en el componente de sesión y probar manualmen
 - ✅ **Fase 2.2: Core export map** — Reemplazado `"./*": "./src/*.ts"` con 28 wildcards por subdirectorio + 49 entradas explícitas para archivos toplevel. Build y lint OK. Typecheck pre-existentes sin cambios.
 - ✅ **Fase 2.3: grep consolidation** — `formatGrepOutput()` extraído a shared grep-utils.ts. V1 y V2 refactorizados (~18 líneas de duplicación eliminadas).
 - ✅ **Fase 2.3: question consolidation** — `formatQuestionOutput()` extraído a shared question-utils.ts. V1 y V2 refactorizados (~15 líneas de duplicación eliminadas).
-- ✅ **Fase 5.1: VirtualList component** — Creado `packages/tui/src/component/virtual-list.tsx`. Reduce overhead de SolidJS + Yoga layout renderizando solo ventana visible + overscan buffer (~3-5 items). Scroll tracking via polling a 10fps (sin eventos de scroll en opentui). Integrado en session component reemplazando `<For>`. Build y lint OK.
+- ✅ **Fase 5.1: VirtualList component** — Creado `packages/tui/src/component/virtual-list.tsx`. Reduce overhead de SolidJS + Yoga layout renderizando solo ventana visible + overscan buffer (~3-5 items). Scroll tracking via polling a 10fps (sin eventos de scroll en opentui). Integrado en session component reemplazando `<For>`.
+- ✅ **Fase 5.3: Height caching** — VirtualList mide alturas reales de items post-Yoga mediante refs en el mismo ciclo de polling. Cache almacena altura por índice (Map<number, number>). Padding y range calculation usan alturas cacheadas con fallback a estimate. Build y lint OK.
 - ✅ **Audit docs consolidated** — `docs/00-resumen/auditoria-completa.md` con todos los hallazgos (~194 items)
 - ✅ **Plan de Fase 2** — `docs/10-plan/fase2-consolidacion-tools.md` con 11 tool pairs priorizados
 
