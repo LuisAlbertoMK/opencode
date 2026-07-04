@@ -37,7 +37,7 @@ Fase 5.2 — Integrar VirtualList en el componente de sesión y probar manualmen
 |------|--------|-------|
 | Fase 0 | ✅ Completa | Quick Wins + parche effect |
 | Fase 1 | 🟡 Parcial | 1.1 ✅ 1.2 🔲 1.3 ✅ 1.4 🔲 1.5 WNF |
-| Fase 2 | 🟡 En progreso | PoC shared utility ✅ — export map ✅ — consolidation 🔲 (grep+question✅) |
+| Fase 2 | 🟡 Parcial | PoC shared utility ✅ — export map ✅ — consolidation 🔲 (grep+question+webfetch+skill✅, read/bajas WNF) |
 | Fase 3 | 🔲 Pendiente | Migración V2 |
 | Fase 4 | ✅ Completa | Linter + any |
 | Fase 5 | 🟡 En progreso | VirtualList component implementado (Fase 5.1) — integrate session (Fase 5.2) + height caching (Fase 5.3) 🔲 |
