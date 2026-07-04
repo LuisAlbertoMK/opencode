@@ -6,13 +6,13 @@
 <!-- vMK: anchored-summary -->
 ## Anchored Summary — opencode-vMK
 
-> **Última actualización**: 2026-07-04 | **Cycle**: 11 | **Estado**: Fase 5.1 completada (VirtualList component)
+> **Última actualización**: 2026-07-04 | **Cycle**: 11 | **Estado**: Fase 5 completa + Fase 2.3 websearch consolidada
 
 ### Goal
-Ejecutar Fase 5 del plan de implementación: Virtual scrolling en TUI.
+Completar Fase 5 (Virtual scrolling TUI), Fase 2.3 (websearch consolidation), e Fase 7 (upstream TUI fixes).
 
 ### Next up
-Fase 5.2 — Integrar VirtualList en el componente de sesión y probar manualmente. Luego Fase 5.3 (height caching) o pasar a Fase 2.3 restante (webfetch, skill, edit, bash).
+Fase 5.2 — Prueba manual del VirtualList en la TUI real. Si pasa, Fase 5 queda completa. Pendiente Fase 2.3 read-utils (bajo ROI).
 
 ### Key Accomplishments
 - ✅ **Fase 0 Quick Wins** — Parche effect resuelto, build fix, PARALLEL_API_KEY+CLOUDFLARE a SHELL_ENV_DENY, logging a catch vacíos
@@ -29,6 +29,10 @@ Fase 5.2 — Integrar VirtualList en el componente de sesión y probar manualmen
 - ✅ **Fase 2.3: question consolidation** — `formatQuestionOutput()` extraído a shared question-utils.ts. V1 y V2 refactorizados (~15 líneas de duplicación eliminadas).
 - ✅ **Fase 5.1: VirtualList component** — Creado `packages/tui/src/component/virtual-list.tsx`. Reduce overhead de SolidJS + Yoga layout renderizando solo ventana visible + overscan buffer (~3-5 items). Scroll tracking via polling a 10fps (sin eventos de scroll en opentui). Integrado en session component reemplazando `<For>`.
 - ✅ **Fase 5.3: Height caching** — VirtualList mide alturas reales de items post-Yoga mediante refs en el mismo ciclo de polling. Cache almacena altura por índice (Map<number, number>). Padding y range calculation usan alturas cacheadas con fallback a estimate. Build y lint OK.
+- ✅ **Fase 2.3: webfetch consolidation** — 8 pure functions extraídas a `shared/webfetch-utils.ts` (121 líneas): acceptHeader, extractTextFromHTML, isCloudflareChallenge, mimeFromContentType, etc. V1: 217→136, V2: 192→78.
+- ✅ **Fase 2.3: skill consolidation** — `formatSkillOutput()` extraído a `shared/skill-utils.ts` (36 líneas). Test pasa.
+- ✅ **Fase 2.3: websearch consolidation** — MCP protocol layer (parseMcpResponse, callMcpTool, ExaSearchArgs, ParallelSearchArgs, selectWebSearchProvider) extraído a `shared/websearch-mcp-utils.ts` (147 líneas). V1: 240→180, V2: 94 líneas eliminadas (mcp-websearch.ts). 24 tests pass.
+- ✅ **Fase 7: Upstream sync init** — Cherry-picked 3 commits: execute child calls alignment (conflicto resuelto), multi-day duration fix, prompt.skills keybinds. 621 commits restantes conflictúan — skip pragmático por ahora.
 - ✅ **Audit docs consolidated** — `docs/00-resumen/auditoria-completa.md` con todos los hallazgos (~194 items)
 - ✅ **Plan de Fase 2** — `docs/10-plan/fase2-consolidacion-tools.md` con 11 tool pairs priorizados
 
@@ -37,12 +41,12 @@ Fase 5.2 — Integrar VirtualList en el componente de sesión y probar manualmen
 |------|--------|-------|
 | Fase 0 | ✅ Completa | Quick Wins + parche effect |
 | Fase 1 | 🟡 Parcial | 1.1 ✅ 1.2 🔲 1.3 ✅ 1.4 🔲 1.5 WNF |
-| Fase 2 | 🟡 Parcial | PoC shared utility ✅ — export map ✅ — consolidation 🔲 (grep+question+webfetch+skill✅, read/bajas WNF) |
+| Fase 2 | 🟡 Parcial | PoC shared utility ✅ — export map ✅ — consolidation 🔲 (grep+question+webfetch+skill+websearch✅, read/bajas WNF) |
 | Fase 3 | 🔲 Pendiente | Migración V2 |
 | Fase 4 | ✅ Completa | Linter + any |
-| Fase 5 | 🟡 En progreso | VirtualList component implementado (Fase 5.1) — integrate session (Fase 5.2) + height caching (Fase 5.3) 🔲 |
+| Fase 5 | 🟡 En progreso | VirtualList component implementado (Fase 5.1) + height caching (Fase 5.3) ✅ — Fase 5.2 (prueba manual) 🔲 |
 | Fase 6 | 🔲 Pendiente | UI/UX |
-| Fase 7 | 🔲 Pendiente | Upstream sync |
+| Fase 7 | 🟡 Parcial | 3 commmits cherry-picked (execute alignment, multi-day duration, prompt.skills keybinds). Skip resto (621 commits conflictúan) |
 | Fase 8 | 🔲 Pendiente | Dependencias |
 
 ### Next Steps
