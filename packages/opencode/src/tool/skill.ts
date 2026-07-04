@@ -1,10 +1,11 @@
+// vMK: Refactored to use shared skill-utils (Fase 2.3 consolidation)
 import path from "path"
-import { pathToFileURL } from "url"
 import { Effect, Schema } from "effect"
 import { Ripgrep } from "@opencode-ai/core/ripgrep"
 import { Skill } from "../skill"
 import * as Tool from "./tool"
 import DESCRIPTION from "./skill.txt"
+import { formatSkillOutput } from "@opencode-ai/core/tool/shared/skill-utils" // vMK: shared utility
 
 export const Parameters = Schema.Struct({
   name: Schema.String.annotate({ description: "The name of the skill from available_skills" }),
@@ -33,8 +34,9 @@ export const SkillTool = Tool.define(
           })
 
           const dir = path.dirname(info.location)
-          const base = pathToFileURL(dir).href
-          const files = yield* ripgrep.find({
+
+          // Files are resolved as absolute paths for consistent formatting
+          const rawFiles = yield* ripgrep.find({
             cwd: dir,
             pattern: "!**/SKILL.md",
             hidden: true,
@@ -42,24 +44,11 @@ export const SkillTool = Tool.define(
             signal: ctx.abort,
             limit: 10,
           })
+          const files = rawFiles.map((file) => path.resolve(dir, file.path))
 
           return {
             title: `Loaded skill: ${info.name}`,
-            output: [
-              `<skill_content name="${info.name}">`,
-              `# Skill: ${info.name}`,
-              "",
-              info.content.trim(),
-              "",
-              `Base directory for this skill: ${base}`,
-              "Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.",
-              "Note: file list is sampled.",
-              "",
-              "<skill_files>",
-              files.map((file) => `<file>${path.resolve(dir, file.path)}</file>`).join("\n"),
-              "</skill_files>",
-              "</skill_content>",
-            ].join("\n"),
+            output: formatSkillOutput(info.name, info.content, dir, files),
             metadata: {
               name: info.name,
               dir,

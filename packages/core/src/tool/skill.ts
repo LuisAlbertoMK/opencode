@@ -1,7 +1,7 @@
+// vMK: Refactored to use shared skill-utils (Fase 2.3 consolidation)
 export * as SkillTool from "./skill"
 
 import path from "path"
-import { pathToFileURL } from "url"
 import { ToolFailure } from "@opencode-ai/llm"
 import { Effect, Layer, Schema } from "effect"
 import { FSUtil } from "../fs-util"
@@ -10,6 +10,11 @@ import { SkillV2 } from "../skill"
 import { PermissionV2 } from "../permission"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
+import { formatSkillOutput } from "./shared/skill-utils" // vMK: shared utility
+
+// Backward-compat wrapper: toModelOutput(skill: SkillV2.Info, files)
+export const toModelOutput = (skill: SkillV2.Info, files: ReadonlyArray<string>) =>
+  formatSkillOutput(skill.name, skill.content, path.dirname(skill.location), files)
 
 export const name = "skill"
 const FILE_LIMIT = 10
@@ -31,25 +36,6 @@ export const description = [
   "",
   "The skill name must match one of the available skills in the system context.",
 ].join("\n")
-
-export const toModelOutput = (skill: SkillV2.Info, files: ReadonlyArray<string>) => {
-  const directory = path.dirname(skill.location)
-  return [
-    `<skill_content name="${skill.name}">`,
-    `# Skill: ${skill.name}`,
-    "",
-    skill.content.trim(),
-    "",
-    `Base directory for this skill: ${pathToFileURL(directory).href}`,
-    "Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.",
-    "Note: file list is sampled.",
-    "",
-    "<skill_files>",
-    ...files.map((file) => `<file>${file}</file>`),
-    "</skill_files>",
-    "</skill_content>",
-  ].join("\n")
-}
 
 const unableToLoad = (name: string, error?: unknown) =>
   new ToolFailure({ message: `Unable to load skill ${name}`, error })
@@ -94,7 +80,7 @@ export const layer = Layer.effectDiscard(
                 return {
                   name: skill.name,
                   directory,
-                  output: toModelOutput(skill, files),
+                  output: formatSkillOutput(skill.name, skill.content, directory, files),
                 }
               }).pipe(Effect.mapError((error) => unableToLoad(input.name, error)))
             }),
