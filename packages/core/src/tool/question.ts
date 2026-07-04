@@ -6,6 +6,7 @@ import { PermissionV2 } from "../permission"
 import { QuestionV2 } from "../question"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
+import { formatQuestionOutput } from "./shared/question-utils" // vMK: shared utility
 
 export const name = "question"
 
@@ -32,15 +33,7 @@ export type Output = typeof Output.Type
 export const toModelOutput = (
   questions: ReadonlyArray<QuestionV2.Prompt>,
   answers: ReadonlyArray<QuestionV2.Answer>,
-) => {
-  const formatted = questions
-    .map(
-      (question, index) =>
-        `"${question.question}"="${answers[index]?.length ? answers[index].join(", ") : "Unanswered"}"`,
-    )
-    .join(", ")
-  return `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.`
-}
+) => formatQuestionOutput(questions, answers)
 
 export const layer = Layer.effectDiscard(
   Effect.gen(function* () {

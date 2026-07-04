@@ -11,6 +11,7 @@ import { Ripgrep } from "../ripgrep"
 import { RelativePath } from "../schema"
 import { Tool } from "./tool"
 import { Tools } from "./tools"
+import { formatGrepOutput } from "./shared/grep-utils" // vMK: shared utility
 
 export const name = "grep"
 
@@ -30,22 +31,6 @@ export const Input = Schema.Struct({
 })
 
 export const Output = Schema.Array(FileSystem.Match)
-type ModelOutput = typeof Output.Encoded
-
-/** Format raw search matches into the familiar concise model output. */
-export const toModelOutput = (output: ModelOutput) => {
-  const lines = output.length === 0 ? ["No files found"] : [`Found ${output.length} matches`]
-  let current = ""
-  for (const match of output) {
-    if (current !== match.entry.path) {
-      if (current) lines.push("")
-      current = match.entry.path
-      lines.push(`${match.entry.path}:`)
-    }
-    lines.push(`  Line ${match.line}: ${match.text}`)
-  }
-  return lines.join("\n")
-}
 
 /** Grep leaf that defaults its filesystem root to the active Location. */
 export const layer = Layer.effectDiscard(
@@ -66,11 +51,14 @@ export const layer = Layer.effectDiscard(
           toModelOutput: ({ output }) => [
             {
               type: "text",
-              text: toModelOutput(
+              text: formatGrepOutput(
                 output.map((match) => ({
-                  ...match,
-                  entry: { ...match.entry, path: path.resolve(location.directory, match.entry.path) },
+                  path: path.resolve(location.directory, match.entry.path),
+                  line: match.line,
+                  text: match.text,
                 })),
+                output.length,
+                false,
               ),
             },
           ],

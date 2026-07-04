@@ -3,6 +3,7 @@ import { Effect, Schema } from "effect"
 import { InstanceState } from "@/effect/instance-state"
 import { FSUtil } from "@opencode-ai/core/fs-util"
 import { Ripgrep } from "@opencode-ai/core/ripgrep"
+import { formatGrepOutput } from "@opencode-ai/core/tool/shared/grep-utils" // vMK: shared utility
 import { assertExternalDirectoryEffect } from "./external-directory"
 import DESCRIPTION from "./grep.txt"
 import * as Tool from "./tool"
@@ -76,35 +77,12 @@ export const GrepTool = Tool.define(
 
           const limit = 100
           const truncated = rows.length === limit
-          const final = rows
-          if (final.length === 0) return empty
-
           const total = rows.length
-          const hasMore = truncated || result.length === limit
-          const output = [`Found ${total} matches${hasMore ? " (more matches available)" : ""}`]
-
-          let current = ""
-          for (const match of final) {
-            if (current !== match.path) {
-              if (current !== "") output.push("")
-              current = match.path
-              output.push(`${match.path}:`)
-            }
-            output.push(`  Line ${match.line}: ${match.text}`)
-          }
-
-          if (truncated) {
-            output.push("")
-            output.push("(Results truncated. Consider using a more specific path or pattern.)")
-          }
 
           return {
             title: params.pattern,
-            metadata: {
-              matches: total,
-              truncated,
-            },
-            output: output.join("\n"),
+            metadata: { matches: total, truncated },
+            output: formatGrepOutput(rows, total, truncated),
           }
         }).pipe(Effect.orDie),
     }

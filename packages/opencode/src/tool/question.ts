@@ -1,6 +1,7 @@
 import { Effect, Schema } from "effect"
 import * as Tool from "./tool"
 import { Question } from "../question"
+import { formatQuestionOutput } from "@opencode-ai/core/tool/shared/question-utils" // vMK: shared utility
 import DESCRIPTION from "./question.txt"
 
 export const Parameters = Schema.Struct({
@@ -27,16 +28,10 @@ export const QuestionTool = Tool.define<typeof Parameters, Metadata, Question.Se
             tool: ctx.callID ? { messageID: ctx.messageID, callID: ctx.callID } : undefined,
           })
 
-          const formatted = params.questions
-            .map((q, i) => `"${q.question}"="${answers[i]?.length ? answers[i].join(", ") : "Unanswered"}"`)
-            .join(", ")
-
           return {
             title: `Asked ${params.questions.length} question${params.questions.length > 1 ? "s" : ""}`,
-            output: `User has answered your questions: ${formatted}. You can now continue with the user's answers in mind.`,
-            metadata: {
-              answers,
-            },
+            output: formatQuestionOutput(params.questions, answers),
+            metadata: { answers },
           }
         }).pipe(Effect.orDie),
     }
