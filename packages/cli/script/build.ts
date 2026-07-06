@@ -136,8 +136,9 @@ if (Script.channel === "vMK-dev") {
       platformTarget.arch,
     ].join("-")
     const distName = targetName.replace(binary, "cli")
-    const src = `./dist/${distName}/bin/${binary}`
-    const dest = "./dist/opencode-vMK.exe"
+    const ext = platformTarget.os === "win32" ? ".exe" : ""
+    const src = `./dist/${distName}/bin/${binary}${ext}`
+    const dest = `./dist/opencode-vMK${ext}`
     if (fs.existsSync(src)) {
       await Bun.write(dest, await Bun.file(src).arrayBuffer())
       console.log(`[vMK] Created ${dest} from ${src}`)

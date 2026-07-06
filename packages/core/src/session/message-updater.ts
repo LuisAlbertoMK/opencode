@@ -87,8 +87,34 @@ export function memory(state: MemoryState): Adapter {
         // Limit in-memory history to prevent unbounded growth.
         // Source of truth is the database; this is a fast projection.
         if (state.messages.length > 1000) {
-          const removed = state.messages.splice(0, state.messages.length - 1000)
-          rebuildIndex()
+          const evictCount = state.messages.length - 1000
+          state.messages.splice(0, evictCount)
+          // vMK: Incremental index shift instead of O(n) rebuildIndex()
+          const newMessageIndex = new Map<SessionMessage.ID, number>()
+          const newShellIndex = new Map<string, number>()
+          latestAssistantIdx = -1
+          for (const [id, idx] of messageIndex) {
+            const newIdx = idx - evictCount
+            if (newIdx >= 0) newMessageIndex.set(id, newIdx)
+          }
+          for (const [callID, idx] of shellIndex) {
+            const newIdx = idx - evictCount
+            if (newIdx >= 0) newShellIndex.set(callID, newIdx)
+          }
+          // Fix: re-derive latestAssistantIdx from shifted index
+          if (latestAssistantIdx >= 0) {
+            const shifted = latestAssistantIdx - evictCount
+            latestAssistantIdx = shifted >= 0 ? shifted : -1
+          }
+          // Update the index maps in-place
+          messageIndex.clear()
+          for (const [id, idx] of newMessageIndex) messageIndex.set(id, idx)
+          shellIndex.clear()
+          for (const [callID, idx] of newShellIndex) shellIndex.set(callID, idx)
+          // Re-scan only the tail to find latest assistant (O(1000) worst case)
+          for (let i = state.messages.length - 1; i >= 0; i--) {
+            if (state.messages[i]!.type === "assistant") { latestAssistantIdx = i; break }
+          }
         }
       })
     },

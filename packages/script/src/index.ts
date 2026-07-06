@@ -34,7 +34,9 @@ const IS_PREVIEW = CHANNEL !== "latest"
 const VERSION = await (async () => {
   if (env.OPENCODE_VERSION) return env.OPENCODE_VERSION
   if (IS_PREVIEW) {
-    const pkg = await Bun.file(path.resolve(import.meta.dir, "../../opencode/package.json")).json()
+    // vMK: opencode package moved from packages/opencode to packages/cli
+    const pkgPath = path.resolve(import.meta.dir, "../../cli/package.json")
+    const pkg = await Bun.file(pkgPath).json()
     return `${pkg.version || "0.0.0"}-${CHANNEL}`
   }
   const version = await fetch("https://registry.npmjs.org/opencode-ai/latest")

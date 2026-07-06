@@ -77,13 +77,21 @@ type Input = {
   readonly request: LLMRequest
 }
 
-const estimateCache = new LruCache<string, number>(10, 30_000)
+// vMK: Cache size 10→100 + WeakMap for fast identity lookup on repeated calls
+const estimateCache = new LruCache<string, number>(100, 30_000)
+const estimateWeak = new WeakMap<object, number>()
 const estimate = (value: unknown) => {
+  // Fast path: if value is an object we've seen before, return cached result
+  if (typeof value === "object" && value !== null) {
+    const weak = estimateWeak.get(value as object)
+    if (weak !== undefined) return weak
+  }
   const json = JSON.stringify(value)
   const cached = estimateCache.get(json)
   if (cached !== undefined) return cached
   const result = Token.estimate(json)
   estimateCache.set(json, result)
+  if (typeof value === "object" && value !== null) estimateWeak.set(value as object, result)
   return result
 }
 

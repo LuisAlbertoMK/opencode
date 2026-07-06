@@ -80,6 +80,11 @@ const registryLayer = Layer.effect(
         : { result, output: bounded.output }
     })
 
+    // vMK: Generation counter to detect when tool registrations change
+    let materializationGen = 0
+    let cachedGen = -1
+    let cachedResult: Materialization | null = null
+
     return Service.of({
       register: Effect.fn("ToolRegistry.register")(function* (tools) {
         const entries = Object.entries(tools)
@@ -90,6 +95,7 @@ const registryLayer = Layer.effect(
             const token = {}
             for (const [name, tool] of entries)
               local.set(name, [...(local.get(name) ?? []), { token, registration: { identity: {}, tool } }])
+            materializationGen++ // vMK: invalidate cache
             yield* Effect.addFinalizer(() =>
               Effect.sync(() => {
                 for (const [name] of entries) {
@@ -97,12 +103,17 @@ const registryLayer = Layer.effect(
                   if (registrations.length > 0) local.set(name, registrations)
                   else local.delete(name)
                 }
+                materializationGen++ // vMK: invalidate cache on deregister
               }),
             )
           }),
         )
       }),
       materialize: Effect.fn("ToolRegistry.materialize")(function* (permissions = []) {
+        // vMK: Return cached materialization if registrations haven't changed
+        if (cachedResult && cachedGen === materializationGen) {
+          return cachedResult
+        }
         const registrations = new Map(applications.entries())
         for (const [name, entries] of local) {
           const registration = entries.at(-1)?.registration
@@ -110,7 +121,7 @@ const registryLayer = Layer.effect(
         }
         for (const [name, registration] of registrations)
           if (whollyDisabled(permission(registration.tool, name), permissions)) registrations.delete(name)
-        return {
+        const result: Materialization = {
           definitions: Array.from(registrations, ([name, registration]) => definition(name, registration.tool)),
           settle: (input) => {
             const registration = registrations.get(input.call.name)
@@ -118,6 +129,9 @@ const registryLayer = Layer.effect(
             return Effect.succeed({ result: { type: "error", value: `Unknown tool: ${input.call.name}` } })
           },
         }
+        cachedGen = materializationGen
+        cachedResult = result
+        return result
       }),
     })
   }),
