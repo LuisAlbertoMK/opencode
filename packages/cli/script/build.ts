@@ -123,3 +123,26 @@ for (const item of targets) {
     ),
   )
 }
+
+// vMK: Post-build step — copy binary as opencode-vMK.exe for vMK-dev channel
+if (Script.channel === "vMK-dev") {
+  const platformTarget = allTargets.find(
+    (t) => t.os === process.platform && t.arch === process.arch && !t.abi && t.avx2 !== false,
+  )
+  if (platformTarget) {
+    const targetName = [
+      binary,
+      platformTarget.os === "win32" ? "windows" : platformTarget.os,
+      platformTarget.arch,
+    ].join("-")
+    const distName = targetName.replace(binary, "cli")
+    const src = `./dist/${distName}/bin/${binary}`
+    const dest = "./dist/opencode-vMK.exe"
+    if (fs.existsSync(src)) {
+      await Bun.write(dest, await Bun.file(src).arrayBuffer())
+      console.log(`[vMK] Created ${dest} from ${src}`)
+    } else {
+      console.warn(`[vMK] Warning: source binary not found at ${src}`)
+    }
+  }
+}

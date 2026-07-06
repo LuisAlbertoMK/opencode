@@ -7,12 +7,13 @@ import { Flock } from "./util/flock"
 import { Flag } from "./flag/flag"
 import { LayerNode } from "./effect/layer-node"
 
+// vMK: All paths respect env vars for fork isolation (opencode-vMK must not corrupt global opencode)
 const app = "opencode"
-const data = path.join(xdgData!, app)
-const cache = path.join(xdgCache!, app)
-const config = path.join(xdgConfig!, app)
-const state = path.join(xdgState!, app)
-const tmp = path.join(os.tmpdir(), app)
+const data = process.env.OPENCODE_DATA_DIR ?? path.join(xdgData!, app)
+const cache = process.env.OPENCODE_CACHE_DIR ?? path.join(xdgCache!, app)
+const config = process.env.OPENCODE_CONFIG_DIR ?? path.join(xdgConfig!, app)
+const state = process.env.OPENCODE_STATE_DIR ?? path.join(xdgState!, app)
+const tmp = process.env.OPENCODE_TMP_DIR ?? path.join(os.tmpdir(), app)
 
 const paths = {
   get home() {
@@ -56,6 +57,7 @@ export interface Interface {
   readonly repos: string
 }
 
+// vMK: make() uses Path.* which already respect env vars for fork isolation
 export function make(input: Partial<Interface> = {}): Interface {
   return {
     home: Path.home,
