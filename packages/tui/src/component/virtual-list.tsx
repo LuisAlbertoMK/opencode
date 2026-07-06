@@ -20,7 +20,8 @@ import {
 } from "solid-js"
 import type { ScrollBoxRenderable } from "@opentui/core"
 
-const POLL_MS = 100          // Check scroll position every 100ms
+const POLL_ACTIVE_MS = 100   // Check scroll position every 100ms when scrolling
+const POLL_IDLE_MS = 500     // Check every 500ms when idle (no scroll changes)
 const ESTIMATED_HEIGHT = 5   // Fallback height per item when not yet measured
 const OVERSCAN = 3           // Extra items above/below viewport
 
@@ -64,19 +65,43 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
     const ref = props.scrollRef()
     if (!ref || ref.isDestroyed) return
 
-    const id = setInterval(() => {
+    // vMK: Two-tier polling — 100ms when scrolling, 500ms when idle
+    let lastScrollTop = r.scrollTop
+    let idleCycles = 0
+    let currentInterval = POLL_ACTIVE_MS
+
+    const tick = () => {
       try {
-        const r = props.scrollRef()
-        if (!r || r.isDestroyed) {
+        const r2 = props.scrollRef()
+        if (!r2 || r2.isDestroyed) {
           clearInterval(id)
           return
         }
 
         // --- scroll tracking ---
-        const st = r.scrollTop
-        const vh = r.height
+        const st = r2.scrollTop
+        const vh = r2.height
+        const changed = Math.abs(lastScrollTop - st) > 0.5 || viewportHeight() !== vh
         setScrollTop((prev) => (Math.abs(prev - st) > 0.5 ? st : prev))
         setViewportHeight((prev) => (prev !== vh ? vh : prev))
+
+        // vMK: adaptive polling — slow down when idle
+        if (changed) {
+          idleCycles = 0
+          if (currentInterval !== POLL_ACTIVE_MS) {
+            clearInterval(id)
+            currentInterval = POLL_ACTIVE_MS
+            id = setInterval(tick, currentInterval)
+          }
+        } else {
+          idleCycles++
+          if (idleCycles > 5 && currentInterval !== POLL_IDLE_MS) {
+            clearInterval(id)
+            currentInterval = POLL_IDLE_MS
+            id = setInterval(tick, currentInterval)
+          }
+        }
+        lastScrollTop = st
 
         // --- height measurement ---
         // Read Yoga-computed heights from currently rendered box refs.
@@ -100,7 +125,9 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
       } catch {
         // scrollbox may be in inconsistent state during destruction
       }
-    }, POLL_MS)
+    }
+
+    let id = setInterval(tick, currentInterval)
 
     onCleanup(() => clearInterval(id))
   })
