@@ -66,7 +66,7 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
     if (!ref || ref.isDestroyed) return
 
     // vMK: Two-tier polling — 100ms when scrolling, 500ms when idle
-    let lastScrollTop = r.scrollTop
+    let lastScrollTop = ref.scrollTop
     let idleCycles = 0
     let currentInterval = POLL_ACTIVE_MS
 
