@@ -19,6 +19,7 @@ import {
   type JSX,
 } from "solid-js"
 import type { ScrollBoxRenderable } from "@opentui/core"
+import { computeVisibleRange } from "./virtual-range"
 
 const POLL_ACTIVE_MS = 100   // Check scroll position every 100ms when scrolling
 const POLL_IDLE_MS = 500     // Check every 500ms when idle (no scroll changes)
@@ -135,57 +136,19 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
   // Compute visible range using cached heights (fall back to estimate)
   const visible = createMemo(() => {
     const items = props.items()
-    const count = items.length
-    if (count === 0) return { items: [] as T[], offset: 0, paddingTop: 0, paddingBottom: 0 }
+    if (items.length === 0) return { items: [] as T[], offset: 0, paddingTop: 0, paddingBottom: 0 }
 
     const st = Math.max(scrollTop(), 0)
     const vh = Math.max(viewportHeight(), 1)
     const est = props.estimatedHeight ?? ESTIMATED_HEIGHT
     const over = props.overscan ?? OVERSCAN
-    const hc = heightCache()
-
-    // Helper: get height for an index, with fallback
-    const h = (i: number): number => hc.get(i) ?? est
-
-    // Find first visible item: accumulate heights until past scrollTop
-    let accum = 0
-    let start = 0
-    for (let i = 0; i < count; i++) {
-      if (accum >= st) {
-        start = i
-        break
-      }
-      accum += h(i)
-      start = i + 1
-    }
-    // If we never broke, all items are above viewport — start = count
-
-    // Find last visible item: continue accumulating until past viewport
-    let end = count
-    for (let i = start; i < count; i++) {
-      if (accum >= st + vh) {
-        end = i
-        break
-      }
-      accum += h(i)
-    }
-
-    // Apply overscan
-    const paddedStart = Math.max(0, start - over)
-    const paddedEnd = Math.min(count, end + over)
-
-    // Recalculate padding using actual heights
-    let paddingTop = 0
-    for (let i = 0; i < paddedStart; i++) paddingTop += h(i)
-
-    let paddingBottom = 0
-    for (let i = paddedEnd; i < count; i++) paddingBottom += h(i)
+    const range = computeVisibleRange(items.length, st, vh, heightCache(), est, over)
 
     return {
-      items: items.slice(paddedStart, paddedEnd),
-      offset: paddedStart,
-      paddingTop,
-      paddingBottom,
+      items: items.slice(range.offset, range.offset + range.count),
+      offset: range.offset,
+      paddingTop: range.paddingTop,
+      paddingBottom: range.paddingBottom,
     }
   })
 
