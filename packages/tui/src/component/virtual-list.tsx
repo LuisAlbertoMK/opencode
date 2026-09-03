@@ -18,7 +18,7 @@ import {
   onCleanup,
   type JSX,
 } from "solid-js"
-import type { ScrollBoxRenderable } from "@opentui/core"
+import type { BoxRenderable, ScrollBoxRenderable } from "@opentui/core"
 import { buildHeightPrefix, computeVisibleRangePrefixed } from "./virtual-range"
 
 const POLL_ACTIVE_MS = 100   // Check scroll position every 100ms when scrolling
@@ -59,7 +59,7 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
 
   // Tracks rendered box refs keyed by message index.
   // Plain variable (not signal) — only read in the polling interval.
-  const itemRefs = new Map<number, { height: number }>()
+  const itemRefs = new Map<number, BoxRenderable>()
 
   // Poll scroll position AND measure actual item heights.
   createEffect(() => {
@@ -111,6 +111,12 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
         const changes: Array<[number, number]> = []
         const cache = heightCache()
         for (const [index, el] of itemRefs) {
+          // Ciclo 2: defense-in-depth — drop destroyed entries on sight (safe
+          // against re-mount ordering; deleting during Map iteration is legal).
+          if (el.isDestroyed) {
+            itemRefs.delete(index)
+            continue
+          }
           if (el.height > 0) {
             const prev = cache.get(index)
             if (prev !== el.height) {
@@ -168,12 +174,24 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
       <For each={visible().items}>
         {(item, i) => {
           const index = visible().offset + i()
+          // Ciclo 2: release destroyed renderables. Without this, itemRefs
+          // retains one stale entry (and its Zig-backed box) per ever-rendered
+          // item — unbounded growth proportional to scroll distance.
+          let el: BoxRenderable | undefined
+          onCleanup(() => {
+            if (el && itemRefs.get(index) === el) itemRefs.delete(index)
+          })
           return (
             // Inner box for Yoga height measurement. The children function
             // typically returns a box/message component that has its own layout.
             // We wrap in a plain box to capture the total height of the item,
             // including any margins/borders added by the child.
-            <box ref={(el) => itemRefs.set(index, el)}>
+            <box
+              ref={(e) => {
+                el = e
+                itemRefs.set(index, e)
+              }}
+            >
               {props.children(item, index)}
             </box>
           )
