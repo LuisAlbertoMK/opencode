@@ -24,3 +24,37 @@ Rama base: `port-vmk-perf` (main/dev INTOCABLES). Jerarquía: correctness > segu
 ## Ciclo 3 — LSP eviction fiber: arm-on-demand (PENDIENTE)
 
 ## Ciclo 4 — MCP toolTruncateLimit: cache O(1) (PENDIENTE, probable REJECT por gate)
+
+## Ciclo 3 — LSP eviction fiber: arm-on-demand (RECHAZADO con evidencia)
+
+Candidato: reemplazar while(true)+sleep(5min) por timer armado bajo demanda.
+Evidencia: el scan es O(clients) con clients<=10, cada 5 min = 12 wakeups/hora
+con loop de ~1us → costo total ~12us/hora. Reescribir el scheduling introduce
+riesgo (scope del layer, interrupción) por ganancia no medible. Jerarquía de
+métricas: el riesgo de correctness no justifica performance no medible.
+**Veredicto: REJECT** — no alcanza el umbral de mejora marginal (§5).
+
+## Ciclo 4 — MCP toolTruncateLimit: cache O(1) (RECHAZADO con evidencia)
+
+Candidato: memoizar el lookup de prefijo por server. Evidencia: O(servers)
+con servers<=10, ejecutado 1 vez por resultado de tool MCP (frecuencia baja).
+Costo actual ~10 iteraciones de Map por llamada (~1us). Cache introduciría
+invalidación (config dinámica add/remove) por ganancia no medible.
+**Veredicto: REJECT** — mejora marginal bajo umbral (§5).
+
+## Candidatos diferidos (fuera de scope del experimento)
+
+1. **For recreation en window shift**: OpenTUI/Solid recrea ~18 filas por
+   shift — optimización de recycling sería en el framework (blast radius
+   **Alto** → checkpoint humano obligatorio, §1).
+2. **Build levers** (Bun bytecode, smol mode, WAL mmap): naturaleza config de
+   build, pertenecen a la integración de port-vmk-perf, no a este experimento.
+3. **Test headless del lifecycle de itemRefs** (@opentui/core/testing):
+   work item de verificación para próximo ciclo.
+
+## Condición de parada (§5) — alcanzada
+
+Sin gaps ICE relevantes con evidencia restantes · Breaker sobrevivió 3
+enfoques en C1 y 3 en C2 · tests verdes · benchmarks >= baseline en todo
+ciclo aplicado · candidatos restantes rechazados con números o diferidos
+por blast radius Alto.
