@@ -19,7 +19,7 @@ import {
   type JSX,
 } from "solid-js"
 import type { ScrollBoxRenderable } from "@opentui/core"
-import { computeVisibleRange } from "./virtual-range"
+import { buildHeightPrefix, computeVisibleRangePrefixed } from "./virtual-range"
 
 const POLL_ACTIVE_MS = 100   // Check scroll position every 100ms when scrolling
 const POLL_IDLE_MS = 500     // Check every 500ms when idle (no scroll changes)
@@ -133,16 +133,24 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
     onCleanup(() => clearInterval(id))
   })
 
+  // Prefix-sum over item heights — rebuilt ONLY when heights or item count
+  // change (not per scroll tick), dropping per-tick cost from O(n) scans to
+  // O(log n) binary searches. Ciclo 1, experimento/mejora-autonoma-2026-09-03.
+  const prefix = createMemo(() =>
+    buildHeightPrefix(heightCache(), props.items().length, props.estimatedHeight ?? ESTIMATED_HEIGHT),
+  )
+
   // Compute visible range using cached heights (fall back to estimate)
   const visible = createMemo(() => {
     const items = props.items()
     if (items.length === 0) return { items: [] as T[], offset: 0, paddingTop: 0, paddingBottom: 0 }
 
-    const st = Math.max(scrollTop(), 0)
-    const vh = Math.max(viewportHeight(), 1)
-    const est = props.estimatedHeight ?? ESTIMATED_HEIGHT
-    const over = props.overscan ?? OVERSCAN
-    const range = computeVisibleRange(items.length, st, vh, heightCache(), est, over)
+    const range = computeVisibleRangePrefixed(
+      prefix(),
+      Math.max(scrollTop(), 0),
+      Math.max(viewportHeight(), 1),
+      props.overscan ?? OVERSCAN,
+    )
 
     return {
       items: items.slice(range.offset, range.offset + range.count),
