@@ -16,6 +16,7 @@ import {
   createSignal,
   For,
   onCleanup,
+  untrack,
   type JSX,
 } from "solid-js"
 import type { BoxRenderable, ScrollBoxRenderable } from "@opentui/core"
@@ -146,6 +147,23 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
     buildHeightPrefix(heightCache(), props.items().length, props.estimatedHeight ?? ESTIMATED_HEIGHT),
   )
 
+  // Ciclo 6: item → absolute index map. The children callback previously read
+  // `visible()` reactively to derive (windowOffset + positional index) — that
+  // reactive read made EVERY visible child scope re-execute on each scroll
+  // shift, destroying and recreating every box (~viewport rows per shift).
+  // An item's absolute index is stable across window shifts (it only changes
+  // when the items array itself changes), so it can be read untracked at
+  // scope-creation time: For then reuses child scopes for items that persist
+  // across shifts, recreating only the entering/leaving boundary items.
+  // Caveat: captured indexes assume items are appended, never prepended/spliced
+  // (true for opencode session transcripts).
+  const itemIndex = createMemo(() => {
+    const map = new Map<T, number>()
+    const items = props.items()
+    for (let i = 0; i < items.length; i++) map.set(items[i], i)
+    return map
+  })
+
   // Compute visible range using cached heights (fall back to estimate)
   const visible = createMemo(() => {
     const items = props.items()
@@ -172,8 +190,10 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
       <box height={visible().paddingTop} />
       {/* Only render items in the visible window */}
       <For each={visible().items}>
-        {(item, i) => {
-          const index = visible().offset + i()
+        {(item) => {
+          // Ciclo 6: untracked read — no reactive dependency inside the child
+          // scope, so For reuses scopes for items persisting across shifts.
+          const index = untrack(() => itemIndex().get(item) ?? -1)
           // Ciclo 2: release destroyed renderables. Without this, itemRefs
           // retains one stale entry (and its Zig-backed box) per ever-rendered
           // item — unbounded growth proportional to scroll distance.

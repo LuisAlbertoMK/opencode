@@ -15,3 +15,5 @@ Notas:
   perf restaura el algoritmo original sin perder la función pura testeable.
 
 | 5 | build levers (bytecode/smol) | `flags build.ts opt-in` | sin revert necesario — flags opt-in, el build default no cambia |
+
+| 6 | child-scope recreation por shift | `perf(tui) ciclo 6 en worktree 0904` | `git revert <commit ciclo 6>` — restaura el read reactivo (recreación full-window); itemIndex memo es aditivo, sin efectos colaterales |
