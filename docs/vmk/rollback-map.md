@@ -13,3 +13,5 @@ Notas:
 - Los docs (`docs/vmk/*`) no afectan runtime — no requieren rollback.
 - Refactor y perf están en commits separados (protocolo §3.4) → el revert del
   perf restaura el algoritmo original sin perder la función pura testeable.
+
+| 5 | build levers (bytecode/smol) | `flags build.ts opt-in` | sin revert necesario — flags opt-in, el build default no cambia |

@@ -58,3 +58,31 @@ Sin gaps ICE relevantes con evidencia restantes · Breaker sobrevivió 3
 enfoques en C1 y 3 en C2 · tests verdes · benchmarks >= baseline en todo
 ciclo aplicado · candidatos restantes rechazados con números o diferidos
 por blast radius Alto.
+
+## Ciclo 5 — build levers (bytecode / smol) — 2026-09-04
+
+Harness: script/bench-boot.ps1 (nuevo) — mediana n=8 (warmup 1), exit code
+validado por corrida, RAM pico por sampling 200ms. Métrica: boot --version
+del binario compilado.
+
+| Variante | boot mediana | boot min | RAM pico med | tamaño |
+|---|---:|---:|---:|---:|
+| baseline (sin flags) | 629.1 ms | 426.5 ms | 53.3 MB | 137.5 MB |
+| bytecode | 634.4 ms | 434.3 ms | 54.4 MB | 324.7 MB |
+| smol (corrida 1) | 450.3 ms | 427.4 ms | 55.4 MB | 137.5 MB |
+| smol (corrida 2) | 638.4 ms | 445.6 ms | 47.0 MB | 137.5 MB |
+| control baseline re-run | 632.2 ms | 448.5 ms | 54.4 MB | 137.5 MB |
+
+**Bytecode: REJECT** — 0% boot medible, binario +136% (137.5→324.7 MB).
+El costo de boot no está en el parseo del bundle pre-minificado.
+
+**Smol: boot NEUTRAL** — el -28% de la corrida 1 NO se repite (corrida 2
+vuelve a ~638; mins equivalentes ~427-448 en todas las variantes). El
+boot mediano es bimodal por ruido del sistema; el piso (~427 ms) es
+idéntico con y sin smol. Valor potencial de smol = RSS de sesión larga
+(GC más frecuente) — NO medible en boot; se difiere a la prueba en vivo
+del usuario. Flag --smol queda como opt-in en build.ts.
+
+**Veredicto §5**: sin gaps de boot con evidencia → build levers cerrado
+en modo diferido para smol (pending live test). WAL mmap queda para el
+próximo ciclo (requiere recon de la capa db).
