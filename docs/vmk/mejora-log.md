@@ -86,3 +86,22 @@ del usuario. Flag --smol queda como opt-in en build.ts.
 **Veredicto §5**: sin gaps de boot con evidencia → build levers cerrado
 en modo diferido para smol (pending live test). WAL mmap queda para el
 próximo ciclo (requiere recon de la capa db).
+
+### Ciclo 5 (cont.) — WAL mmap — REJECT
+
+Harness: script/bench-db-mmap.ts — bun:sqlite standalone, A=config actual de
+database.ts vs B=A+mmap_size=128MB+temp_store=MEMORY. Files frescos por
+corrida, interleave A/B, mediana de 5. Workload: insert 3000 filas x 2KB,
+2000 selects por PK, full scan.
+
+| métrica | A (actual) | B (+mmap) | delta |
+|---|---:|---:|---:|
+| insert 3000x2KB | 357.7 ms | 348.7 ms | -2.5% (ruido) |
+| 2000 selects PK | 61.5 ms | 79.9 ms | +29.8% PEOR |
+| full scan | 10.9 ms | 17.4 ms | +59.8% PEOR |
+
+**Veredicto: REJECT.** El db de opencode es cache-residente (cache_size
+-64000 ya activo): las lecturas no tocan disco y mmap solo agrega overhead
+de page-faults en Windows. WAL+synchronous=NORMAL+cache ya están seteados
+en database.ts:27-32 — la config actual es óptima. El candidato diferido
+"WAL mmap" queda cerrado con evidencia.
