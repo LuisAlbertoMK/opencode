@@ -7,6 +7,7 @@
 // index equivalence: children-received index === position in the items array.
 import { expect, test } from "bun:test"
 import { testRender } from "@opentui/solid"
+import type { ScrollBoxRenderable } from "@opentui/core"
 import { createSignal } from "solid-js"
 import { VirtualList } from "../../src/component/virtual-list"
 
@@ -20,7 +21,8 @@ test("VirtualList recycles child scopes across window shifts", async () => {
   const indexById = new Map<number, number>()
 
   // Fake scroll surface: the component polls scrollRef() every 100ms while
-  // scrolling; we mutate scrollTop through a signal to drive shifts.
+  // scrolling; we mutate scrollTop through a signal to drive shifts. Cast is
+  // safe: VirtualList only touches scrollTop/height/isDestroyed.
   const [scrollTop, setScrollTop] = createSignal(0)
   const fakeScroll = {
     get scrollTop() {
@@ -28,7 +30,7 @@ test("VirtualList recycles child scopes across window shifts", async () => {
     },
     height: 30,
     isDestroyed: false,
-  }
+  } as unknown as ScrollBoxRenderable
 
   const app = await testRender(() => (
     <scrollbox height={30} width={80}>
