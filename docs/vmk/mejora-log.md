@@ -105,3 +105,36 @@ corrida, interleave A/B, mediana de 5. Workload: insert 3000 filas x 2KB,
 de page-faults en Windows. WAL+synchronous=NORMAL+cache ya están seteados
 en database.ts:27-32 — la config actual es óptima. El candidato diferido
 "WAL mmap" queda cerrado con evidencia.
+
+## Ciclo 6 — For-recycling: child-scope recreation por shift — 2026-09-04
+
+Root cause ENCONTRADO (no era el For de solid-js ni @opentui): el children
+callback de VirtualList leía `visible()` reactivamente para derivar
+`offset + i()` — ese read re-ejecutaba el scope de CADA hijo visible en cada
+shift de ventana, destruyendo y recreando todos los boxes (~viewport filas
+por shift). El índice absoluto de un item NO cambia al scroll-ear (solo
+cambia si cambia el array completo), así que el read reactivo era
+innecesario.
+
+Fix (packages/tui/src/component/virtual-list.tsx):
+- memo `itemIndex` (Map item→índice absoluto, O(n) solo cuando cambia items)
+- children callback: `untrack(() => itemIndex().get(item))` — sin reads
+  reactivos dentro del scope → For reusa scopes de items que persisten
+- índices capturados asumen append-only (transcripciones opencode: válido;
+  prepend/splice invalidaría índices capturados — documentado como caveat)
+
+Verificación:
+- test nuevo test/component/virtual-list-recycle.test.tsx (headless via
+  testRender): shift de ventana recrea ≤ max(8, window/2) items (ANTES:
+  window completo ~viewport filas); equivalencia de índices absolutos
+  (children index === posición en array) — PASS
+- virtual-range.test.ts 7/7 PASS (sin cambios en el rango)
+- suite completa: 197 pass / 4 fail / 1 skip — los 4 fails son
+  PRE-EXISTENTES (verificados en base sin el fix: runtime.test.tsx y
+  app-lifecycle.test.tsx fallan igual; SIGHUP/Windows + path boundaries)
+
+Métrica CPU real pendiente de la prueba en vivo del usuario (el costo
+cambia de "recrear window" a "crear 1-2 items por shift").
+
+**Checkpoint humano (protocolo §1, blast radius Medio-Alto en rendering)**:
+merge a port-vmk-perf pendiente del veredicto del usuario en vivo.
