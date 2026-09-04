@@ -22,6 +22,8 @@ const skipInstall = process.argv.includes("--skip-install")
 const sourcemapsFlag = process.argv.includes("--sourcemaps")
 const plugin = createSolidTransformPlugin()
 const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
+const bytecodeFlag = process.argv.includes("--bytecode")
+const smolFlag = process.argv.includes("--smol")
 
 const createEmbeddedWebUIBundle = async () => {
   console.log(`Building Web UI to embed in the binary`)
@@ -167,6 +169,7 @@ for (const item of targets) {
     external: ["node-gyp"],
     format: "esm",
     minify: true,
+    bytecode: bytecodeFlag,
     sourcemap: sourcemapsFlag ? "linked" : "none",
     splitting: true,
     compile: {
@@ -176,7 +179,12 @@ for (const item of targets) {
       autoloadPackageJson: true,
       target: name.replace(pkg.name, "bun") as any,
       outfile: `dist/${name}/bin/opencode`,
-      execArgv: [`--user-agent=opencode/${Script.version}`, "--use-system-ca", "--"],
+      execArgv: [
+        ...(smolFlag ? ["--smol"] : []),
+        `--user-agent=opencode/${Script.version}`,
+        "--use-system-ca",
+        "--",
+      ],
       windows: {},
     },
     files: {
