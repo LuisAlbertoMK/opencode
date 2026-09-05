@@ -106,29 +106,49 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
         lastScrollTop = st
 
         // --- height measurement ---
-        // Read Yoga-computed heights from currently rendered box refs.
-        // Heights are unknown until Yoga layout runs (next frame after SolidJS commit).
-        // We check every poll cycle — once set, the value stabilizes.
-        const changes: Array<[number, number]> = []
+        // Ciclo 2: skip Yoga reads when the height cache is already complete
+        // for the current visible window. The visible window is derived from
+        // heightCache + items + scrollTop/viewportHeight, so any change in
+        // items, window position/size, or cached heights invalidates the window
+        // and re-triggers measurement. Check is O(visible) Map lookups vs
+        // O(viewport) Yoga .height reads + Map iteration when cacheComplete.
+        // Reads of `visible` are untracked — tick runs outside the reactive
+        // owner so we must not create a subscription, and we must not re-
+        // introduce reads reactivos inside the children callback (ciclo 6).
+        const vSnapshot = untrack(() => visible())
         const cache = heightCache()
-        for (const [index, el] of itemRefs) {
-          // Ciclo 2: defense-in-depth — drop destroyed entries on sight (safe
-          // against re-mount ordering; deleting during Map iteration is legal).
-          if (el.isDestroyed) {
-            itemRefs.delete(index)
-            continue
-          }
-          if (el.height > 0) {
-            const prev = cache.get(index)
-            if (prev !== el.height) {
-              changes.push([index, el.height])
+        let cacheComplete = vSnapshot.items.length > 0
+        if (cacheComplete) {
+          for (let i = vSnapshot.offset; i < vSnapshot.offset + vSnapshot.items.length; i++) {
+            if (!cache.has(i)) {
+              cacheComplete = false
+              break
             }
           }
         }
-        if (changes.length > 0) {
-          const next = new Map(cache)
-          for (const [idx, h] of changes) next.set(idx, h)
-          setHeightCache(next)
+        if (!cacheComplete) {
+          // Read Yoga-computed heights from currently rendered box refs.
+          // Heights are unknown until Yoga layout runs (next frame after SolidJS commit).
+          const changes: Array<[number, number]> = []
+          for (const [index, el] of itemRefs) {
+            // defense-in-depth — drop destroyed entries on sight (safe
+            // against re-mount ordering; deleting during Map iteration is legal).
+            if (el.isDestroyed) {
+              itemRefs.delete(index)
+              continue
+            }
+            if (el.height > 0) {
+              const prev = cache.get(index)
+              if (prev !== el.height) {
+                changes.push([index, el.height])
+              }
+            }
+          }
+          if (changes.length > 0) {
+            const next = new Map(cache)
+            for (const [idx, h] of changes) next.set(idx, h)
+            setHeightCache(next)
+          }
         }
       } catch {
         // scrollbox may be in inconsistent state during destruction

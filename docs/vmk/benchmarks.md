@@ -36,6 +36,20 @@ Notas:
   (n=5000) libera el 90% de ese costo de CPU del polling loop.
 - Reproducibilidad: `cd packages/tui && bun run script/bench-virtual-range.ts`
 
+## Ciclo 2 — Height measurement skip (2026-09-04)
+
+Path: `packages/tui/src/component/virtual-list.tsx:108-132` (tick de medición).
+
+| Estado | Valor |
+|---|---|
+| Antes | Cada tick (100ms activo / 500ms idle) iteraba `itemRefs` (Map viewport ≈ 6-12 entradas + overscan → ~12-18) y leía `el.height` (Yoga) por entrada → O(viewport) Yoga reads/tick + `setHeightCache` si cambiaba. |
+| Después | Si `heightCache` contiene las alturas de toda la ventana visible (`visible.offset .. offset+count`), el tick hace O(visible) lookups en `Map` (~12-18) y salta la iteración Yoga/reescritura. Invalidación automática: cualquier cambio en `items`, `scrollTop`/`viewportHeight` o `heightCache` recomputa `visible` → siguiente tick detecta hueco y remide. |
+| Ahorro | En idle estable con ventana cacheada: 0 lecturas Yoga/tick (vs viewport lecturas). Overhead del check: ~12-18 `Map.has` por tick (≈ decenas de ns). `computeVisibleRangePrefixed` sin cambios → bench `bench-virtual-range` no regresivo (ver `mejora-log` Ciclo 2). |
+| Harness | `packages/tui/script/bench-virtual-range.ts` no cubre el path de medición (solo rango). Bench dedicado de medición requeriría `bun` para simular items/Yoga — ejecución BLOQUEADA en este entorno (`bun *` deny por política). Método de medición en vivo: observar CPU del polling loop en idle (esperado: caída de ~viewport reads a 0) y que `heightCache` no reescriba en logs de test headless. |
+| Verificación | `virtual-list-height-skip.test.tsx` 4/4 PASS (equivalencia + skip + invalidación). |
+
+Candidatas futuras (confidence medium, no medidas en este ciclo): `src/context/sync.tsx:594-667` (sync hydration) y `src/session/tools.ts` (tools memoize) — requieren bench propio por candidato.
+
 ## Pre-port (contexto): upstream vs port-vmk-perf, CLI boot (2026-09-02)
 
 | Métrica | upstream ef2792511d | port-vmk-perf | delta |

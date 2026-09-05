@@ -5,7 +5,7 @@ Mapeo commit ↔ ciclo ↔ gap. Cada ciclo se revierte en aislado sin afectar po
 | Ciclo | Gap | Commits (en orden) | Rollback quirúrgico |
 |---|---|---|---|
 | 1 | VirtualList range O(n)/tick | `e7d89685f2` refactor: extraer computeVisibleRange · `590bf90514` perf: prefix-sum + tests + harness | `git revert 590bf90514` → vuelve al baseline O(n) conservando la extracción. Revert total: `git revert 590bf90514 e7d89685f2` |
-| 2 | (pendiente) | — | — |
+| 2 | Height skip cuando cache completo (ciclo 2) | `a8fcd48b47` perf(tui): skip height measurement when cache complete | `git revert a8fcd48b47` revierte solo el skip; ciclo 6 (itemIndex) intacto |
 | 3 | (pendiente) | — | — |
 | 4 | (pendiente) | — | — |
 

@@ -1,0 +1,16 @@
+# ADR-005 — Skip de medición de alturas cuando el cache está completo
+
+- **Estado**: Aceptado (Ciclo 2, 2026-09-04) · Rama `experimento/ciclo2-height-skip`
+- **Contexto**: Cada tick del polling de `VirtualList` (100 ms activo / 500 ms idle) iteraba `itemRefs: Map<index, BoxRenderable>` y leía `el.height` (Yoga) por cada entrada visible + overscan (~12-18 entradas). Cuando la ventana visible ya tiene todas las alturas en `heightCache` y son estables, esa pasada O(viewport) es redundante: el siguiente `computeVisibleRangePrefixed` ya usa `heightCache` sin necesidad de re-medir. El hotspot documentado es `packages/tui/src/component/virtual-list.tsx:108-132`.
+- **Decisión**: Check O(visible) de completitud antes de medir: `visible = untrack(() => visible())` → para `i in [offset, offset+count)` verificar `heightCache.has(i)`. Si completo → skip total de la iteración `itemRefs` y de lecturas `el.height`/`setHeightCache` en ese tick. Lectura de `visible` con `untrack` para no crear suscripción reactiva fuera del owner y para no reintroducir reads reactivos dentro del `children` callback (caveat del ciclo 6). Invalidación automática: `visible` deriva de `heightCache` + `items` + `scrollTop`/`viewportHeight`; cualquier cambio en esos recomputa la ventana → siguiente tick verá un hueco en el cache y volverá a medir. Índices capturados asumen append-only (caveat ciclo 6).
+- **Alternativas**:
+  1. **B — skip por tamaño de cache (`cache.size >= items.length`)**: descartado — no detecta huecos en la ventana (p. ej. ventana al fondo sin alturas del medio cacheadas → skip incorrecto y padding erróneo).
+  2. **C — polling adaptativo/WeakRef**: descartado — complejidad y GC non-determinista sin ganancia medible sobre un check O(visible) de Map.
+- **Consecuencias**:
+  - (+) En idle estable con ventana cacheada: 0 lecturas Yoga/tick (vs ~12-18). Overhead del check: ~12-18 `Map.has` (~ns). Branch predictor favorece skip.
+  - (+) `onCleanup` del ciclo 6 sigue liberando `itemRefs` al desmontar filas; el `isDestroyed` drop defensivo dentro del `if (!cacheComplete)` se ejecuta solo cuando hay remedição — en skip estable no se acumula basura porque el cleanup ya retiró las filas que salieron de la ventana.
+  - (−) Si una altura ya cacheada cambiara sin que cambie `items`/`scrollTop`/`viewportHeight` (p. ej. resize de ancho que re-wrappea texto), el skip no lo detectaría hasta el próximo shift de ventana o append. Riesgo bajo en TUI (ancho estable) y el costo es un frame con padding levemente desfasado — jerarquía correctness > performance lo admite; documentado como caveat.
+  - (−) Una señal extra `vSnapshot` por tick — costo trivial.
+- **Verificación**: `virtual-list-height-skip.test.tsx` 4/4 PASS (helper `isCacheComplete`, equivalencia de rango con cache completo, skip efectivo headless, invalidación por append/ventana). `virtual-range.test.ts` 7/7 y `virtual-list-recycle.test.tsx` 1/1 sin regresión. Suite tui: 204 pass / 1 fail pre-existente (path boundary Windows, mismo que base). `typecheck` verde.
+- **Candidatas futuras** (confidence medium, no parte de este ADR — citadas por completitud del ciclo 2): `src/context/sync.tsx:594-667` (sync hydration) y `src/session/tools.ts` (tools memoize).
+- **Rollback**: `git revert <sha ciclo 2>` restaura medición cada tick; no toca `itemIndex`/`visible` del ciclo 6.
