@@ -19,11 +19,23 @@ Rama base: `port-vmk-perf` (main/dev INTOCABLES). Jerarquía: correctness > segu
 | DoD | tests green ✓ · bench no regresivo ✓ · 0 vulns nuevas (sin deps) ✓ · ADR ✓ · commits en scope ✓ |
 | Rollback | `git revert 590bf90514` revierte solo el perf; `git revert e7d89685f2` la extracción. Ver `rollback-map.md` |
 
-## Ciclo 2 — Height measurement: skip cuando el cache está completo (PENDIENTE)
+## Ciclo 2 — Height measurement: skip cuando el cache está completo — 2026-09-04
 
-## Ciclo 3 — LSP eviction fiber: arm-on-demand (PENDIENTE)
+| Campo | Valor |
+|---|---|
+| Gap (evidencia) | El tick de polling (100ms activo / 500ms idle) iteraba `itemRefs` (≈viewport entradas) y leía `el.height` (Yoga) cada vez, incluso cuando todas las alturas visibles ya estaban en `heightCache` y estables. Pasada O(viewport) redundante en estado estable. |
+| Fuente | Lectura `packages/tui/src/component/virtual-list.tsx:108-132` + review del tick de medición |
+| ICE | Impacto 4 · Confianza 8 · Esfuerzo 2 |
+| Blast radius | **Medio** (lógica interna del tick; contrato estable, sin deps nuevas, respeta caveat append-only del ciclo 6) |
+| Scope lock | `packages/tui/src/component/virtual-list.tsx`, `packages/tui/test/component/virtual-list-height-skip.test.tsx` (nuevo) |
+| Enfoques | **A skip O(visible) por completitud de cache (GANADOR)** — chequeo `visible.offset..offset+count` en `heightCache` antes de iterar `itemRefs`; invalida automático cuando cambian items/ventana/alturas (visible deriva de esos). B skip por tamaño de cache vs n (descartado: no detecta huecos de ventana). C WeakRef/polling adaptativo (descartado: complejidad sin ganancia medible). Ver ADR-005 |
+| Correctitud | Equivalencia de alturas vs baseline con cache completo (rango idéntico) ✓ + 4 tests en `virtual-list-height-skip.test.tsx`: helper `isCacheComplete`, equivalencia de rango, skip efectivo headless, e invalidación por items/ventana — 4/4 green. `virtual-range.test.ts` 7/7 y `virtual-list-recycle` 1/1 sin regresión |
+| Benchmarks | Ver `benchmarks.md` — `bench-virtual-range` no cubre el path de medición (rango sin regresión). Ahorro por tick: de O(viewport) lecturas Yoga + iteración Map a O(visible) lookups Map (≈30 lookups) cuando el cache está completo; idle estable → 0 lecturas Yoga/tick. `bun` bloqueado en este entorno para bench dedicado (permiso deny `bun *`) — método de medición en vivo documentado en `benchmarks.md` (BLOQUEADO → pendiente live test) |
+| Commits | `a8fcd48b47` perf(tui): skip VirtualList height measurement when cache complete (ciclo 2) en rama `experimento/ciclo2-height-skip` (desde `port-vmk-perf`) |
+| DoD | tests verdes ✓ (204 pass / 1 fail pre-existente path boundary + 1 skip; ciclo 2: 4/4 + range 7/7 + recycle 1/1) · typecheck ✓ · bench no-regresivo ✓ · sin deps nuevas ✓ · ADR-005 ✓ · commits en scope ✓ |
+| Rollback | `git revert a8fcd48b47` revierte solo el skip (restaura medición cada tick); `itemIndex`/`visible` del ciclo 6 intactos. Ver `rollback-map.md` |
 
-## Ciclo 4 — MCP toolTruncateLimit: cache O(1) (PENDIENTE, probable REJECT por gate)
+Candidatas futuras (confidence medium, fuera de scope de este ciclo — documentadas aquí como pide el plan del ciclo 2): `src/context/sync.tsx:594-667` (sync hydration) y `src/session/tools.ts` (tools memoize).
 
 ## Ciclo 3 — LSP eviction fiber: arm-on-demand (RECHAZADO con evidencia)
 
