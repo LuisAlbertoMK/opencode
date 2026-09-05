@@ -57,3 +57,19 @@ Candidatas futuras (confidence medium, no medidas en este ciclo): `src/context/s
 | boot --version (dev, mediana n=8) | 23.7s | 5.3s | +78% |
 | boot --help (dev, mediana n=8) | 29.8s | 5.2s | +83% |
 | RAM pico boot (sampling 400ms) | ~206 MB | 111 MB | −46% |
+
+## Live test — sesión real (2026-09-05)
+
+Método: doble muestreo de CPU/intervalo (Get-Process, 10s) porque Get-Counter
+falla en esta máquina (error c0000bb8). Proceso port identificado por Path like
+*dist-locked*: binario locked en
+`C:/Users/MK/AppData/Local/Temp/opencode-dist-locked/opencode-windows-x64-locked/bin/opencode.exe`
+(el dist/ original ya no existe). Proceso PID 16428 EXCLUIDO: era el opencode
+global de npm (upstream), no el port.
+
+| Estado | Valor |
+|---|---|
+| CPU idle (8 cores) | 0.1 / 1.0 / 0.9% de un core (doble muestreo, 10s) |
+| RSS sesión | ~640-697 MB; picos ~1015-1055 MB (uno 875 MB incluyendo boot) |
+| Veredicto | idle ~0% valida la expectativa del ciclo 2 (0 Yoga reads en idle) como proxy de CPU [confidence medium]; RSS de sesión ~640-700 MB es baseline nuevo (los 111 MB previos eran pico de boot, no comparables); feel de scroll/streaming del usuario aún pendiente |
+| Test --smol | Pendiente — requiere rebuild con flag de build.ts |
