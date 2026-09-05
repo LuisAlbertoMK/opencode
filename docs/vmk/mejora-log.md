@@ -150,3 +150,26 @@ cambia de "recrear window" a "crear 1-2 items por shift").
 
 **Checkpoint humano (protocolo §1, blast radius Medio-Alto en rendering)**:
 merge a port-vmk-perf pendiente del veredicto del usuario en vivo.
+
+## Ciclo 7 — sync hydration (RECHAZADO con evidencia) — 2026-09-05
+
+Candidato: skip del merge en `packages/tui/src/context/sync.tsx:594-667`
+cuando "nada cambió" (cada `session.sync(sessionID)` corre 4 llamadas SDK
+paralelas + merge O(messages×parts) con dedup vía tracker Sets/sort/slice;
+disparador: entrada/switch de sesión).
+
+ICE: Impacto 4 (path solo de entrada a sesión; `fullSyncedSessions` ya
+corta la mayoría) · Confianza 6 (merge con estado vivo: eventos
+message.updated/part.delta concurrentes; 6 tests de races lo pinnean) ·
+Esfuerzo 4 (change detection etag/timestamp/hash preservando semántica
+exacta).
+
+Blast: Medio. Tests que pinnean (9): sync-live-hydration.test.tsx (6),
+sync-undefined-messages.test.tsx (1), sync.test.tsx (2) — cualquier
+cambio debe pasarlos + typecheck.
+
+**Veredicto: REJECT** — análogo al ciclo 2 en forma pero más riesgoso
+(riesgo de corrupción de partes en streaming si el skip falla); posponer
+hasta telemetría real de latencia en session switch. No alcanza umbral §5.
+
+Rollback: no aplica (sin código).
