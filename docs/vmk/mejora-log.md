@@ -173,3 +173,19 @@ cambio debe pasarlos + typecheck.
 hasta telemetría real de latencia en session switch. No alcanza umbral §5.
 
 Rollback: no aplica (sin código).
+
+## Ciclo 8 — delta coalescing (APLICADO) — 2026-09-05
+
+| Campo | Valor |
+|---|---|
+| Gap (evidencia) | `message.part.delta` por carácter/token dispara `setStore`+re-render por delta → scroll freeze en streaming (GLM/Claude). Spec origen `TUI_TECHNIQUES_RESEARCH.md:§4 Delta Coalescing` pedía buffer 40ms. |
+| Fuente | `TUI_TECHNIQUES_RESEARCH.md:§4` + `packages/tui/src/context/sync.tsx:477-499` (handler `message.part.delta` pre-coalescing) + issue #26688 / PR #36045 |
+| ICE | Impacto 5 · Confianza 8 · Esfuerzo 3 |
+| Blast radius | **Medio** (solo path `message.part.delta` en `sync.tsx`; `fullSyncedSessions`/`hydratingSessions` intactos; revert restaura case directo) |
+| Scope lock | `packages/tui/src/context/sync.tsx` (+ tests `sync-coalescing` 3/3, `sync-live-hydration` 6/6, `sync-undefined-messages` 1/1, `sync` 2/2) |
+| Técnica | Buffer `Map<key,messageID\0partID\0field>` + flush `queueMicrotask`+`setTimeout 16ms` en `batch()` agrupado por `messageID`; defer mientras `hydratingSessions.has(sessionID)` (guard-rail ciclo 7, líneas 598-599 y merge 613-654). Spec pedía 40ms; se usó microtask+16ms (más rápido, menor latencia percibida) |
+| Correctitud | Tests 12/12 PASS: `sync-coalescing` 3/3 + `sync-live-hydration` 6/6 + `sync-undefined-messages` 1/1 + `sync` 2/2; typecheck limpio |
+| Benchmarks | Sin números sintéticos inventados. Método de medición en vivo pendiente: `cellsUpdated`/frame + `stdoutWriteTime`/`renderTime` vía `getNativeStats()` y scroll latency con `opencode run --print-logs` durante streaming real (comparar antes/después de `901c49e1f4` en sesión larga) |
+| Commits | `901c49e1f4` `feat(tui): delta coalescing sync flush with hydration guard (ciclo 8)` — 5 files, 461+/10- |
+| DoD | tests verdes 12/12 ✓ · typecheck ✓ · sin deps nuevas ✓ · guard-rail hydration intacto ✓ · commits en scope ✓ |
+| Rollback | `git revert 901c49e1f4` restaura el case directo (aplica delta por delta sin buffer) |
