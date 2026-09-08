@@ -157,6 +157,85 @@ export const {
       hydratingSessions.get(sessionID)?.parts.add(partID)
     }
 
+    // Ciclo 8 — delta coalescing: buffer por (messageID, partID, field) + flush microtask/timeout + batch.
+    // Guardarraíl ciclo 7: flush respeta hydratingSessions — difiere mientras hidrata (ver líneas 598-599 y merge 613-654).
+    const deltaBuffer = new Map<string, { sessionID: string; messageID: string; partID: string; field: string; text: string }>()
+    let deltaFlushScheduled = false
+    let deltaFlushTimer: ReturnType<typeof setTimeout> | undefined
+
+    function flushDeltas() {
+      deltaFlushScheduled = false
+      if (deltaFlushTimer !== undefined) {
+        clearTimeout(deltaFlushTimer)
+        deltaFlushTimer = undefined
+      }
+      if (deltaBuffer.size === 0) return
+      const toFlush = new Map<string, { sessionID: string; messageID: string; partID: string; field: string; text: string }>()
+      const deferred = new Map<string, { sessionID: string; messageID: string; partID: string; field: string; text: string }>()
+      for (const [k, v] of deltaBuffer) {
+        if (hydratingSessions.has(v.sessionID)) deferred.set(k, v)
+        else toFlush.set(k, v)
+      }
+      if (deferred.size > 0) {
+        deltaBuffer.clear()
+        for (const [k, v] of deferred) deltaBuffer.set(k, v)
+        if (toFlush.size === 0) {
+          deltaFlushScheduled = true
+          deltaFlushTimer = setTimeout(flushDeltas, 16)
+          return
+        }
+      } else {
+        deltaBuffer.clear()
+      }
+      if (toFlush.size === 0) {
+        if (deferred.size > 0) {
+          deltaFlushScheduled = true
+          deltaFlushTimer = setTimeout(flushDeltas, 16)
+        }
+        return
+      }
+      const groups = new Map<string, typeof toFlush>()
+      for (const [k, v] of toFlush) {
+        let g = groups.get(v.messageID)
+        if (!g) {
+          g = new Map()
+          groups.set(v.messageID, g)
+        }
+        g.set(k, v)
+      }
+      batch(() => {
+        for (const [messageID, entries] of groups) {
+          const parts = store.part[messageID]
+          if (!parts) continue
+          setStore(
+            "part",
+            messageID,
+            produce((draft) => {
+              for (const entry of entries.values()) {
+                const idx = draft.findIndex((p) => p.id === entry.partID)
+                if (idx === -1) continue
+                const part = draft[idx] as Record<string, unknown>
+                const field = entry.field as string
+                const existing = part[field] as string | undefined
+                part[field] = (existing ?? "") + entry.text
+              }
+            }),
+          )
+        }
+      })
+      if (deferred.size > 0) {
+        deltaFlushScheduled = true
+        deltaFlushTimer = setTimeout(flushDeltas, 16)
+      }
+    }
+
+    function scheduleDeltaFlush() {
+      if (deltaFlushScheduled) return
+      deltaFlushScheduled = true
+      queueMicrotask(flushDeltas)
+      if (deltaFlushTimer === undefined) deltaFlushTimer = setTimeout(flushDeltas, 16)
+    }
+
     function sessionListQuery(): { scope?: "project"; path?: string } {
       if (!kv.get("session_directory_filter_enabled", true)) return { scope: "project" }
       if (!project.data.instance.path.worktree || !project.data.instance.path.directory) return { scope: "project" }
@@ -401,16 +480,21 @@ export const {
           const result = search(parts, event.properties.partID, (part) => part.id)
           if (!result.found) break
           touchPart(event.properties.sessionID, event.properties.partID)
-          setStore(
-            "part",
-            event.properties.messageID,
-            produce((draft) => {
-              const part = draft[result.index]
-              const field = event.properties.field as keyof typeof part
-              const existing = part[field] as string | undefined
-              ;(part[field] as string) = (existing ?? "") + event.properties.delta
-            }),
-          )
+          // Coalesce: acumular en buffer y flush por microtask/timeout en batch.
+          // El case directo original queda intacto tras revert del buffer+flush.
+          const field = event.properties.field as string
+          const key = `${event.properties.messageID}\0${event.properties.partID}\0${field}`
+          const existing = deltaBuffer.get(key)
+          if (existing) existing.text += event.properties.delta
+          else
+            deltaBuffer.set(key, {
+              sessionID: event.properties.sessionID,
+              messageID: event.properties.messageID,
+              partID: event.properties.partID,
+              field,
+              text: event.properties.delta,
+            })
+          scheduleDeltaFlush()
           break
         }
 
@@ -661,6 +745,8 @@ export const {
           })().finally(() => {
             syncingSessions.delete(sessionID)
             hydratingSessions.delete(sessionID)
+            // Guardarraíl ciclo 7/8: si había deltas diferidos para esta sesión, reprogramar flush ahora.
+            if (deltaBuffer.size > 0) scheduleDeltaFlush()
           })
           syncingSessions.set(sessionID, task)
           return task
