@@ -481,7 +481,7 @@ export const {
           if (!result.found) break
           touchPart(event.properties.sessionID, event.properties.partID)
           // Coalesce: acumular en buffer y flush por microtask/timeout en batch.
-          // El case directo original queda intacto tras revert del buffer+flush.
+          // El case directo fue reemplazado por buffer+flush; `git revert 901c49e1f4` lo restaura.
           const field = event.properties.field as string
           const key = `${event.properties.messageID}\0${event.properties.partID}\0${field}`
           const existing = deltaBuffer.get(key)
