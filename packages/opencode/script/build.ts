@@ -24,6 +24,9 @@ const plugin = createSolidTransformPlugin()
 const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
 const bytecodeFlag = process.argv.includes("--bytecode")
 const smolFlag = process.argv.includes("--smol")
+// E9: build to a separate outdir while a live opencode.exe locks the default dist/
+const outdirIndex = process.argv.indexOf("--outdir")
+const outDir = outdirIndex >= 0 ? (process.argv[outdirIndex + 1] ?? "dist") : "dist"
 
 const createEmbeddedWebUIBundle = async () => {
   console.log(`Building Web UI to embed in the binary`)
@@ -136,7 +139,7 @@ const targets = singleFlag
     })
   : allTargets
 
-await $`rm -rf dist`
+await $`rm -rf ${outDir}`
 
 const binaries: Record<string, string> = {}
 if (!skipInstall) {
@@ -156,7 +159,7 @@ for (const item of targets) {
     .filter(Boolean)
     .join("-")
   console.log(`building ${name}`)
-  await $`mkdir -p dist/${name}/bin`
+  await $`mkdir -p ${outDir}/${name}/bin`
 
   const workerPath = "./src/cli/tui/worker.ts"
   const treeSitterWorkerPath = "opentui-tree-sitter-worker.js"
@@ -178,7 +181,7 @@ for (const item of targets) {
       autoloadTsconfig: true,
       autoloadPackageJson: true,
       target: name.replace(pkg.name, "bun") as any,
-      outfile: `dist/${name}/bin/opencode`,
+      outfile: `${outDir}/${name}/bin/opencode`,
       execArgv: [
         ...(smolFlag ? ["--smol"] : []),
         `--user-agent=opencode/${Script.version}`,
@@ -211,7 +214,7 @@ for (const item of targets) {
 
   // Smoke test: only run if binary is for current platform
   if (item.os === process.platform && item.arch === process.arch && !item.abi) {
-    const binaryPath = `dist/${name}/bin/opencode`
+    const binaryPath = `${outDir}/${name}/bin/opencode`
     console.log(`Running smoke test: ${binaryPath} --version`)
     try {
       const versionOutput = await $`${binaryPath} --version`.text()
@@ -222,8 +225,8 @@ for (const item of targets) {
     }
   }
 
-  await $`rm -rf ./dist/${name}/bin/tui`
-  await Bun.file(`dist/${name}/package.json`).write(
+  await $`rm -rf ./${outDir}/${name}/bin/tui`
+  await Bun.file(`${outDir}/${name}/package.json`).write(
     JSON.stringify(
       {
         name,
@@ -243,12 +246,12 @@ for (const item of targets) {
 if (Script.release) {
   for (const key of Object.keys(binaries)) {
     if (key.includes("linux")) {
-      await $`tar -czf ../../${key}.tar.gz *`.cwd(`dist/${key}/bin`)
+      await $`tar -czf ../../${key}.tar.gz *`.cwd(`${outDir}/${key}/bin`)
     } else {
-      await $`zip -r ../../${key}.zip *`.cwd(`dist/${key}/bin`)
+      await $`zip -r ../../${key}.zip *`.cwd(`${outDir}/${key}/bin`)
     }
   }
-  await $`gh release upload v${Script.version} ./dist/*.zip ./dist/*.tar.gz --clobber --repo ${process.env.GH_REPO}`
+  await $`gh release upload v${Script.version} ${outDir}/*.zip ${outDir}/*.tar.gz --clobber --repo ${process.env.GH_REPO}`
 }
 
 export { binaries }
