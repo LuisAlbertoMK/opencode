@@ -459,17 +459,23 @@ export async function create(input: {
     const documentState = documentPullState()
     const workspaceState = workspacePullState()
     if (!documentState.supported && !workspaceState.supported) return { handled: false, matched: false }
-    return mergeResults(
-      filePath,
-      await Promise.all([
-        ...(documentState.supported ? [requestDiagnosticReport(filePath)] : []),
-        ...documentState.documentIdentifiers.map((identifier) => requestDiagnosticReport(filePath, identifier)),
-        ...(workspaceState.supported ? [requestWorkspaceDiagnosticReport(filePath)] : []),
-        ...workspaceState.workspaceIdentifiers.map((identifier) =>
-          requestWorkspaceDiagnosticReport(filePath, identifier),
-        ),
-      ]),
-    )
+    const work = Promise.all([
+      ...(documentState.supported ? [requestDiagnosticReport(filePath)] : []),
+      ...documentState.documentIdentifiers.map((identifier) => requestDiagnosticReport(filePath, identifier)),
+      ...(workspaceState.supported ? [requestWorkspaceDiagnosticReport(filePath)] : []),
+      ...workspaceState.workspaceIdentifiers.map((identifier) =>
+        requestWorkspaceDiagnosticReport(filePath, identifier),
+      ),
+    ]).catch(() => [] as DiagnosticRequestResult[])
+    // ciclo3-exp6: Promise.race con timeout 2500ms devuelve resultados parciales; no lanza error nuevo, resuelve vacío tras timeout
+    const fallback = new Promise<DiagnosticRequestResult[]>((resolve) => {
+      const t = setTimeout(() => resolve([]), 2500)
+      if (typeof (t as unknown as { unref?: () => void }).unref === "function") {
+        ;(t as unknown as { unref: () => void }).unref()
+      }
+    })
+    const results = await Promise.race([work, fallback])
+    return mergeResults(filePath, results)
   }
 
   function waitForRegistrationChange(timeout: number) {

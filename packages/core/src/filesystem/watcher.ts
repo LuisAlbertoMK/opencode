@@ -21,6 +21,10 @@ declare const OPENCODE_LIBC: string | undefined
 
 const SUBSCRIBE_TIMEOUT_MS = 10_000
 
+// ciclo3-exp5: Set módulo-nivel para pending subscribes fantasma y flag disposed
+const pendingWatchSubscriptions = new Set<Promise<ParcelWatcher.AsyncSubscription>>()
+let watcherDisposed = false
+
 export const Event = FileSystemWatcher.Event
 
 const watcher = lazy((): typeof import("@parcel/watcher") | undefined => {
@@ -80,7 +84,18 @@ const layer = Layer.effect(
     const runFork = Effect.runForkWith(context)
     const subscriptions: ParcelWatcher.AsyncSubscription[] = []
     yield* Effect.addFinalizer(() =>
-      Effect.promise(() => Promise.allSettled(subscriptions.map((subscription) => subscription.unsubscribe()))),
+      Effect.gen(function* () {
+        // ciclo3-exp5: marca disposed y limpia tanto subscripciones confirmadas como pending fantasma
+        watcherDisposed = true
+        yield* Effect.promise(() => Promise.allSettled(subscriptions.map((subscription) => subscription.unsubscribe())))
+        const pending = [...pendingWatchSubscriptions]
+        pendingWatchSubscriptions.clear()
+        yield* Effect.promise(() =>
+          Promise.allSettled(
+            pending.map((p) => p.then((sub) => sub.unsubscribe()).catch(() => {})),
+          ),
+        )
+      }),
     )
 
     const callback: ParcelWatcher.SubscribeCallback = (_error, updates) => {
@@ -93,11 +108,26 @@ const layer = Layer.effect(
 
     const subscribe = (directory: string, ignore: string[]) => {
       const pending = w.subscribe(directory, callback, { ignore, backend })
+      // ciclo3-exp5: guarda promise en Set módulo-nivel y limpia en dispose; flag disposed ejecuta unsubscribe inmediato
+      pendingWatchSubscriptions.add(pending)
+      pending.then(() => pendingWatchSubscriptions.delete(pending)).catch(() => pendingWatchSubscriptions.delete(pending))
+      if (watcherDisposed) {
+        pending.then((subscription) => subscription.unsubscribe()).catch(() => {})
+        pendingWatchSubscriptions.delete(pending)
+      }
       return Effect.promise(() => pending).pipe(
-        Effect.tap((subscription) => Effect.sync(() => subscriptions.push(subscription))),
+        Effect.tap((subscription) =>
+          Effect.sync(() => {
+            subscriptions.push(subscription)
+            pendingWatchSubscriptions.delete(pending)
+            // ciclo3-exp5: si ya se dispuso, desuscribe inmediato
+            if (watcherDisposed) subscription.unsubscribe().catch(() => {})
+          }),
+        ),
         Effect.timeout(SUBSCRIBE_TIMEOUT_MS),
         Effect.catchCause((cause) => {
           pending.then((subscription) => subscription.unsubscribe()).catch(() => {})
+          pendingWatchSubscriptions.delete(pending)
           return Effect.logError("failed to subscribe", { directory, cause: Cause.pretty(cause) })
         }),
       )
