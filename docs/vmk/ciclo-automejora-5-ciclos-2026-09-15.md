@@ -29,6 +29,17 @@ Método por ciclo: investigación previa (30 exps diseñados c/u, file:line + ev
 | Commit/push | sin commit ni push — espera permiso explícito |
 | Bench scripts | `C:\Users\MK\AppData\Local\Temp\opencode\bench-ciclo1.ts`, `bench-ciclo2.ts`, `bench-ciclo5.ts` |
 
+## E9 ejecutado (2026-09-16): PASS
+
+| Métrica | Valor |
+|---|---|
+| Build `--bytecode --smol` | OK (`dist-e9/opencode-windows-x64/bin/opencode.exe`, smoke `--version` PASS) |
+| **Boot mediana** (`--version`, 7 runs) | **512.6 ms** (runs 490-600) |
+| Criterio go/no-go | <800 ms → **CUMPLE** |
+| Veredicto | **Quedarse en Bun definitivo** — sidecar Rust TUI pierde justificación (binario <1s resuelve velocidad edición) |
+| Exe | 360MB (bytecode + WebUI embed, normal Bun compile) |
+| Script | `packages/opencode/script/build.ts` ahora soporta `--outdir` (default `dist` intacto) — permite build en paralelo con sesión viva que lockea `dist/` |
+
 ## Files Changed (este reporte)
 - `docs/vmk/ciclo-automejora-5-ciclos-2026-09-15.md` (nuevo, este archivo)
 - `BITACORA.md` prepend entrada 2026-09-15 (fuera de los 15 de código)
