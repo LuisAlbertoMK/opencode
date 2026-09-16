@@ -1401,6 +1401,8 @@ async function modelSuggestions(provider: Info | undefined, modelID: ModelV2.ID,
 let catalogMemo: { readonly key: Record<string, ModelsDev.Provider>; readonly value: Record<string, Info> } | undefined
 function getCachedCatalog(modelsDev: Record<string, ModelsDev.Provider>): Record<string, Info> {
   if (catalogMemo && catalogMemo.key === modelsDev) return catalogMemo.value
+  // ciclo3-fix: refresh invalida cachés por provider.id
+  invalidateCatalogCaches()
   const next = mapValues(modelsDev, fromModelsDevProvider) as Record<string, Info>
   catalogMemo = { key: modelsDev, value: next }
   return next
