@@ -7,6 +7,16 @@ import { Context, Effect, Layer, Schema } from "effect"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
+// ciclo2-exp6: lazy photon — dynamic import solo en primera imagen; promesa cacheada a nivel de módulo para evitar recarga
+const photonImportCache: { promise?: Promise<typeof import("@silvia-odwyer/photon-node")> } = {}
+const getPhotonModule = () => {
+  const cached = photonImportCache.promise
+  if (cached) return cached
+  const p = import("@silvia-odwyer/photon-node")
+  photonImportCache.promise = p
+  return p
+}
+
 const MAX_BASE64_BYTES = 5 * 1024 * 1024
 const MAX_WIDTH = 2000
 const MAX_HEIGHT = 2000
@@ -66,7 +76,7 @@ const layer = Layer.effect(
         ;(globalThis as typeof globalThis & { __OPENCODE_PHOTON_WASM_PATH?: string }).__OPENCODE_PHOTON_WASM_PATH =
           path.isAbsolute(photonWasm) ? photonWasm : fileURLToPath(new URL(photonWasm, import.meta.url))
       }).pipe(
-        Effect.andThen(() => Effect.tryPromise(() => import("@silvia-odwyer/photon-node"))),
+        Effect.andThen(() => Effect.tryPromise(() => getPhotonModule())),
         Effect.tapError((error) => Effect.logWarning("failed to load photon", { error })),
         Effect.mapError(() => new ResizerUnavailableError()),
       ),
@@ -124,15 +134,23 @@ const layer = Layer.effect(
           return acc.some((item) => item.width === next.width && item.height === next.height) ? acc : [...acc, next]
         }, [])) {
           const resized = photon.resize(decoded, size.width, size.height, photon.SamplingFilter.Lanczos3)
-          const candidate = [
-            { data: Buffer.from(resized.get_bytes()).toString("base64"), mime: "image/png" },
-            ...JPEG_QUALITIES.map((quality) => ({
-              data: Buffer.from(resized.get_bytes_jpeg(quality)).toString("base64"),
-              mime: "image/jpeg",
-            })),
-          ]
-            .map((item) => ({ ...item, bytes: Buffer.byteLength(item.data, "utf8") }))
-            .find((item) => item.bytes <= info.maxBase64Bytes)
+          // ciclo5-exp27: early-exit evita encode JPEG innecesario cuando base64 ya cabe
+          let candidate: { data: string; mime: string; bytes: number } | undefined
+          const pngData = Buffer.from(resized.get_bytes()).toString("base64")
+          const pngBytes = Buffer.byteLength(pngData, "utf8")
+          if (pngBytes <= info.maxBase64Bytes) {
+            candidate = { data: pngData, mime: "image/png", bytes: pngBytes }
+          } else {
+            for (const quality of JPEG_QUALITIES) {
+              // ciclo5-exp27
+              const data = Buffer.from(resized.get_bytes_jpeg(quality)).toString("base64")
+              const b = Buffer.byteLength(data, "utf8")
+              if (b <= info.maxBase64Bytes) {
+                candidate = { data, mime: "image/jpeg", bytes: b }
+                break
+              }
+            }
+          }
           resized.free()
 
           if (candidate) {

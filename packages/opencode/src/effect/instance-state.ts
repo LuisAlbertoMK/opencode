@@ -28,7 +28,7 @@ export const make = <A, E = never, R = never>(
 ): Effect.Effect<InstanceState<A, E, Exclude<R, Scope.Scope>>, never, R | Scope.Scope> =>
   Effect.gen(function* () {
     const cache = yield* ScopedCache.make<string, A, E, R>({
-      capacity: Number.POSITIVE_INFINITY,
+      capacity: 16, // ciclo2-exp8: LRU 16 evita fuga por workspace churn (FIFO evict oldest si no hay LRU nativo)
       lookup: () =>
         Effect.gen(function* () {
           return yield* init(yield* context)
