@@ -217,7 +217,7 @@ const layer = Layer.effect(
     const git = yield* Git.Service
     const locks = yield* RcMap.make({
       lookup: () => TxReentrantLock.make(),
-      idleTimeToLive: 0,
+      idleTimeToLive: 30_000, // ciclo2-exp9: evita re-crear lock por keystroke
     })
     const state = yield* Effect.cached(
       Effect.gen(function* () {

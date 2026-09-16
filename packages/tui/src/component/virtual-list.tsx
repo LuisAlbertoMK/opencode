@@ -62,6 +62,22 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
   // Plain variable (not signal) — only read in the polling interval.
   const itemRefs = new Map<number, BoxRenderable>()
 
+  // ciclo2-exp5: dispose VirtualList — limpia referencias JS (itemRefs + heightCache) en unmount para evitar fuga Zig/BoxRenderable
+  onCleanup(() => {
+    for (const el of itemRefs.values()) {
+      const maybeDestroy = el as unknown as { destroy?: () => void }
+      if (!el.isDestroyed && typeof maybeDestroy.destroy === "function") {
+        try {
+          maybeDestroy.destroy()
+        } catch {
+          // ignore destroy errors during dispose
+        }
+      }
+    }
+    itemRefs.clear()
+    setHeightCache(new Map())
+  })
+
   // Poll scroll position AND measure actual item heights.
   createEffect(() => {
     const ref = props.scrollRef()
@@ -71,12 +87,16 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
     let lastScrollTop = ref.scrollTop
     let idleCycles = 0
     let currentInterval = POLL_ACTIVE_MS
+    // ciclo2-exp16: rAF evita wake-ups inertes vs setInterval; fallback interval dirty-gated es más estable sin browser clock en TUI Zig
+    const rafActive = typeof requestAnimationFrame !== "undefined" && typeof cancelAnimationFrame !== "undefined"
+    let id: ReturnType<typeof setInterval> | number = 0 as unknown as ReturnType<typeof setInterval>
 
     const tick = () => {
       try {
         const r2 = props.scrollRef()
         if (!r2 || r2.isDestroyed) {
-          clearInterval(id)
+          if (rafActive) cancelAnimationFrame(id as unknown as number)
+          if (!rafActive) clearInterval(id as ReturnType<typeof setInterval>)
           return
         }
 
@@ -87,22 +107,25 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
         setScrollTop((prev) => (Math.abs(prev - st) > 0.5 ? st : prev))
         setViewportHeight((prev) => (prev !== vh ? vh : prev))
 
-        // vMK: adaptive polling — slow down when idle
-        if (changed) {
+        // vMK: adaptive polling — slow down when idle (solo en modo interval; en rAF el browser throttling ya regula)
+        if (!rafActive && changed) {
           idleCycles = 0
           if (currentInterval !== POLL_ACTIVE_MS) {
-            clearInterval(id)
+            clearInterval(id as ReturnType<typeof setInterval>)
             currentInterval = POLL_ACTIVE_MS
             id = setInterval(tick, currentInterval)
           }
-        } else {
+        }
+        if (!rafActive && !changed) {
           idleCycles++
           if (idleCycles > 5 && currentInterval !== POLL_IDLE_MS) {
-            clearInterval(id)
+            clearInterval(id as ReturnType<typeof setInterval>)
             currentInterval = POLL_IDLE_MS
             id = setInterval(tick, currentInterval)
           }
         }
+        if (rafActive && changed) idleCycles = 0
+        if (rafActive && !changed) idleCycles++
         lastScrollTop = st
 
         // --- height measurement ---
@@ -155,9 +178,17 @@ export function VirtualList<T>(props: VirtualListProps<T>) {
       }
     }
 
-    let id = setInterval(tick, currentInterval)
-
-    onCleanup(() => clearInterval(id))
+    if (rafActive) {
+      const loop = () => {
+        tick()
+        id = requestAnimationFrame(loop) as unknown as ReturnType<typeof setInterval>
+      }
+      id = requestAnimationFrame(loop) as unknown as ReturnType<typeof setInterval>
+      onCleanup(() => cancelAnimationFrame(id as unknown as number))
+      return
+    }
+    id = setInterval(tick, currentInterval)
+    onCleanup(() => clearInterval(id as ReturnType<typeof setInterval>))
   })
 
   // Prefix-sum over item heights — rebuilt ONLY when heights or item count
