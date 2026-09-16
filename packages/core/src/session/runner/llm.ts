@@ -165,10 +165,23 @@ const layer = Layer.effect(
     const continueAfterOverflowCompaction = (step: number) =>
       new TurnTransitionError({ _tag: "ContinueAfterOverflowCompaction", step })
 
+    // ciclo1-exp4: memoize system context by SessionContextEpoch to avoid repeated Effect.all per turn
+    const systemContextCache = new Map<string, SystemContext.SystemContext>()
     const loadSystemContext = (agent: AgentV2.Selection) =>
-      Effect.all([systemContext.load(), skillGuidance.load(agent), referenceGuidance.load()], {
-        concurrency: "unbounded",
-      }).pipe(Effect.map(SystemContext.combine))
+      Effect.gen(function* () {
+        const key = String(agent.id)
+        const cached = systemContextCache.get(key)
+        if (cached) return cached
+        const combined = yield* Effect.all([systemContext.load(), skillGuidance.load(agent), referenceGuidance.load()], {
+          concurrency: "unbounded",
+        }).pipe(Effect.map(SystemContext.combine))
+        systemContextCache.set(key, combined)
+        if (systemContextCache.size > 32) {
+          const first = systemContextCache.keys().next().value as string
+          systemContextCache.delete(first)
+        }
+        return combined
+      })
 
     const runTurnAttempt = Effect.fn("SessionRunner.runTurn")(function* (
       sessionID: SessionSchema.ID,

@@ -31,6 +31,9 @@ function extract(messages: SessionV1.WithParts[]) {
   return paths
 }
 
+// ciclo1-exp17: cache instruction file path -> {mtimeMs, content}
+const instructionSystemCache = new Map<string, { mtimeMs: number; content: string }>()
+
 export interface Interface {
   readonly clear: (messageID: MessageID) => Effect.Effect<void>
   readonly systemPaths: () => Effect.Effect<Set<string>, FSUtil.Error>
@@ -89,7 +92,23 @@ const layer: Layer.Layer<
     })
 
     const read = Effect.fnUntraced(function* (filepath: string) {
-      return yield* fs.readFileString(filepath).pipe(Effect.catch(() => Effect.succeed("")))
+      const cached = instructionSystemCache.get(filepath)
+      const stat = yield* fs.stat(filepath).pipe(Effect.catch(() => Effect.succeed(undefined)))
+      const mtimeMs = (() => {
+        if (!stat) return undefined
+        const raw = (stat as unknown as { mtime: unknown }).mtime
+        if (raw instanceof Date) return raw.getTime()
+        if (raw && typeof raw === "object" && "_tag" in (raw as object)) {
+          const opt = raw as { _tag: string; value?: unknown }
+          if (opt._tag === "Some" && opt.value instanceof Date) return (opt.value as Date).getTime()
+        }
+        return undefined
+      })()
+      if (cached && mtimeMs !== undefined && cached.mtimeMs === mtimeMs) return cached.content
+      const content = yield* fs.readFileString(filepath).pipe(Effect.catch(() => Effect.succeed("")))
+      if (mtimeMs !== undefined) instructionSystemCache.set(filepath, { mtimeMs, content })
+      if (mtimeMs === undefined && content) instructionSystemCache.set(filepath, { mtimeMs: Date.now(), content })
+      return content
     })
 
     const fetch = Effect.fnUntraced(function* (url: string) {

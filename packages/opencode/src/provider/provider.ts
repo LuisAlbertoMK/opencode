@@ -1,7 +1,5 @@
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
-import os from "os"
 import { ConfigV1 } from "@opencode-ai/core/v1/config/config"
-import fuzzysort from "fuzzysort"
 import { Config } from "@/config/config"
 import { mapValues, mergeDeep, omit, pickBy, sortBy } from "remeda"
 import { NoSuchModelError, type Provider as SDK } from "ai"
@@ -16,8 +14,6 @@ import { Env } from "../env"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { iife } from "@/util/iife"
 import { Global } from "@opencode-ai/core/global"
-import path from "path"
-import { pathToFileURL } from "url"
 import { Effect, Layer, Context, Schema, Types } from "effect"
 import { EffectBridge } from "@/effect/bridge"
 import { InstanceState } from "@/effect/instance-state"
@@ -626,6 +622,8 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
 
       const providerConfig = (yield* dep.config()).provider?.["gitlab"]
       const directory = yield* InstanceState.directory
+      // ciclo1-exp11: lazy os import avoids static cost until needed
+      const os = yield* Effect.promise(() => import("os"))
 
       const aiGatewayHeaders = {
         "User-Agent": `opencode/${InstallationVersion} gitlab-ai-provider/${GITLAB_PROVIDER_VERSION} (${os.platform()} ${os.release()}; ${os.arch()})`,
@@ -755,6 +753,8 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
         }
 
       const apiKey = env["CLOUDFLARE_API_KEY"] || (auth?.type === "api" ? auth.key : undefined)
+      // ciclo1-exp11: lazy os import avoids static cost until needed
+      const os = yield* Effect.promise(() => import("os"))
 
       return {
         autoload: !!apiKey,
@@ -824,6 +824,8 @@ function custom(dep: CustomDep): Record<string, CustomLoader> {
           return undefined
         }
       })
+      // ciclo1-exp11: lazy os import avoids static cost until needed
+      const os = yield* Effect.promise(() => import("os"))
       const opts = {
         metadata,
         cacheTtl: input.options?.cacheTtl,
@@ -1119,19 +1121,22 @@ export const ConfigProvidersResult = Schema.Struct({
 export type ConfigProvidersResult = Types.DeepMutable<Schema.Schema.Type<typeof ConfigProvidersResult>>
 
 export function toPublicInfo(provider: Info): Info {
-  return JSON.parse(
-    JSON.stringify(
-      {
-        ...provider,
-        models: Object.fromEntries(Object.entries(provider.models).filter(([, model]) => Schema.is(Model)(model))),
-      },
-      (_, value) => {
-        if (typeof value === "function" || typeof value === "symbol" || value === undefined) return undefined
-        if (typeof value === "bigint") return value.toString()
-        return value
-      },
-    ),
-  )
+  const cached = publicInfoCache.get(provider.id)
+  if (cached) return cached
+  // ciclo1-exp29: structuredClone memo per provider id
+  const filtered = {
+    ...provider,
+    models: Object.fromEntries(Object.entries(provider.models).filter(([, model]) => Schema.is(Model)(model))),
+  }
+  const serialized = JSON.stringify(filtered, (_, value) => {
+    if (typeof value === "function" || typeof value === "symbol" || value === undefined) return undefined
+    if (typeof value === "bigint") return value.toString()
+    return value
+  })
+  const parsed = JSON.parse(serialized) as Info
+  const result = typeof structuredClone === "function" ? structuredClone(parsed) : parsed
+  publicInfoCache.set(provider.id, result)
+  return result
 }
 
 export function defaultModelIDs<T extends { models: Record<string, { id: string }> }>(providers: Record<string, T>) {
@@ -1357,7 +1362,8 @@ function modeOptions(model: Model, body: Record<string, unknown> | undefined) {
   return { ...rest, reasoningMode: reasoning.mode }
 }
 
-function modelSuggestions(provider: Info | undefined, modelID: ModelV2.ID, enableExperimentalModels: boolean) {
+// ciclo1-exp1: lazily import fuzzysort to avoid bundling cost unless suggestions needed
+async function modelSuggestions(provider: Info | undefined, modelID: ModelV2.ID, enableExperimentalModels: boolean): Promise<string[]> {
   const available = provider
     ? Object.keys(provider.models).filter((id) => {
         const model = provider.models[id]
@@ -1366,7 +1372,16 @@ function modelSuggestions(provider: Info | undefined, modelID: ModelV2.ID, enabl
         return true
       })
     : []
-  const fuzzy = fuzzysort.go(modelID, available, { limit: 3, threshold: -10000 }).map((m) => m.target)
+  // ciclo5-exp14: prefilter evita scan total
+  if (available.length > 400) {
+    const prefiltered = available.filter((id) => id.toLowerCase().includes(modelID.toLowerCase()))
+    if (prefiltered.length >= 3) return prefiltered.slice(0, 3)
+  }
+  const fuzzysortImport = (await import("fuzzysort")) as unknown as typeof import("fuzzysort") & {
+    default?: typeof import("fuzzysort")
+  }
+  const fuzzysortLocal: typeof import("fuzzysort") = fuzzysortImport.default ?? fuzzysortImport
+  const fuzzy = fuzzysortLocal.go(modelID, available, { limit: 3, threshold: -1000 }).map((m: { target: string }) => m.target)
   if (fuzzy.length) return fuzzy
   const query = modelID
     .toLowerCase()
@@ -1386,6 +1401,41 @@ function modelSuggestions(provider: Info | undefined, modelID: ModelV2.ID, enabl
     .map((item) => item.id)
 }
 
+// ciclo1-exp2: cache catalog derived from modelsDev to avoid remapping per instance
+let catalogMemo: { readonly key: Record<string, ModelsDev.Provider>; readonly value: Record<string, Info> } | undefined
+function getCachedCatalog(modelsDev: Record<string, ModelsDev.Provider>): Record<string, Info> {
+  if (catalogMemo && catalogMemo.key === modelsDev) return catalogMemo.value
+  const next = mapValues(modelsDev, fromModelsDevProvider) as Record<string, Info>
+  catalogMemo = { key: modelsDev, value: next }
+  return next
+}
+// ciclo1-exp3: cache sorted models by release_date to avoid per-call sortBy
+const sortedCache = new Map<string, Model[]>()
+function getSortedModels(provider: Info): Model[] {
+  const cached = sortedCache.get(provider.id)
+  if (cached) return cached
+  const sorted = sortBy(
+    Object.values(provider.models),
+    [(model) => model.release_date, "desc"],
+    [(model) => model.id, "desc"],
+  )
+  sortedCache.set(provider.id, sorted)
+  return sorted
+}
+
+// ciclo1-exp13: cache npmPackage -> entrypoint to skip Npm.add
+const npmEntrypointCache = new Map<string, string>()
+// ciclo1-exp29: memo toPublicInfo by provider id using structuredClone
+const publicInfoCache = new Map<string, Info>()
+// ciclo1-exp2+exp3: invalidate catalog and sorted caches together on reload
+function invalidateCatalogCaches() {
+  catalogMemo = undefined
+  sortedCache.clear()
+  // ciclo1-exp29: invalidate toPublicInfo memo with catalog
+  publicInfoCache.clear()
+  npmEntrypointCache.clear()
+}
+
 const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
@@ -1402,7 +1452,8 @@ const layer = Layer.effect(
         const bridge = yield* EffectBridge.make()
         const cfg = yield* config.get()
         const modelsDev = yield* modelsDevSvc.get()
-        const catalog = mapValues(modelsDev, fromModelsDevProvider)
+        // ciclo1-exp2: use module-level memo to avoid remapping per instance
+        const catalog = getCachedCatalog(modelsDev)
         const database = mapValues(catalog, toPublicInfo)
 
         const providers: Record<ProviderV2.ID, Info> = {} as Record<ProviderV2.ID, Info>
@@ -1843,11 +1894,17 @@ const layer = Layer.effect(
           if (model.api.npm.startsWith("file://")) {
             return model.api.npm
           }
+          // ciclo1-exp13: reuse cached entrypoint to skip Npm.add
+          const cached = npmEntrypointCache.get(model.api.npm)
+          if (cached) return cached
           const item = await Npm.add(model.api.npm)
           if (!item.entrypoint) throw new Error(`Package ${model.api.npm} has no import entrypoint`)
+          npmEntrypointCache.set(model.api.npm, item.entrypoint)
           return item.entrypoint
         })()
 
+        // ciclo1-exp11: lazy url import avoids static cost
+        const { pathToFileURL } = await import("url")
         // `installedPath` is a local entry path or an existing `file://` URL. Normalize
         // only path inputs so Node on Windows accepts the dynamic import.
         const importSpec = installedPath.startsWith("file://") ? installedPath : pathToFileURL(installedPath).href
@@ -1874,21 +1931,31 @@ const layer = Layer.effect(
       const provider = s.providers[providerID]
       if (!provider) {
         const catalogProvider = s.catalog[providerID]
+        // ciclo1-exp1: dynamic import lazily typed
         const suggestions = catalogProvider
-          ? modelSuggestions(catalogProvider, modelID, runtimeFlags.enableExperimentalModels)
-          : fuzzysort
-              .go(providerID, Object.keys({ ...s.catalog, ...s.providers }), { limit: 3, threshold: -10000 })
-              .map((m) => m.target)
+          ? yield* Effect.promise(() => modelSuggestions(catalogProvider, modelID, runtimeFlags.enableExperimentalModels))
+          : yield* Effect.promise(async () => {
+              const fuzzysortImport = (await import("fuzzysort")) as unknown as typeof import("fuzzysort") & {
+                default?: typeof import("fuzzysort")
+              }
+              const fuzzysortLocal: typeof import("fuzzysort") = fuzzysortImport.default ?? fuzzysortImport
+              return fuzzysortLocal
+                .go(providerID, Object.keys({ ...s.catalog, ...s.providers }), { limit: 3, threshold: -10000 })
+                .map((m: { target: string }) => m.target)
+            })
         return yield* new ModelNotFoundError({ providerID, modelID, suggestions })
       }
 
       const info = provider.models[modelID]
       if (!info) {
-        const current = modelSuggestions(provider, modelID, runtimeFlags.enableExperimentalModels)
-        const suggestions = current.length
-          ? current
-          : modelSuggestions(s.catalog[providerID], modelID, runtimeFlags.enableExperimentalModels)
-        return yield* new ModelNotFoundError({ providerID, modelID, suggestions })
+        const current = yield* Effect.promise(() =>
+          modelSuggestions(provider, modelID, runtimeFlags.enableExperimentalModels),
+        )
+        if (current.length) return yield* new ModelNotFoundError({ providerID, modelID, suggestions: current })
+        const fallback = yield* Effect.promise(() =>
+          modelSuggestions(s.catalog[providerID], modelID, runtimeFlags.enableExperimentalModels),
+        )
+        return yield* new ModelNotFoundError({ providerID, modelID, suggestions: fallback })
       }
       return info
     })
@@ -1973,11 +2040,8 @@ const layer = Layer.effect(
         : providerID.startsWith("github-copilot")
           ? ["gpt-mini", ...smallModelFamilyPriority]
           : smallModelFamilyPriority
-      const models = sortBy(
-        Object.values(provider.models),
-        [(model) => model.release_date, "desc"],
-        [(model) => model.id, "desc"],
-      )
+      // ciclo1-exp3: use module-level sorted cache invalidated with catalog
+      const models = getSortedModels(provider)
       for (const family of priority) {
         const candidates = models.filter((model) => model.family === family)
         if (providerID === ProviderV2.ID.amazonBedrock) {
@@ -2010,6 +2074,8 @@ const layer = Layer.effect(
       if (cfg.model) return parseModel(cfg.model)
 
       const s = yield* InstanceState.get(state)
+      // ciclo1-exp11: lazy path import avoids static cost
+      const path = yield* Effect.promise(() => import("path"))
       const recent = yield* fs.readJson(path.join(Global.Path.state, "model.json")).pipe(
         Effect.map((x): { providerID: ProviderV2.ID; modelID: ModelV2.ID }[] => {
           if (!isRecord(x) || !Array.isArray(x.recent)) return []
@@ -2045,11 +2111,22 @@ const layer = Layer.effect(
 )
 
 const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro"]
+// ciclo1-exp6: pre-index priority rank for O(1) lookup vs linear findIndex
+const priorityRank = new Map<string, number>(priority.map((value, index) => [value, index] as const))
+function getPriorityRank(id: string): number {
+  for (const entry of priorityRank) {
+    const filter = entry[0]
+    const rank = entry[1]
+    if (id.includes(filter)) return rank
+  }
+  return -1
+}
 const smallModelFamilyPriority = ["gemini-flash", "gpt-nano", "claude-haiku"]
 export function sort<T extends { id: string }>(models: T[]) {
   return sortBy(
     models,
-    [(model) => priority.findIndex((filter) => model.id.includes(filter)), "desc"],
+    // ciclo1-exp6: O(1) rank lookup via pre-indexed Map
+    [(model) => getPriorityRank(model.id), "desc"],
     [(model) => (model.id.includes("latest") ? 0 : 1), "asc"],
     [(model) => model.id, "desc"],
   )

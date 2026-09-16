@@ -166,6 +166,25 @@ ${message.recent}
   }
 }
 
+// ciclo1-exp5: LRU 64 memo for toLLMMessage per messageID+model
+const llmMessageCache = new Map<string, Message[]>()
+const LLM_CACHE_MAX = 64
+function llmCacheKey(message: SessionMessage.Message, model: Model): string {
+  return `${String(message.id)}:${String(model.id)}:${String(model.provider)}`
+}
+function toLLMMessageCached(message: SessionMessage.Message, model: Model): Message[] {
+  const key = llmCacheKey(message, model)
+  const cached = llmMessageCache.get(key)
+  if (cached) return cached
+  const result = toLLMMessage(message, model)
+  if (llmMessageCache.size >= LLM_CACHE_MAX) {
+    const first = llmMessageCache.keys().next().value as string
+    llmMessageCache.delete(first)
+  }
+  llmMessageCache.set(key, result)
+  return result
+}
+
 /** Translate projected V2 Session history into canonical @opencode-ai/llm context. */
 export const toLLMMessages = (messages: readonly SessionMessage.Message[], model: Model) =>
-  messages.flatMap((message) => toLLMMessage(message, model))
+  messages.flatMap((message) => toLLMMessageCached(message, model))
