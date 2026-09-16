@@ -80,18 +80,31 @@ export function spawn(cmd: string[], opts: Options = {}): Child {
 
     const ms = opts.timeout ?? 5_000
     if (ms <= 0) return
-    timer = setTimeout(() => proc.kill("SIGKILL"), ms)
+    // ciclo3-exp3: guarda referencia local y unref para no bloquear event loop
+    const t = setTimeout(() => proc.kill("SIGKILL"), ms)
+    if (typeof (t as unknown as { unref?: () => void }).unref === "function") {
+      ;(t as unknown as { unref: () => void }).unref()
+    }
+    timer = t
   }
 
   const exited = new Promise<number>((resolve, reject) => {
     const done = () => {
       opts.abort?.removeEventListener("abort", abort)
-      if (timer) clearTimeout(timer)
+      // ciclo3-exp3: clearTimeout/unref en todos los caminos de salida (exit y close)
+      const t = timer
+      if (t) clearTimeout(t)
+      timer = undefined
     }
 
     proc.once("exit", (code, signal) => {
       done()
       resolve(code ?? (signal ? 1 : 0))
+    })
+
+    proc.once("close", () => {
+      // ciclo3-exp3: close sin exit previo también limpia timer SIGKILL
+      done()
     })
 
     proc.once("error", (error) => {

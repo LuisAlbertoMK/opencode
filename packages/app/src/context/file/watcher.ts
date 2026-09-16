@@ -26,7 +26,14 @@ export function invalidateFromWatcher(event: WatcherEvent, ops: WatcherOps) {
 
   const path = ops.normalize(rawPath)
   if (!path) return
-  if (path.startsWith(".git/")) return
+  if (
+    path.startsWith(".git/") ||
+    path.startsWith("node_modules/") ||
+    path.startsWith(".parcel-cache/") ||
+    path.startsWith("dist/") ||
+    path.startsWith(".opencode/cache")
+  )
+    return // ciclo5-exp14(c3)
 
   if (ops.hasFile(path) || ops.isOpen?.(path)) {
     ops.loadFile(path)

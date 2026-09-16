@@ -271,6 +271,13 @@ export const make = Effect.gen(function* () {
       let end = false
       let exit: readonly [code: number | null, signal: NodeJS.Signals | null] | undefined
       proc.on("error", (err) => {
+        // ciclo3-exp1: spawn falla antes de registrar handler en acquireRelease → mata grupo/pid huérfano defensivo
+        try {
+          if (proc.pid) proc.kill("SIGKILL")
+        } catch {}
+        try {
+          if (proc.pid && process.platform !== "win32") process.kill(-proc.pid, "SIGKILL")
+        } catch {}
         resume(Effect.fail(toPlatformError("spawn", err, command)))
       })
       proc.on("exit", (...args) => {
@@ -370,15 +377,35 @@ export const make = Effect.gen(function* () {
           const extra = fds(command.options)
           const dir = yield* cwd(command.options)
 
+          let leakedProc: NodeChildProcess.ChildProcess | undefined
           const [proc, signal] = yield* Effect.acquireRelease(
-            spawn(command, {
-              cwd: dir,
-              env: env(command.options),
-              stdio: stdios(sin, sout, serr, extra),
-              detached: command.options.detached ?? process.platform !== "win32",
-              shell: command.options.shell,
-              windowsHide: process.platform === "win32",
-            }),
+            Effect.gen(function* () {
+              const res = yield* spawn(command, {
+                cwd: dir,
+                env: env(command.options),
+                stdio: stdios(sin, sout, serr, extra),
+                detached: command.options.detached ?? process.platform !== "win32",
+                shell: command.options.shell,
+                windowsHide: process.platform === "win32",
+              })
+              leakedProc = res[0]
+              return res
+            }).pipe(
+              Effect.tapError(() =>
+                Effect.sync(() => {
+                  // ciclo3-exp1: defensivo si spawn falla antes de registrar release → intenta matar pid/grupo huérfano
+                  const p = leakedProc
+                  if (p?.pid) {
+                    try {
+                      p.kill("SIGKILL")
+                    } catch {}
+                    try {
+                      if (process.platform !== "win32") process.kill(-p.pid, "SIGKILL")
+                    } catch {}
+                  }
+                }),
+              ),
+            ),
             Effect.fnUntraced(function* ([proc, signal]) {
               const done = yield* Deferred.isDone(signal)
               const kill = timeout(proc, command, command.options)
