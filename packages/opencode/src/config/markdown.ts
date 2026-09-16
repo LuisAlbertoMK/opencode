@@ -5,8 +5,28 @@ import { ConfigMarkdown as ConfigMarkdownCore } from "@opencode-ai/core/config/m
 export const FILE_REGEX = /(?<![\w`])@(\.?[^\s`,.]*(?:\.[^\s`,.]+)*)/g
 export const SHELL_REGEX = /!`([^`]+)`/g
 
+// ciclo1-exp20: memo files with LRU 64 for string templates, WeakMap for objects
+const filesStringCache = new Map<string, RegExpMatchArray[]>()
+const filesWeakCache = new WeakMap<object, RegExpMatchArray[]>()
+const FILES_CACHE_LIMIT = 64
 export function files(template: string) {
-  return Array.from(template.matchAll(FILE_REGEX))
+  if (typeof template !== "string") {
+    const obj = template as unknown as object
+    const cachedWeak = filesWeakCache.get(obj)
+    if (cachedWeak) return cachedWeak
+    const resultWeak = Array.from((template as unknown as string).matchAll(FILE_REGEX))
+    filesWeakCache.set(obj, resultWeak)
+    return resultWeak
+  }
+  const cached = filesStringCache.get(template)
+  if (cached) return cached
+  const result = Array.from(template.matchAll(FILE_REGEX))
+  if (filesStringCache.size >= FILES_CACHE_LIMIT) {
+    const firstKey = filesStringCache.keys().next().value
+    if (firstKey !== undefined) filesStringCache.delete(firstKey)
+  }
+  filesStringCache.set(template, result)
+  return result
 }
 
 export function shell(template: string) {
