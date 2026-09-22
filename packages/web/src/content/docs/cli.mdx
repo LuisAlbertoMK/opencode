@@ -382,6 +382,16 @@ opencode run --attach http://localhost:4096 "Explain async/await in JavaScript"
 | <nobr><code>{"--variant"}</code></nobr>  |       | Model variant (provider-specific reasoning effort)                         |
 | <nobr><code>{"--thinking"}</code></nobr> |       | Show thinking blocks                                                       |
 | <nobr><code>{"--auto"}</code></nobr>     |       | Auto-approve permissions that are not explicitly denied                    |
+| <nobr><code>{"--no-watcher"}</code></nobr> |     | Disable file watcher (lightweight mode)                                    |
+| <nobr><code>{"--no-lsp"}</code></nobr>     |     | Disable LSP servers (lightweight mode)                                     |
+
+#### Ephemeral mode & lightweight flags
+
+`opencode run "prompt"` is the canonical ephemeral mode: streams events to stdout and exits when the session becomes idle (`session.status` → `idle`). No file watcher, no LSP servers, zero RAM when idle. Ideal for scripting and CI.
+
+Lightweight TUI: `opencode --mini` (or `opencode run --mini`) boots a split-footer direct mode with an in-process server. Add `--no-watcher` / `--no-lsp` to skip those subsystems individually; the rest of the TUI continues normally and features that require the disabled subsystem show a notice instead of crashing. Flag priority: CLI `--no-*` sets `OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER` / `OPENCODE_DISABLE_LSP` for that process.
+
+Model routing: `--model` (CLI) > `model:` in the agent YAML/frontmatter > session default. See [Agents](/docs/agents#model) for per-agent `model:` configuration.
 
 ---
 

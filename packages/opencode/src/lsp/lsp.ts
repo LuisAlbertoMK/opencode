@@ -13,6 +13,7 @@ import { InstanceState } from "@/effect/instance-state"
 import { containsPath } from "@/project/instance-context"
 import { NonNegativeInt } from "@opencode-ai/core/schema"
 import { RuntimeFlags } from "@/effect/runtime-flags"
+import { Flag } from "@opencode-ai/core/flag/flag"
 import { LspEvent } from "@opencode-ai/schema/lsp-event"
 
 export const Event = LspEvent
@@ -154,6 +155,16 @@ const layer = Layer.effect(
 
     const state = yield* InstanceState.make<State>(
       Effect.fn("LSP.state")(function* (ctx) {
+        if (process.env["OPENCODE_DISABLE_LSP"] === "true" || process.env["OPENCODE_DISABLE_LSP"] === "1") {
+          yield* Effect.logInfo("LSP disabled via OPENCODE_DISABLE_LSP / --no-lsp")
+          const s: State = {
+            clients: [],
+            servers: {},
+            broken: new Set(),
+            spawning: new Map(),
+          }
+          return s
+        }
         const cfg = yield* config.get()
 
         const servers: Record<string, LSPServer.Info> = {}

@@ -1186,7 +1186,9 @@ export class NoModelsError extends Schema.TaggedErrorClass<NoModelsError>()("Pro
   providerID: ProviderV2.ID,
 }) {
   override get message() {
-    return `No models are available for provider: ${this.providerID}`
+    if (this.providerID === "opencode")
+      return `No models are available for provider: ${this.providerID} — hacé \`opencode auth login opencode\` o seteá OPENCODE_API_KEY, o borrá ~/.cache/opencode/models.json (%LOCALAPPDATA%\\opencode\\cache\\models.json en Windows) y reintentá. Si models.dev no trae modelos free, el error es esperado hasta autenticar.`
+    return `No models are available for provider: ${this.providerID} — verificá tu auth/config para este provider`
   }
 
   static isInstance(input: unknown): input is NoModelsError {

@@ -368,6 +368,20 @@ If you don’t specify a model, primary agents use the [model globally configure
 
 The model ID in your OpenCode config uses the format `provider/model-id`. For example, if you're using [OpenCode Zen](/docs/zen), you would use `opencode/gpt-5.1-codex` for GPT 5.1 Codex.
 
+#### Per-agent routing priority
+
+Resolution order: `--model` CLI flag (`provider/model`) > `model:` in the agent YAML/frontmatter > session default (`model` / `small_model` in `opencode.json`). Example:
+
+```yaml title=".opencode/agents/reviewer.md"
+---
+description: Reviews code
+mode: subagent
+model: anthropic/claude-sonnet-4-20250514
+---
+```
+
+`opencode run --model openai/gpt-5 --agent reviewer "prompt"` uses `openai/gpt-5`; without `--model` the agent's `model:` is used. Ephemeral `opencode run "prompt"` follows the same priority and exits on idle with no watcher/LSP (zero idle RAM). For lightweight TUI, `--no-watcher` / `--no-lsp` disable those subsystems gracefully.
+
 ---
 
 ### Tools (deprecated)

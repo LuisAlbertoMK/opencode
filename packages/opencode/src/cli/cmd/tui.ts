@@ -73,7 +73,7 @@ export const TuiThreadCommand = cmd({
   command: "$0 [project]",
   describe: "start opencode tui",
   builder: (yargs) =>
-    withNetworkOptions(yargs)
+    withNetworkOptions(yargs.parserConfiguration({ "boolean-negation": false }) as any)
       .positional("project", {
         type: "string",
         describe: "path to start opencode in",
@@ -140,6 +140,20 @@ export const TuiThreadCommand = cmd({
       .option("demo", {
         type: "boolean",
         hidden: true,
+      })
+      .option("no-watcher", {
+        type: "boolean",
+        default: false,
+        describe: "disable file watcher (lightweight mode; features that need it show a notice)",
+      })
+      .option("no-lsp", {
+        type: "boolean",
+        default: false,
+        describe: "disable LSP servers (lightweight mode; LSP features show a notice)",
+      })
+      .option("no-mdns", {
+        type: "boolean",
+        hidden: true,
       }),
   handler: async (args) => {
     if (args.replay === true) {
@@ -171,6 +185,8 @@ export const TuiThreadCommand = cmd({
         replay: noReplay ? false : undefined,
         replayLimit: args.replayLimit,
         demo: args.demo,
+        noWatcher: args["no-watcher"] ?? false,
+        noLsp: args["no-lsp"] ?? false,
       })
       return
     }
@@ -179,6 +195,8 @@ export const TuiThreadCommand = cmd({
       ["--no-replay", noReplay],
       ["--replay-limit", args.replayLimit !== undefined],
       ["--demo", args.demo !== undefined],
+      ["--no-watcher", args["no-watcher"] === true],
+      ["--no-lsp", args["no-lsp"] === true],
     ].find((entry) => entry[1])?.[0]
     if (unsupported) {
       UI.error(`${unsupported} requires --mini`)

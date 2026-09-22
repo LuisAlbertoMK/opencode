@@ -126,14 +126,33 @@ async function toolError(part: ToolPart) {
 export const RunCommand = effectCmd({
   command: "run [message..]",
   describe: "run opencode with a message",
-  // --attach connects to a remote server (no local instance needed); the
-  // default path runs an in-process server and needs the project instance.
-  instance: (args) => !args.attach,
-  // For --dir without --attach, load instance for the resolved target dir.
-  // The handler also chdirs (preserving the legacy order: chdir → file resolution).
-  directory: (args) => (args.dir && !args.attach ? path.resolve(process.cwd(), args.dir) : process.cwd()),
+  instance: (args) => {
+    const a = args as typeof args & {
+      "no-watcher"?: boolean
+      "no-lsp"?: boolean
+      noWatcher?: boolean
+      noLsp?: boolean
+    }
+    if (a["no-watcher"] || a.noWatcher) process.env["OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER"] = "true"
+    if (a["no-lsp"] || a.noLsp) process.env["OPENCODE_DISABLE_LSP"] = "true"
+    if (a.attach) return false
+    return true
+  },
+  directory: (args) => {
+    const a = args as typeof args & {
+      "no-watcher"?: boolean
+      "no-lsp"?: boolean
+      noWatcher?: boolean
+      noLsp?: boolean
+    }
+    if (a["no-watcher"] || a.noWatcher) process.env["OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER"] = "true"
+    if (a["no-lsp"] || a.noLsp) process.env["OPENCODE_DISABLE_LSP"] = "true"
+    if (a.dir && !a.attach) return path.resolve(process.cwd(), a.dir)
+    return process.cwd()
+  },
   builder: (yargs: Argv) =>
     yargs
+      .parserConfiguration({ "boolean-negation": false })
       .positional("message", {
         describe: "message to send",
         type: "string",
@@ -259,8 +278,26 @@ export const RunCommand = effectCmd({
         default: false,
         hidden: true,
         describe: "enable direct interactive demo slash commands; pass one as the message to run it immediately",
+      })
+      .option("no-watcher", {
+        type: "boolean",
+        default: false,
+        describe: "disable file watcher (lightweight mode; features that need it show a notice)",
+      })
+      .option("no-lsp", {
+        type: "boolean",
+        default: false,
+        describe: "disable LSP servers (lightweight mode; LSP features show a notice)",
       }),
   handler: Effect.fn("Cli.run")(function* (args) {
+    const a = args as typeof args & {
+      "no-watcher"?: boolean
+      "no-lsp"?: boolean
+      noWatcher?: boolean
+      noLsp?: boolean
+    }
+    if (a["no-watcher"] || a.noWatcher) process.env["OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER"] = "true"
+    if (a["no-lsp"] || a.noLsp) process.env["OPENCODE_DISABLE_LSP"] = "true"
     const { Agent } = yield* Effect.promise(() => import("@/agent/agent"))
     const { RuntimeFlags } = yield* Effect.promise(() => import("@/effect/runtime-flags"))
     const { InstanceRef } = yield* Effect.promise(() => import("@/effect/instance-ref"))
@@ -977,10 +1014,14 @@ type MiniCommandInput = {
   replay?: boolean
   replayLimit?: number
   demo?: boolean
+  noWatcher?: boolean
+  noLsp?: boolean
 }
 
 export async function runMini(input: MiniCommandInput) {
   if (!RunCommand.handler) throw new Error("Mini command handler is unavailable")
+  if (input.noWatcher) process.env["OPENCODE_EXPERIMENTAL_DISABLE_FILEWATCHER"] = "true"
+  if (input.noLsp) process.env["OPENCODE_DISABLE_LSP"] = "true"
   await RunCommand.handler({
     $0: "opencode",
     _: ["mini"],
@@ -1012,5 +1053,9 @@ export async function runMini(input: MiniCommandInput) {
     "dangerously-skip-permissions": false,
     dangerouslySkipPermissions: false,
     demo: input.demo ?? false,
-  })
+    "no-watcher": input.noWatcher ?? false,
+    "no-lsp": input.noLsp ?? false,
+    noWatcher: input.noWatcher ?? false,
+    noLsp: input.noLsp ?? false,
+  } as never)
 }
