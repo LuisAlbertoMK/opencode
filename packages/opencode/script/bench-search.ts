@@ -30,11 +30,13 @@ const FILE_LIMIT = 100
 const GREP_LIMIT = 50
 const GLOB_LIMIT = 50
 
+const locationRef = Location.Ref.make({ directory: dir })
+
 // Provisiona FileSystem vía LocationServiceMap + AppRuntime (fix Service not found sin tocar runtime real)
-const run = <A>(effect: Effect.Effect<A, unknown, never>) =>
+const run = <A>(effect: Effect.Effect<A, unknown, FileSystem.Service>) =>
   AppRuntime.runPromise(
     effect.pipe(
-      Effect.provide(LocationServiceMap.Service.get(Location.Ref.make({ directory: dir }))),
+      Effect.provide(LocationServiceMap.Service.get(locationRef)),
       Effect.provide(locationServiceMapLayer),
     ),
   ) as Promise<A>

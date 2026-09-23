@@ -1,0 +1,47 @@
+{
+  "freeze_id": "HEAD-6fa0f16e7f-e69de29b",
+  "tier": 0,
+  "verdict": "PASS",
+  "files": [
+    "packages/opencode/script/bench-boot.ps1",
+    "packages/opencode/script/bench-db-mmap.ts",
+    "packages/opencode/script/bench-search.ts",
+    "packages/opencode/script/bench-test-suite.ts",
+    "docs/agentes/ciclo9/RECEIPT-slice1.json"
+  ],
+  "pilot_medians": {
+    "bench_boot_dev_median_ms": 1488.4,
+    "bench_boot_warmups": 1,
+    "bench_boot_runs": 3,
+    "bench_db_mmap_A_insert_ms": 298.1,
+    "bench_db_mmap_B_insert_ms": 343.8,
+    "bench_db_mmap_warmups": 1,
+    "bench_db_mmap_runs": 3,
+    "bench_search_find_fff_median_ms": 2.0,
+    "bench_search_find_package_json_median_ms": 1.4,
+    "bench_search_find_tools_experiment_median_ms": 1.5,
+    "bench_search_grep_FileFinder_median_ms": 193.9,
+    "bench_search_grep_import_median_ms": 458.5,
+    "bench_search_grep_grep_median_ms": 450.9,
+    "bench_search_grep_autocomplete_median_ms": 156.9,
+    "bench_search_glob_test_ts_median_ms": 391.7,
+    "bench_search_warmups": 1,
+    "bench_search_runs": 3,
+    "bench_test_suite_grep_filter_median_s": 12.961,
+    "bench_test_suite_filter": "test/tool/grep.test.ts",
+    "bench_test_suite_warmups": 1,
+    "bench_test_suite_runs": 3,
+    "bench_test_suite_short_mode": "BENCH_SHORT=1 => test/tool (documented), BENCH_FILTER override",
+    "typecheck_packages_opencode": "PASS",
+    "typecheck_full_turbo": "30/30 PASS",
+    "worktree_safe": true,
+    "commit_limit_lines": "<400"
+  },
+  "notes": {
+    "bench_boot_protocol": "1 warmup + 3 runs piloto (oficial 1+7), PSCommandPath worktree-safe",
+    "bench_db_mmap_protocol": "1 warmup + 3 runs piloto (oficial 1+5), import.meta.dir worktree-safe",
+    "bench_search_fix": "Provisiona FileSystem.Service via LocationServiceMap.AppRuntime (Location.Ref.make + locationServiceMapLayer), TS2345 resuelto",
+    "bench_test_suite_protocol": "1 warmup + 3 runs piloto; full suite >5min (read.test 39s single file), modo corto BENCH_SHORT/BENCH_FILTER documentado sin borrar modo completo",
+    "preexisting_failures": "llm/cli pre-push hook: no reproduce en turbo typecheck 30/30 PASS (reportado, no tocado)"
+  }
+}
