@@ -94,7 +94,10 @@ for (let i = 0; i < RUNS; i++) {
   B.insertMs.push(b.insertMs)
   B.selectMs.push(b.selectMs)
   B.scanMs.push(b.scanMs)
-  console.log(`run ${i + 1}/${RUNS} A insert=${a.insertMs.toFixed(1)}ms B insert=${b.insertMs.toFixed(1)}ms`)
+  // Tier0 slice3: DB fresca por corrida (file db-<tag>.sqlite nuevo), log completo para varianza intra-serie
+  console.log(
+    `run ${i + 1}/${RUNS} A insert=${a.insertMs.toFixed(1)}ms select=${a.selectMs.toFixed(1)}ms scan=${a.scanMs.toFixed(1)}ms | B insert=${b.insertMs.toFixed(1)}ms select=${b.selectMs.toFixed(1)}ms scan=${b.scanMs.toFixed(1)}ms`,
+  )
 }
 
 const med = (xs: number[]) => {
@@ -124,6 +127,14 @@ console.log(
         insert: r1(((med(B.insertMs) - med(A.insertMs)) / med(A.insertMs)) * 100),
         select: r1(((med(B.selectMs) - med(A.selectMs)) / med(A.selectMs)) * 100),
         scan: r1(((med(B.scanMs) - med(A.scanMs)) / med(A.scanMs)) * 100),
+      },
+      raw: {
+        A_insert: A.insertMs.map(r1),
+        B_insert: B.insertMs.map(r1),
+        A_select: A.selectMs.map(r1),
+        B_select: B.selectMs.map(r1),
+        A_scan: A.scanMs.map(r1),
+        B_scan: B.scanMs.map(r1),
       },
     },
     null,

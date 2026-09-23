@@ -1,0 +1,98 @@
+{
+  "freeze_id": "HEAD-0227b1b0b3-e69de29b",
+  "tier": 0,
+  "verdict": {
+    "a_mediana_comparable": "NO. La mediana insert NO es comparable entre ramas/dias. Varianza intra-serie 406-839ms (rango 377ms en serie1, 542-1126ms rango 584ms en serie2) y drift inter-serie de medianas A: 489.1 -> 630.6 (+29%) -> 469.2 -> 454.8 en la misma maquina minutos aparte, con outliers esporadicos (839, 1126). El bench entero (insert) depende de FS cache/WAL sync/IO jitter, no del codigo. Comparar medianas absolutas entre dias (custom 700.5 vs premerge 301 vs upstream 277) es invalido: la varianza del entorno supera cualquier efecto de rama.",
+    "b_protocolo_recomendado": "Descartar insert como metrica primaria. Para db usar SOLO select/scan (scan A 11-16ms estable, select correlacionado pero menos ruidoso) con DB fresca por corrida + interleaved A/B (ya implementado). Si se insiste en insert: DB fresca por run (file nuevo, ya hecho), interleaved, N>=7, reportar medianas PAREADAS dentro de la misma serie (delta % intra-serie) con test no parametrico (Wilcoxon paired) y 2 series separadas por pausa para ver repetibilidad. Nunca comparar medianas absolutas entre dias. Flag BENCH_WARMUPS/BENCH_RUNS ya soporta protocolo controlado.",
+    "c_senal_real_custom_vs_upstream": "No hay senal real. Dentro de cada serie B (mmap+temp_store) es 6-21% mas rapido en insert que A (mismo codigo, solo pragmas), pero la diferencia intra-serie (delta por run: +26 a +406ms) tiene desviacion > efecto. Entre series, el delta mediano varia -6.8% a -21.5% sin estabilidad. Select empeora con B (+36-57%) y scan tambien (+77-163%), por lo que mmap no es ganancia neta. Custom vs upstream (misma A) no muestra diferencia mas alla del ruido: la varianza 220-922ms vista en la medicion oficial es puro ruido de entorno, no regresion/mejora.",
+    "summary": "Medicion oficial 220-922ms explicada por ruido FS/WAL, no por ramas. Insert no comparable. Protocolo futuro: solo select/scan o insert con DB fresca + interleaved + paired delta. Sin senal real custom vs upstream."
+  },
+  "files": [
+    "packages/opencode/script/bench-db-mmap.ts",
+    "docs/agentes/ciclo9/RECEIPT-slice3.json"
+  ],
+  "series_data": [
+    {
+      "serie": 1,
+      "label": "pre-instrumento pausa 0s (evidencia varianza brutal)",
+      "warmups": 1,
+      "runs": 7,
+      "protocol": "DB fresca por corrida (db-A-<i>.sqlite / db-B-<i>.sqlite nuevo), interleaved A/B, 1 warmup+7 runs",
+      "A_insert_raw": [462.6, 468.3, 486.5, 489.1, 501.1, 839.4, 560.3],
+      "B_insert_raw": [360.5, 439.8, 421.9, 462.7, 422.1, 432.8, 578.2],
+      "A_median_insert": 489.1,
+      "B_median_insert": 432.8,
+      "delta_pct_insert": -11.5,
+      "notes": "Outlier A 839.4ms (run6) dispara rango 377ms. Run1 tras warmup: A 462.6 (minimo, no sistematicamente lento) B 360.5 (minimo). No hay patron frio/caliente consistente."
+    },
+    {
+      "serie": 2,
+      "label": "pre-instrumento pausa 8s (repetibilidad)",
+      "warmups": 1,
+      "runs": 7,
+      "protocol": "DB fresca por corrida, interleaved, 1 warmup+7 runs, pausa 8s + rm tmp entre series",
+      "A_insert_raw": [630.6, 542.2, 704.3, 1126.7, 633.6, 626.1, 564.7],
+      "B_insert_raw": [495.0, 469.4, 890.6, 606.1, 647.9, 404.3, 494.1],
+      "A_median_insert": 630.6,
+      "B_median_insert": 495.0,
+      "delta_pct_insert": -21.5,
+      "notes": "Outlier A 1126.7ms run4 y B 890.6ms run3. Mediana A derivo +29% vs serie1 (489->630) en misma maquina. Intra-serie rango A 584ms. Confirma varianza inter-serie domina."
+    },
+    {
+      "serie": 3,
+      "label": "instrumentado completa (oficial) - serie A",
+      "warmups": 1,
+      "runs": 7,
+      "protocol": "DB fresca por corrida, interleaved, 1 warmup+7 runs, log select/scan por run (Tier0 <=50L)",
+      "A_insert_raw": [510.1, 447.8, 457.6, 469.2, 439.8, 470.3, 502.3],
+      "B_insert_raw": [437.8, 413.0, 399.7, 437.4, 441.5, 464.1, 377.4],
+      "A_select_raw": [77.0, 94.7, 89.9, 62.1, 79.6, 110.5, 61.2],
+      "B_select_raw": [80.8, 108.7, 122.0, 95.0, 80.3, 111.3, 114.6],
+      "A_scan_raw": [15.5, 16.2, 16.7, 11.4, 16.7, 15.4, 14.8],
+      "B_scan_raw": [21.5, 46.1, 33.3, 27.5, 24.6, 32.1, 25.3],
+      "A_median": {"insert_ms": 469.2, "select_ms": 79.6, "scan_ms": 15.5},
+      "B_median": {"insert_ms": 437.4, "select_ms": 108.7, "scan_ms": 27.5},
+      "delta_pct": {"insert": -6.8, "select": 36.5, "scan": 77.2},
+      "intra_variance": "A insert rango 439-510 (70ms) sin outlier, cv~6%; B 377-464 (86ms). Select rango mayor proporcionalmente pero sin outliers extremos. Scan muy estable (A 11-16ms).",
+      "warmup_effect": "Run1 tras warmup A 510.1 (+8% sobre mediana) B 437.8 (mediana) - no patron sistematico frio."
+    },
+    {
+      "serie": 4,
+      "label": "instrumentado completa (oficial) - serie B con pausa 10s",
+      "warmups": 1,
+      "runs": 7,
+      "protocol": "DB fresca por corrida, interleaved, 1 warmup+7 runs, pausa 10s + rm tmp",
+      "A_insert_raw": [460.7, 419.1, 419.6, 526.7, 406.7, 454.8, 517.2],
+      "B_insert_raw": [454.6, 397.6, 450.6, 420.8, 396.4, 443.6, 361.8],
+      "A_select_raw": [85.5, 71.1, 176.3, 59.3, 80.7, 66.0, 61.8],
+      "B_select_raw": [138.1, 144.3, 77.1, 96.7, 94.2, 105.4, 90.5],
+      "A_scan_raw": [12.8, 15.2, 16.3, 14.3, 19.1, 16.2, 10.1],
+      "B_scan_raw": [22.5, 27.0, 20.9, 30.3, 20.2, 27.2, 40.7],
+      "A_median": {"insert_ms": 454.8, "select_ms": 71.1, "scan_ms": 15.2},
+      "B_median": {"insert_ms": 420.8, "select_ms": 96.7, "scan_ms": 27.0},
+      "delta_pct": {"insert": -7.5, "select": 36.0, "scan": 77.1},
+      "intra_variance": "A insert rango 406-526 (120ms) cv~9%, B 361-454 (92ms). Select outlier A 176ms run3. Scan A 10-19ms estable.",
+      "warmup_effect": "Run1 tras warmup A 460.7 (+1% mediana) B 454.6 (+8%) - no sistematico.",
+      "comparacion_serie3_vs_4": "Medianas A 469.2->454.8 (-3% drift inter-serie, menor que antes por ausencia de outliers extremos pero aun 14ms). B 437.4->420.8 (-4%). Delta insert consistente -6.8% vs -7.5% cuando no hay outliers, pero serie1-2 mostraron -11% a -21% con outliers: confirma que comparacion pareada intra-serie es la unica valida."
+    }
+  ],
+  "env": {
+    "branch": "experimento/ciclo8-delta-coalescing",
+    "head": "0227b1b0b3",
+    "head_full": "0227b1b0b3e8434038214859b70de563049d659b",
+    "diff_hash": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+    "bun": "1.3.14",
+    "rows": 3000,
+    "row_bytes": 2048,
+    "selects": 2000,
+    "db_fresh_per_run": true,
+    "interleaved": true,
+    "tmp_cleanup_between_series": true
+  },
+  "method_factors": {
+    "intra_serie_variance": "Insert: rango 70-584ms segun presencia de outliers FS; CV 6-20%. Select: CV ~25% con outlier ocasional. Scan: CV ~15% mas estable.",
+    "inter_serie_variance": "Mediana A 454-630ms (+38% max drift) en misma maquina minutos aparte. Supera cualquier efecto de pragmas/levers.",
+    "bench_entero_vs_intra": "Varianza del bench entero (220-922ms oficial, 406-1126ms aqui) es compuesta de intra-serie + inter-serie + outlier. No es metricas de codigo.",
+    "paired_vs_absolute": "Delta pareado A vs B dentro de misma serie (mismo estado cache) es unico comparable: B insert -7% consistente sin outliers, pero select/scan empeoran (+36%/+77%). Mediana absoluta entre dias invalida."
+  }
+}
