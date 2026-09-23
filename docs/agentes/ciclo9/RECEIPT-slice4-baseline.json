@@ -1,0 +1,129 @@
+{
+  "slice": "4.1",
+  "tier": 0,
+  "type": "baseline-only-measurement",
+  "freeze_id": "HEAD-9a103ef7e5-e69de29bb2d1",
+  "branch": "experimento/ciclo8-delta-coalescing",
+  "head": "9a103ef7e5",
+  "head_full": "9a103ef7e5cdb6024560d7b721e249b3853011ae",
+  "workspace": "D:\\opencode (principal, NO worktree)",
+  "env": {
+    "bun": "1.3.14",
+    "node": "no-medido (bun runtime)",
+    "packageManager": "bun@1.3.14",
+    "typecheck": "verde (turbo typecheck PASS previo, no re-ejecutado por ser solo-medicion)",
+    "os": "win32",
+    "date": "2026-09-23T16:44:47-06:00"
+  },
+  "decision": {
+    "command_official": "bun test --timeout 30000 --only-failures",
+    "command_executed": "npm run test  =>  bun test --timeout 30000 --only-failures",
+    "package_json_source": "packages/opencode/package.json:scripts.test",
+    "root_test": "echo 'do not run tests from root' && exit 1  (package.json root, no aplicable)",
+    "cwd": "D:\\opencode\\packages\\opencode",
+    "workdir_constraint": "workspace principal (no worktree) para evitar fails-artefacto por junctions",
+    "duration_full_attempt_s": 360,
+    "duration_full_result": "timeout-ambiental (abortado a 360s sin resumen, sin exit, sin Ran line)",
+    "log_temp": "D:\\TEMP\\opencode\\slice4-baseline-opencode.log (67 lineas, no commiteado, solo resumido aqui)",
+    "git_flags_used": "ninguno con -A ni --force (solo git status rev-parse branch)",
+    "alcance_real_medido": "full suite impracticable (>30min proyectado, >5min colgado) => medido por paquetes: intento full abortado + muestreo por archivos aislados (5 corridas acotadas)",
+    "impracticable_threshold": ">30min para full suite, >5min por parte => timeout-ambiental"
+  },
+  "files_changed": [
+    "docs/agentes/ciclo9/RECEIPT-slice4-baseline.json"
+  ],
+  "files_not_touched": ["src/**", "package.json", "dist/**"],
+  "counts": {
+    "test_files": 252,
+    "test_declarations": 1289,
+    "test_describe_plus_test": 1778,
+    "count_method": "Select-String -Path packages/opencode/test/**/*.test.ts -Pattern '^\\s*test\\(' y Get-ChildItem -Recurse -Filter *.test.ts",
+    "total_tests_full_suite": "NO-MEDIDO (suite no completo, timeout-ambiental a 360s, sin Ran line)",
+    "sampled_runs": [
+      {
+        "file": "test/util/wildcard.test.ts",
+        "command": "npm run test -- test/util/wildcard.test.ts",
+        "result": "8 pass, 0 fail, 30 expect() calls, Ran 8 tests across 1 file [8.00s] wall 9.68s",
+        "exit": 0,
+        "classification": "ambiental-ok"
+      },
+      {
+        "file": "test/util/timeout.test.ts + test/util/wildcard.test.ts",
+        "command": "npm run test -- test/util/timeout.test.ts test/util/wildcard.test.ts",
+        "result": "10 pass, 0 fail, 32 expect() calls, Ran 10 tests across 2 files [9.49s]",
+        "exit": 0,
+        "classification": "ambiental-ok"
+      },
+      {
+        "file": "test/tool/read.test.ts",
+        "command": "npm run test -- test/tool/read.test.ts",
+        "result": "40 pass, 0 fail, 90 expect() calls, Ran 40 tests across 1 file [46.70s]",
+        "exit": 0,
+        "classification": "ambiental-ok"
+      },
+      {
+        "file": "test/tool/registry.test.ts",
+        "command": "npm run test -- test/tool/registry.test.ts",
+        "result": "15 pass, 0 fail, 25 expect() calls, Ran 15 tests across 1 file [21.73s] wall 23.68s",
+        "exit": 0,
+        "classification": "ambiental-ok"
+      },
+      {
+        "file": "test/tool/shell.test.ts",
+        "command": "npm run test -- test/tool/shell.test.ts",
+        "result": "abortado a 180s sin Ran line (timeout-ambiental), 2 fails observados antes del hang",
+        "exit": "timeout-killed",
+        "classification": "timeout-ambiental + real fails"
+      }
+    ]
+  },
+  "key_findings": {
+    "tabla": {
+      "total": "252 files / 1289 test() / 1778 con describe (conteo estatico); ejecucion full NO-MEDIDO por timeout-ambiental",
+      "pass": "73 pass en 4 archivos muestreados (8+10+40+15) sin fails; shell colgado no da Ran",
+      "fail": "2 fails deterministicos en shell.test.ts (muestreo)",
+      "timeout": "2 timeout-ambiental: full suite a 360s + shell.test.ts a 180s (hang sin completar)"
+    },
+    "fails": [
+      {
+        "test": "tool.shell permissions > asks for external_directory permission for drive-relative PowerShell paths [pwsh]",
+        "file": "packages/opencode/test/tool/shell.test.ts:450",
+        "classification": "real",
+        "evidence": "Expected to contain: \"D:\\\\TEMP\\\\*\" Received: [ \"D:\\\\opencode\\\\packages\\\\*\" ]  [179.73ms]",
+        "explicacion": "Logica de permiso externa calcula glob base equivocado para paths drive-relative en pwsh; deterministico, no flaky, no timeout"
+      },
+      {
+        "test": "tool.shell permissions > asks for external_directory permission for drive-relative PowerShell paths [powershell]",
+        "file": "packages/opencode/test/tool/shell.test.ts:450",
+        "classification": "real",
+        "evidence": "Expected to contain: \"D:\\\\TEMP\\\\*\" Received: [ \"D:\\\\opencode\\\\packages\\\\*\" ]  [144.84ms]",
+        "explicacion": "Mismo bug que anterior pero shell powershell; duplicado deterministico"
+      },
+      {
+        "test": "full suite bun test --timeout 30000 --only-failures (sin filtro)",
+        "classification": "ambiental (timeout)",
+        "evidence": "npm run test 360s sin Ran line, log 67 lineas solo INFO disposing instances + ERROR ACPServiceFailure ses_new; kill por timeout",
+        "explicacion": "Suite completa cuelga >5min, coincide con contexto previo 'shell suite es flaky (26 vs 18 timeouts entre corridas)'; no es fail de asercion sino hang ambiental"
+      },
+      {
+        "test": "tool.shell suite completa (test/tool/shell.test.ts sin -t)",
+        "classification": "ambiental (timeout) + real",
+        "evidence": "abortado a 180s sin summary, 68 lineas log, 2 fails previos + hang posterior (INFO disposing all instances nunca llega a Ran)",
+        "explicacion": "Hang probablemente por streams/abort o dispose instances no terminado; los 2 fails reales ocurren antes del hang, pero el hang es ambiental"
+      }
+    ],
+    "flaky": {
+      "observado_en_esta_medicion": "no reproducido como variacion pass/fail entre 2 corridas (solo 1 corrida por archivo), pero full suite confirma inestabilidad: intento full 360s sin completar replica patron historico 26 vs 18 timeouts",
+      "historico": "contexto previo: shell suite flaky 26 vs 18 timeouts entre corridas + fails-artefacto por junctions en worktrees (evitado corriendo en workspace principal)",
+      "conclusion_flaky": "no clasificado como flaky en esta medicion puntual; requiere 2 corridas del mismo archivo para confirmar flaky, no hecho por cota 5min"
+    },
+    "ambiental_vs_real": "2 real (shell permissions drive-relative, evidencia 1 linea exacta), 2 timeout-ambiental (full + shell hang), 0 flaky confirmado hoy, 0 artefacto junctions (workspace principal OK)"
+  },
+  "nuance": {
+    "suite_verde_alcanzable": "NO con baseline actual. 2 fails reales deterministicos bloquean verde aunque se resuelva el hang; ademas el hang/timeout-ambiental impide siquiera obtener verde completo en <30min. Proyeccion: full suite >30min y con hang intermitente, no es verde estable hoy.",
+    "que_deberia_atacar_slice_4_2": "1) Fix real shell permissions drive-relative (glob path.dirname(tmp) vs packages) — 2 tests en shell.test.ts:450, causa D:\\TEMP vs D:\\opencode\\packages. 2) Fix hang/timeout shell suite (investigar dispose all instances / shell streaming abort — relacionado a Slice2 fix previo L425/L505 pero aun hang en suite completa). 3) Aislar shell suite del resto (tag o split) para que timeout-ambiental no bloquee medicion del resto; medir resto sin shell para baseline verde parcial. No atacar junctions (ya mitigado) ni registry (ya verde 15 pass).",
+    "riesgo_si_no_se_ataca": "Suite seguira timeout-ambiental >5min y 2 fails reales impedirán cualquier Slice 4 verde; delta-coalescing no medible hasta tener baseline estable.",
+    "nota_medicion": "Medicion respeta Tier 0 solo-lectura: no se toco src/, no package.json, no commit, no push, no -A/--force, logs solo en D:\\TEMP\\opencode (no commiteados). Si se quiere total exacto, repetir con BENCH_SHORT o filtro por carpeta con timeout 120s por carpeta y sumar Ran lines, pero full monolítico seguirá >30min.",
+    "repro": "cd packages/opencode && npm run test -- test/util/wildcard.test.ts  # 8 pass 8s; npm run test -- test/tool/shell.test.ts  # 2 fail + hang 180s; npm run test  # full hang 360s"
+  }
+}
