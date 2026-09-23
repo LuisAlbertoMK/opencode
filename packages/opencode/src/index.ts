@@ -1,119 +1,30 @@
-import yargs from "yargs"
-import { hideBin } from "yargs/helpers"
-import { RunCommand } from "./cli/cmd/run"
-import { GenerateCommand } from "./cli/cmd/generate"
-import { ConsoleCommand } from "./cli/cmd/account"
-import { ProvidersCommand } from "./cli/cmd/providers"
-import { AgentCommand } from "./cli/cmd/agent"
-import { UpgradeCommand } from "./cli/cmd/upgrade"
-import { UninstallCommand } from "./cli/cmd/uninstall"
-import { ModelsCommand } from "./cli/cmd/models"
-import { UI } from "./cli/ui"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
-import { FormatError } from "./cli/error"
-import { ServeCommand } from "./cli/cmd/serve"
-import { DebugCommand } from "./cli/cmd/debug"
-import { StatsCommand } from "./cli/cmd/stats"
-import { McpCommand } from "./cli/cmd/mcp"
-import { GithubCommand } from "./cli/cmd/github"
-import { ExportCommand } from "./cli/cmd/export"
-import { ImportCommand } from "./cli/cmd/import"
-import { AttachCommand } from "./cli/cmd/attach"
-import { TuiThreadCommand } from "./cli/cmd/tui"
-import { AcpCommand } from "./cli/cmd/acp"
-import { EOL } from "os"
-import { WebCommand } from "./cli/cmd/web"
-import { PrCommand } from "./cli/cmd/pr"
-import { SessionCommand } from "./cli/cmd/session"
-import { DbCommand } from "./cli/cmd/db"
-import { errorMessage } from "./util/error"
-import { PluginCommand } from "./cli/cmd/plug"
-import { Heap } from "./cli/heap"
+import { hideBin } from "yargs/helpers"
 
 const args = hideBin(process.argv)
 
-function show(out: string) {
-  const text = out.trimStart()
-  if (!text.startsWith("opencode ")) {
-    process.stderr.write(UI.logo() + EOL + EOL)
-    process.stderr.write(text + EOL)
-    return
-  }
-  process.stderr.write(out)
+// Fast path: print version without evaluating the yargs command graph.
+// yargs prints only the version number plus a newline, so mirror that exactly.
+// Only inspect args before the first "--" separator so `run -- --version`
+// passes --version to the subcommand instead of triggering the fast path.
+const separator = args.indexOf("--")
+const head = separator === -1 ? args : args.slice(0, separator)
+if (head.includes("--version") || head.includes("-v")) {
+  // Wait for stdout to flush before process.exit(), same truncation guard
+  // used by generate.ts — process.exit() can otherwise drop piped output.
+  await new Promise<void>((resolve) => {
+    process.stdout.write(InstallationVersion + "\n", () => resolve())
+  })
+  process.exit(0)
 }
 
-const cli = yargs(args)
-  .parserConfiguration({ "populate--": true })
-  .scriptName("opencode")
-  .wrap(100)
-  .help("help", "show help")
-  .alias("help", "h")
-  .version("version", "show version number", InstallationVersion)
-  .alias("version", "v")
-  .option("print-logs", {
-    describe: "print logs to stderr",
-    type: "boolean",
-  })
-  .option("log-level", {
-    describe: "log level",
-    type: "string",
-    choices: ["DEBUG", "INFO", "WARN", "ERROR"],
-  })
-  .option("pure", {
-    describe: "run without external plugins",
-    type: "boolean",
-  })
-  .middleware(async (opts) => {
-    if (opts.printLogs) process.env.OPENCODE_PRINT_LOGS = "1"
-    if (opts.logLevel) process.env.OPENCODE_LOG_LEVEL = opts.logLevel
-    if (opts.pure) {
-      process.env.OPENCODE_PURE = "1"
-    }
+const { buildCli, show } = await import("./cli/bootstrap")
+const { UI } = await import("./cli/ui")
+const { EOL } = await import("os")
+const { FormatError } = await import("./cli/error")
+const { errorMessage } = await import("./util/error")
 
-    Heap.start()
-
-    process.env.AGENT = "1"
-    process.env.OPENCODE = "1"
-    process.env.OPENCODE_PID = String(process.pid)
-  })
-  .usage("")
-  .completion("completion", "generate shell completion script")
-  .command(AcpCommand)
-  .command(McpCommand)
-  .command(TuiThreadCommand)
-  .command(AttachCommand)
-  .command(RunCommand)
-  .command(GenerateCommand)
-  .command(DebugCommand)
-  .command(ConsoleCommand)
-  .command(ProvidersCommand)
-  .command(AgentCommand)
-  .command(UpgradeCommand)
-  .command(UninstallCommand)
-  .command(ServeCommand)
-  .command(WebCommand)
-  .command(ModelsCommand)
-  .command(StatsCommand)
-  .command(ExportCommand)
-  .command(ImportCommand)
-  .command(GithubCommand)
-  .command(PrCommand)
-  .command(SessionCommand)
-  .command(PluginCommand)
-  .command(DbCommand)
-  .fail((msg, err) => {
-    if (
-      msg?.startsWith("Unknown argument") ||
-      msg?.startsWith("Not enough non-option arguments") ||
-      msg?.startsWith("Invalid values:")
-    ) {
-      if (err) throw err
-      cli.showHelp(show)
-    }
-    if (err) throw err
-    process.exit(1)
-  })
-  .strict()
+const cli = buildCli(args)
 
 try {
   if (args.includes("-h") || args.includes("--help")) {
