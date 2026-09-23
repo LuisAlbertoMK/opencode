@@ -1,32 +1,11 @@
 import { InstanceRuntime } from "../project/instance-runtime"
 import { context } from "../project/instance-context"
 import yargs from "yargs"
-import { RunCommand } from "./cmd/run"
-import { GenerateCommand } from "./cmd/generate"
-import { ConsoleCommand } from "./cmd/account"
-import { ProvidersCommand } from "./cmd/providers"
-import { AgentCommand } from "./cmd/agent"
-import { UpgradeCommand } from "./cmd/upgrade"
-import { UninstallCommand } from "./cmd/uninstall"
-import { ModelsCommand } from "./cmd/models"
-import { UI } from "./ui"
+import type { Argv, CommandModule } from "yargs"
 import { InstallationVersion } from "@opencode-ai/core/installation/version"
-import { ServeCommand } from "./cmd/serve"
-import { DebugCommand } from "./cmd/debug"
-import { StatsCommand } from "./cmd/stats"
-import { McpCommand } from "./cmd/mcp"
-import { GithubCommand } from "./cmd/github"
-import { ExportCommand } from "./cmd/export"
-import { ImportCommand } from "./cmd/import"
-import { AttachCommand } from "./cmd/attach"
-import { TuiThreadCommand } from "./cmd/tui"
-import { AcpCommand } from "./cmd/acp"
+import { UI } from "./ui"
+import { tuiOptions } from "./cmd/tui.options"
 import { EOL } from "os"
-import { WebCommand } from "./cmd/web"
-import { PrCommand } from "./cmd/pr"
-import { SessionCommand } from "./cmd/session"
-import { DbCommand } from "./cmd/db"
-import { PluginCommand } from "./cmd/plug"
 import { Heap } from "./heap"
 
 export async function bootstrap<T>(directory: string, cb: () => Promise<T>) {
@@ -46,6 +25,35 @@ export function show(out: string) {
     return
   }
   process.stderr.write(out)
+}
+
+// yargs only reads `command`/`describe`/`aliases` at registration time, so
+// those stay static here while the heavy module graph loads behind `builder`
+// and `handler`. Top-level `--help` lists commands without running
+// sub-builders, so registration stays cheap; showing help for (or parsing) a
+// specific command pays that command's import only. Same deferred-import
+// pattern as the handler in `src/cli/effect-cmd.ts`.
+function lazyCommand<T, U>(
+  command: string | readonly string[],
+  describe: string | false | undefined,
+  load: () => Promise<CommandModule<T, U>>,
+  aliases?: string | readonly string[],
+): CommandModule<T, U> {
+  return {
+    command,
+    describe,
+    aliases,
+    builder: async (yargs: Argv<T>): Promise<Argv<U>> => {
+      const mod = await load()
+      if (mod.builder === undefined) return yargs as unknown as Argv<U>
+      if (typeof mod.builder === "function") return mod.builder(yargs)
+      return yargs.options(mod.builder) as Argv<U>
+    },
+    handler: async (args) => {
+      const mod = await load()
+      await mod.handler(args)
+    },
+  }
 }
 
 export function buildCli(args: string[]) {
@@ -85,29 +93,163 @@ export function buildCli(args: string[]) {
     })
     .usage("")
     .completion("completion", "generate shell completion script")
-    .command(AcpCommand)
-    .command(McpCommand)
-    .command(TuiThreadCommand)
-    .command(AttachCommand)
-    .command(RunCommand)
-    .command(GenerateCommand)
-    .command(DebugCommand)
-    .command(ConsoleCommand)
-    .command(ProvidersCommand)
-    .command(AgentCommand)
-    .command(UpgradeCommand)
-    .command(UninstallCommand)
-    .command(ServeCommand)
-    .command(WebCommand)
-    .command(ModelsCommand)
-    .command(StatsCommand)
-    .command(ExportCommand)
-    .command(ImportCommand)
-    .command(GithubCommand)
-    .command(PrCommand)
-    .command(SessionCommand)
-    .command(PluginCommand)
-    .command(DbCommand)
+    .command(
+      lazyCommand("acp", "start ACP (Agent Client Protocol) server", async () => {
+        const mod = await import("./cmd/acp")
+        return mod.AcpCommand
+      }),
+    )
+    .command(
+      lazyCommand("mcp", "manage MCP (Model Context Protocol) servers", async () => {
+        const mod = await import("./cmd/mcp")
+        return mod.McpCommand
+      }),
+    )
+    // The default command keeps a synchronous builder: yargs renders
+    // top-level `--help` (and the `parse(args, callback)` output used by
+    // `src/index.ts`) synchronously, so an async builder here would drop the
+    // default command's positionals/options from help and yield empty output.
+    // Only the light `tui.options` module (yargs + network options) loads
+    // eagerly; the heavy `tui.ts` graph still loads lazily in the handler.
+    .command({
+      command: "$0 [project]",
+      describe: "start opencode tui",
+      builder: (yargs) => tuiOptions(yargs),
+      handler: async (args) => {
+        const mod = await import("./cmd/tui")
+        await mod.TuiThreadCommand.handler(args)
+      },
+    })
+    .command(
+      lazyCommand("attach <url>", "attach to a running opencode server", async () => {
+        const mod = await import("./cmd/attach")
+        return mod.AttachCommand
+      }),
+    )
+    .command(
+      lazyCommand("run [message..]", "run opencode with a message", async () => {
+        const mod = await import("./cmd/run")
+        return mod.RunCommand
+      }),
+    )
+    .command(
+      lazyCommand("generate", undefined, async () => {
+        const mod = await import("./cmd/generate")
+        return mod.GenerateCommand
+      }),
+    )
+    .command(
+      lazyCommand("debug", "debugging and troubleshooting tools", async () => {
+        const mod = await import("./cmd/debug/index")
+        return mod.DebugCommand
+      }),
+    )
+    .command(
+      lazyCommand("console", false, async () => {
+        const mod = await import("./cmd/account")
+        return mod.ConsoleCommand
+      }),
+    )
+    .command(
+      lazyCommand(
+        "providers",
+        "manage AI providers and credentials",
+        async () => {
+          const mod = await import("./cmd/providers")
+          return mod.ProvidersCommand
+        },
+        ["auth"],
+      ),
+    )
+    .command(
+      lazyCommand("agent", "manage agents", async () => {
+        const mod = await import("./cmd/agent")
+        return mod.AgentCommand
+      }),
+    )
+    .command(
+      lazyCommand("upgrade [target]", "upgrade opencode to the latest or a specific version", async () => {
+        const mod = await import("./cmd/upgrade")
+        return mod.UpgradeCommand
+      }),
+    )
+    .command(
+      lazyCommand("uninstall", "uninstall opencode and remove all related files", async () => {
+        const mod = await import("./cmd/uninstall")
+        return mod.UninstallCommand
+      }),
+    )
+    .command(
+      lazyCommand("serve", "starts a headless opencode server", async () => {
+        const mod = await import("./cmd/serve")
+        return mod.ServeCommand
+      }),
+    )
+    .command(
+      lazyCommand("web", "start opencode server and open web interface", async () => {
+        const mod = await import("./cmd/web")
+        return mod.WebCommand
+      }),
+    )
+    .command(
+      lazyCommand("models [provider]", "list all available models", async () => {
+        const mod = await import("./cmd/models")
+        return mod.ModelsCommand
+      }),
+    )
+    .command(
+      lazyCommand("stats", "show token usage and cost statistics", async () => {
+        const mod = await import("./cmd/stats")
+        return mod.StatsCommand
+      }),
+    )
+    .command(
+      lazyCommand("export [sessionID]", "export session data as JSON", async () => {
+        const mod = await import("./cmd/export")
+        return mod.ExportCommand
+      }),
+    )
+    .command(
+      lazyCommand("import <file>", "import session data from JSON file or URL", async () => {
+        const mod = await import("./cmd/import")
+        return mod.ImportCommand
+      }),
+    )
+    .command(
+      lazyCommand("github", "manage GitHub agent", async () => {
+        const mod = await import("./cmd/github")
+        return mod.GithubCommand
+      }),
+    )
+    .command(
+      lazyCommand("pr <number>", "fetch and checkout a GitHub PR branch, then run opencode", async () => {
+        const mod = await import("./cmd/pr")
+        return mod.PrCommand
+      }),
+    )
+    .command(
+      lazyCommand("session", "manage sessions", async () => {
+        const mod = await import("./cmd/session")
+        return mod.SessionCommand
+      }),
+    )
+    .command(
+      lazyCommand(
+        "plugin <module>",
+        "install plugin and update config",
+        async () => {
+          const mod = await import("./cmd/plug")
+          return mod.PluginCommand
+        },
+        ["plug"],
+      ),
+    )
+    .command(
+      lazyCommand("db", "database tools", async () => {
+        const mod = await import("./cmd/db")
+        return mod.DbCommand
+      }),
+    )
     .fail((msg, err) => {
       if (
         msg?.startsWith("Unknown argument") ||
