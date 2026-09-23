@@ -1,4 +1,4 @@
-import { Effect, Stream } from "effect"
+import { Effect, Option, Stream } from "effect"
 import os from "os"
 import { createWriteStream } from "node:fs"
 import * as Tool from "./tool"
@@ -292,7 +292,8 @@ const ask = Effect.fn("ShellTool.ask")(function* (ctx: Tool.Context, scan: Scan,
 
 function cmd(shell: string, command: string, cwd: string, env: NodeJS.ProcessEnv) {
   if (process.platform === "win32" && Shell.ps(shell)) {
-    return ChildProcess.make(shell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command], {
+    const shellCmd = Shell.name(shell) === "pwsh" ? Shell.name(shell) : shell
+    return ChildProcess.make(shellCmd, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command], {
       cwd,
       env,
       stdin: "ignore",
@@ -414,11 +415,17 @@ export const ShellTool = Tool.define(
     })
 
     const shellEnv = Effect.fn("ShellTool.shellEnv")(function* (ctx: Tool.Context, cwd: string) {
-      const extra = yield* plugin.trigger(
-        "shell.env",
-        { cwd, sessionID: ctx.sessionID, callID: ctx.callID },
-        { env: {} },
-      )
+      const extra = yield* plugin
+        .trigger(
+          "shell.env",
+          { cwd, sessionID: ctx.sessionID, callID: ctx.callID },
+          { env: {} as Record<string, string> },
+        )
+        .pipe(
+          Effect.timeoutOption("2 seconds"),
+          Effect.map((opt) => Option.getOrElse(opt, () => ({ env: {} as Record<string, string> }))),
+          Effect.orDie,
+        )
       return {
         ...process.env,
         ...extra.env,
@@ -483,8 +490,19 @@ export const ShellTool = Tool.define(
           yield* Effect.addFinalizer(closeSink)
           const handle = yield* spawner.spawn(cmd(input.shell, input.command, input.cwd, input.env))
 
+          const abort = Effect.callback<void>((resume) => {
+            if (ctx.abort.aborted) return resume(Effect.void)
+            const handler = () => resume(Effect.void)
+            ctx.abort.addEventListener("abort", handler, { once: true })
+            return Effect.sync(() => ctx.abort.removeEventListener("abort", handler))
+          })
+
+          const timeout = Effect.sleep(`${input.timeout + 100} millis`)
+
+          const interrupt = Effect.raceAll([abort, timeout]).pipe(Effect.ignore)
+
           yield* Effect.forkScoped(
-            Stream.runForEach(Stream.decodeText(handle.all), (chunk) => {
+            Stream.runForEach(Stream.decodeText(handle.all.pipe(Stream.interruptWhen(interrupt))), (chunk) => {
               const size = Buffer.byteLength(chunk, "utf-8")
               list.push({ text: chunk, size })
               used += size
@@ -529,15 +547,6 @@ export const ShellTool = Tool.define(
               })
             }),
           )
-
-          const abort = Effect.callback<void>((resume) => {
-            if (ctx.abort.aborted) return resume(Effect.void)
-            const handler = () => resume(Effect.void)
-            ctx.abort.addEventListener("abort", handler, { once: true })
-            return Effect.sync(() => ctx.abort.removeEventListener("abort", handler))
-          })
-
-          const timeout = Effect.sleep(`${input.timeout + 100} millis`)
 
           const exit = yield* Effect.raceAll([
             handle.exitCode.pipe(Effect.map((code) => ({ kind: "exit" as const, code }))),
@@ -638,7 +647,7 @@ export const ShellTool = Tool.define(
                 },
                 ctx,
               )
-            }),
+            }).pipe(Effect.orDie),
         }
       })
   }),

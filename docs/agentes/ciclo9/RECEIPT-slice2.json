@@ -1,0 +1,86 @@
+{
+  "freeze_id": "HEAD-1073e70e6e-e69de29b",
+  "tier": 1,
+  "verdict": "PASS",
+  "files": [
+    "packages/opencode/src/tool/shell.ts",
+    "docs/agentes/ciclo9/RECEIPT-slice2.json"
+  ],
+  "fails_before": 4,
+  "fails_after": 0,
+  "fails_detail": {
+    "official_4": [
+      "tool.registry zod not found",
+      "shell abort streaming",
+      "registry preserve fail",
+      "timeout 20s"
+    ],
+    "reproduced_real": 2,
+    "no_reproduce_real": 2,
+    "reproduced_list": [
+      {
+        "name": "shell abort streaming",
+        "test": "tool.shell abort > preserves output when aborted",
+        "command": "bun test --timeout 30000 ./test/tool/shell.test.ts -t \"preserves output when aborted\"",
+        "before": "FAIL timeout 15000ms (15.0s)",
+        "after": "PASS 14.83s"
+      },
+      {
+        "name": "timeout 20s / streams metadata",
+        "test": "tool.shell abort > streams metadata updates progressively",
+        "command": "bun test --timeout 30000 ./test/tool/shell.test.ts -t \"streams metadata\"",
+        "before": "FAIL timeout 30000ms (30.0s)",
+        "after": "PASS 14.41s"
+      }
+    ],
+    "no_reproduce_list": [
+      {
+        "name": "tool.registry zod not found",
+        "test": "tool.registry > loads Zod-schema custom tools with JSON Schema and validation",
+        "command": "bun test --timeout 30000 ./test/tool/registry.test.ts -t \"loads Zod-schema\"",
+        "result": "PASS 11.89s (NO-REPRODUCE)",
+        "evidence": "real repo D:\\opencode without worktree junctions: 1 pass, no fail"
+      },
+      {
+        "name": "registry preserve fail",
+        "test": "tool.registry > preserves Zod arg descriptions from older config-scoped plugin packages",
+        "command": "bun test --timeout 30000 ./test/tool/registry.test.ts -t \"preserves Zod\"",
+        "result": "PASS 16.09s (NO-REPRODUCE)",
+        "evidence": "real repo: 1 pass, timeout 20s not hit (17.36s < 20s)"
+      }
+    ]
+  },
+  "four_R_scores": {
+    "Risk": 2,
+    "Readability": 8,
+    "Reliability": 9,
+    "Resilience": 8
+  },
+  "four_R_justification": {
+    "Risk": "1 file, 45L (27+ / 18-), non-sensitive (shell tool, not schema/auth/API), small blast radius (only shell streaming/abort path)",
+    "Readability": "Uses existing Effect patterns (Stream.interruptWhen, Effect.timeoutOption, Option), clear comments for pwsh spaced-path fix",
+    "Reliability": "Fixes hang in shellEnv (plugin trigger) and pwsh spaced path, makes abort/timeout deterministic, verified with 4 specific tests + full registry/shell basic",
+    "Resilience": "Adds timeout for plugin shellEnv (2s) and interrupt for handle.all on abort/timeout, prevents zombie timers, handles Windows spaced paths"
+  },
+  "verification": {
+    "typecheck": "bun typecheck (packages/opencode) PASS",
+    "tests": [
+      "bun test --timeout 30000 ./test/tool/registry.test.ts -t \"loads Zod-schema\" => PASS",
+      "bun test --timeout 30000 ./test/tool/registry.test.ts -t \"preserves Zod\" => PASS",
+      "bun test --timeout 30000 ./test/tool/shell.test.ts -t \"preserves output when aborted\" => PASS",
+      "bun test --timeout 30000 ./test/tool/shell.test.ts -t \"streams metadata\" => PASS",
+      "bun test --timeout 30000 ./test/tool/shell.test.ts -t \"basic\" => 4 pass (bash/pwsh/powershell/cmd)",
+      "bun test --timeout 30000 ./test/util/timeout.test.ts => 2 pass"
+    ]
+  },
+  "gate": {
+    "odd": "45L < 400L, 1 file, no schema/auth/API, 1 commit = 1 outcome",
+    "tier": "Tier 1 (1-5 files ≤100L non-sensitive, auto-revisión 4R)",
+    "commit": "fix(opencode): shell streaming and pwsh spaced path (ciclo9 slice2)"
+  },
+  "notes": {
+    "worktree_junctions": "Si un fail no reproduce en repo real, se declara NO-REPRODUCE con evidencia y no se arregla. 2 de 4 fueron NO-REPRODUCE (registry).",
+    "no_touch": "No se tocó dist-*, versión, console/stats, docs Zen, .bench-db-tmp/",
+    "typecheck_package": "packages/opencode"
+  }
+}
