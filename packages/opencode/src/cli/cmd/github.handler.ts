@@ -1,12 +1,6 @@
 import path from "path"
 import { exec } from "child_process"
 import { Filesystem } from "@/util/filesystem"
-import * as prompts from "@clack/prompts"
-import { map, pipe, sortBy, values } from "remeda"
-import { Octokit } from "@octokit/rest"
-import { graphql } from "@octokit/graphql"
-import * as core from "@actions/core"
-import * as github from "@actions/github"
 import type { Context } from "@actions/github/lib/context"
 import type {
   IssueCommentEvent,
@@ -161,6 +155,8 @@ export const githubInstall = Effect.fn("Cli.github.install")(function* () {
   const modelsDev = yield* ModelsDev.Service
   const gitSvc = yield* Git.Service
   yield* Effect.promise(async () => {
+    const prompts = await import("@clack/prompts")
+    const { map, pipe, sortBy, values } = await import("remeda")
     {
       UI.empty()
       prompts.intro("Install GitHub agent")
@@ -386,6 +382,10 @@ export const githubRun = Effect.fn("Cli.github.run")(function* (args: { event?: 
   const runLocalEffect = <A, E>(effect: Effect.Effect<A, E>) =>
     Effect.runPromise(effect.pipe(Effect.provideService(InstanceRef, ctx)))
   yield* Effect.promise(async () => {
+    const { Octokit } = await import("@octokit/rest")
+    const { graphql } = await import("@octokit/graphql")
+    const core = await import("@actions/core")
+    const github = await import("@actions/github")
     const isMock = args.token || args.event
 
     const context = isMock ? (JSON.parse(args.event!) as Context) : github.context
@@ -431,7 +431,7 @@ export const githubRun = Effect.fn("Cli.github.run")(function* (args: { event?: 
     const shareBaseUrl = isMock ? "https://dev.opencode.ai" : "https://opencode.ai"
 
     let appToken: string
-    let octoRest: Octokit
+    let octoRest: InstanceType<typeof Octokit>
     let octoGraph: typeof graphql
     let gitConfig: string
     let session: { id: SessionID; title: string; version: string }

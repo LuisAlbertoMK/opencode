@@ -1,11 +1,9 @@
 import { cmd } from "./cmd"
-import * as prompts from "@clack/prompts"
 import { UI } from "../ui"
 import { Global } from "@opencode-ai/core/global"
 import path from "path"
 import fs from "fs/promises"
 import { Filesystem } from "@/util/filesystem"
-import matter from "gray-matter"
 import { EOL } from "os"
 import type { Argv } from "yargs"
 import { Effect } from "effect"
@@ -69,6 +67,8 @@ const AgentCreateCommand = effectCmd({
     const runLocalEffect = <A, E>(effect: Effect.Effect<A, E>) =>
       Effect.runPromise(effect.pipe(Effect.provideService(InstanceRef, ctx)))
     yield* Effect.promise(async () => {
+      const prompts = await import("@clack/prompts")
+      const { default: matter } = await import("gray-matter")
       const cliPath = args.path
       const cliDescription = args.description
       const cliMode = args.mode as AgentMode | undefined
