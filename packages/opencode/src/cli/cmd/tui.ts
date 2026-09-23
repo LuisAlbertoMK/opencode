@@ -117,11 +117,14 @@ export const TuiThreadCommand = cmd({
       return
     }
 
-    const { win32InstallCtrlCGuard } = await import("@opencode-ai/tui/terminal-win32")
-    const { errorMessage } = await import("@opencode-ai/tui/util/error")
-    const unguard = win32InstallCtrlCGuard()
+    const [win32, errUtil, tuiConfigMod] = await Promise.all([
+      import("@opencode-ai/tui/terminal-win32"),
+      import("@opencode-ai/tui/util/error"),
+      import("@/config/tui"),
+    ])
+    const unguard = win32.win32InstallCtrlCGuard()
     try {
-      const { TuiConfig } = await import("@/config/tui")
+      const TuiConfig = tuiConfigMod.TuiConfig
       if (args.fork && !args.continue && !args.session) {
         UI.error("--fork requires --continue or --session")
         process.exitCode = 1
@@ -190,7 +193,7 @@ export const TuiThreadCommand = cmd({
           headers,
         })
       } catch (error) {
-        UI.error(errorMessage(error))
+        UI.error(errUtil.errorMessage(error))
         process.exitCode = 1
         return
       }
