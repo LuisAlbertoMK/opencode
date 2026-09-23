@@ -362,7 +362,11 @@ export const ShellTool = Tool.define(
           const file = yield* cygpath(shell, text)
           if (file) return file
         }
-        return FSUtil.normalizePath(path.resolve(root, FSUtil.windowsPath(text)))
+        const normalized = FSUtil.windowsPath(text)
+        if (/^[A-Za-z]:[^\\/]/.test(normalized)) {
+          return FSUtil.normalizePath(path.resolve(root, normalized.slice(2)))
+        }
+        return FSUtil.normalizePath(path.resolve(root, normalized))
       }
       return path.resolve(root, text)
     })
