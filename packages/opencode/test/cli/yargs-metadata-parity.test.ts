@@ -12,6 +12,11 @@ import { describe, expect, test } from "bun:test"
 
 const bootstrap = await Bun.file(new URL("../../src/cli/bootstrap.ts", import.meta.url)).text()
 
+// Minimal structural view of a yargs CommandModule: everything optional
+// because `command`/`describe` are optional on CommandModule and modules
+// also export unrelated members (helpers, strings like `defaultConsoleUrl`).
+type CommandMetadata = { command?: unknown; describe?: unknown; aliases?: unknown }
+
 const norm = (value: string | readonly string[] | undefined) => [...(value ?? [])].sort()
 
 // Static mirror of the registration table in `buildCli`. Each row is checked
@@ -24,7 +29,7 @@ const cases: Array<{
   command: string
   describe: string | false | undefined
   aliases?: readonly string[]
-  load: () => Promise<Record<string, { command: unknown; describe: unknown; aliases?: unknown }>>
+  load: () => Promise<Record<string, unknown>>
 }> = [
   { exportName: "AcpCommand", command: "acp", describe: "start ACP (Agent Client Protocol) server", load: () => import("../../src/cli/cmd/acp") },
   { exportName: "McpCommand", command: "mcp", describe: "manage MCP (Model Context Protocol) servers", load: () => import("../../src/cli/cmd/mcp") },
@@ -65,10 +70,12 @@ describe("yargs lazy metadata parity", () => {
       for (const alias of c.aliases ?? []) expect(bootstrap.includes(`"${alias}"`)).toBe(true)
 
       const mod = await c.load()
-      const actual = mod[c.exportName] as { command: unknown; describe: unknown; aliases?: string | readonly string[] }
+      const candidate = mod[c.exportName]
+      if (typeof candidate !== "object" || candidate === null) throw new Error(`Missing export ${c.exportName}`)
+      const actual = candidate as CommandMetadata
       expect(actual.command).toEqual(c.command)
       expect(actual.describe ?? undefined).toEqual(c.describe ?? undefined)
-      expect(norm(actual.aliases)).toEqual(norm(c.aliases))
+      expect(norm(actual.aliases as string | readonly string[] | undefined)).toEqual(norm(c.aliases))
     }, 60000)
   }
 })
