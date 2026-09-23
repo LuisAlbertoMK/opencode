@@ -1,14 +1,27 @@
 // bench-db-mmap.ts — micro-bench del lever WAL-mmap (ciclo 5, protocolo v3)
 // Reproduce la config de pragmas de packages/core/src/database/database.ts
 // (A = actual) contra A+mmap+temp_store (B), con files frescos por corrida e
-// interleaved A/B para cancelar drift de FS cache. Métrica: mediana de 5.
+// interleaved A/B para cancelar drift de FS cache. Métrica: mediana.
+// Protocolo slice1: 1 warmup + N runs + mediana (BENCH_WARMUPS/BENCH_RUNS), worktree-safe via import.meta.dir
 
 import { Database } from "bun:sqlite"
 import { mkdirSync, rmSync } from "node:fs"
 import { join } from "node:path"
 
+const warmups = Number(Bun.env.BENCH_WARMUPS ?? 1)
+const RUNS = Number(Bun.env.BENCH_RUNS ?? 5)
+if (!Number.isInteger(warmups) || warmups < 0) {
+  console.error("BENCH_WARMUPS must be a non-negative integer")
+  process.exit(1)
+}
+if (!Number.isInteger(RUNS) || RUNS < 1) {
+  console.error("BENCH_RUNS must be a positive integer")
+  process.exit(1)
+}
+console.log(`bench:db-mmap warmups=${warmups} runs=${RUNS} (mediana)`)
+
 const tmpRoot = join(import.meta.dir, ".bench-db-tmp")
-rmSync(tmpRoot, { recursive: true, force: true })
+try { rmSync(tmpRoot, { recursive: true, force: true }) } catch {}
 mkdirSync(tmpRoot, { recursive: true })
 
 const ROW_TEXT = "x".repeat(2048) // ~2KB por fila, similar a mensajes
@@ -62,11 +75,13 @@ function workload(tag: string): { insertMs: number; selectMs: number; scanMs: nu
   return { insertMs, selectMs, scanMs }
 }
 
-// warmup
-workload("A-warm")
-workload("B-warm")
+// warmup(s) — no median
+for (let w = 0; w < warmups; w++) {
+  workload(`A-warm-${w}`)
+  workload(`B-warm-${w}`)
+  console.log(`warmup ${w + 1}/${warmups} done`)
+}
 
-const RUNS = 5
 const A: { insertMs: number[]; selectMs: number[]; scanMs: number[] } = { insertMs: [], selectMs: [], scanMs: [] }
 const B: { insertMs: number[]; selectMs: number[]; scanMs: number[] } = { insertMs: [], selectMs: [], scanMs: [] }
 
@@ -79,6 +94,7 @@ for (let i = 0; i < RUNS; i++) {
   B.insertMs.push(b.insertMs)
   B.selectMs.push(b.selectMs)
   B.scanMs.push(b.scanMs)
+  console.log(`run ${i + 1}/${RUNS} A insert=${a.insertMs.toFixed(1)}ms B insert=${b.insertMs.toFixed(1)}ms`)
 }
 
 const med = (xs: number[]) => {
@@ -90,6 +106,7 @@ const r1 = (n: number) => Math.round(n * 10) / 10
 console.log(
   JSON.stringify(
     {
+      warmups,
       runs: RUNS,
       rows: INSERTS,
       row_bytes: ROW_TEXT.length,
@@ -114,4 +131,7 @@ console.log(
   ),
 )
 
-rmSync(tmpRoot, { recursive: true, force: true })
+console.log(`METRIC db_mmap_A_insert_ms=${r1(med(A.insertMs)).toFixed(1)}`)
+console.log(`METRIC db_mmap_B_insert_ms=${r1(med(B.insertMs)).toFixed(1)}`)
+
+try { rmSync(tmpRoot, { recursive: true, force: true }) } catch {}

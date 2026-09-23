@@ -1,21 +1,31 @@
 param(
   [Parameter(Mandatory = $true)][string]$Target,
-  [int]$Runs = 8,
+  [int]$Runs = 0,
   [int]$SampleMs = 200
 )
 
 # Boot bench harness — median wall time + peak RAM per run.
-# Protocol: exit code validated on EVERY run; any failure invalidates the metric
-# (lesson from the -1112% false bench on 2026-09-02).
+# Protocol ciclo9 slice1: 1 warmup + N runs + mediana (N=3 piloto, N=7 oficial)
+# Worktree: resuelve package dir vía PSCommandPath (sin hardcode D:\opencode)
+# Env: BENCH_RUNS / BENCH_WARMUPS pueden sobreescribir defaults.
 # Warmup: run 0 is discarded. Target "dev" = bun run src/index.ts --version.
+
+# Env overrides (permiten BENCH_RUNS=3 en piloto sin tocar param)
+if ($Runs -eq 0) {
+  if ($env:BENCH_RUNS) { $Runs = [int]$env:BENCH_RUNS } else { $Runs = 7 }
+}
+$Warmups = 1
+if ($env:BENCH_WARMUPS) { $Warmups = [int]$env:BENCH_WARMUPS }
 
 $times = @()
 $rams = @()
 $failures = 0
-$pkgDir = Split-Path -Parent $PSCommandPath
+$scriptDir = Split-Path -Parent $PSCommandPath
+$pkgDir = Split-Path -Parent $scriptDir
+# pkgDir is packages/opencode — worktree-safe (PSCommandPath points to worktree copy)
 
-for ($i = 0; $i -le $Runs; $i++) {
-  $isWarmup = ($i -eq 0)
+for ($i = 0; $i -lt ($Warmups + $Runs); $i++) {
+  $isWarmup = ($i -lt $Warmups)
   $psi = [System.Diagnostics.ProcessStartInfo]::new()
   if ($Target -eq "dev") {
     $psi.FileName = "bun"
@@ -68,6 +78,7 @@ $medIdx = [int][Math]::Floor(($sorted.Count - 1) / 2)
 $ramSorted = $rams | Sort-Object
 [pscustomobject]@{
   target = $Target
+  warmups = $Warmups
   runs = $sorted.Count
   median_ms = [math]::Round($sorted[$medIdx], 1)
   median_peak_ram_mb = [math]::Round($ramSorted[$medIdx], 1)
