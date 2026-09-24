@@ -538,7 +538,9 @@ export const {
       const projectPromise = project.sync()
       const sessionListPromise = projectPromise.then(() => listSessions())
 
-      // blocking - include session.list when continuing a session
+      // blocking - include session.list when continuing a session.
+      // capabilities/consoleState stay non-blocking (delayed org badge etc.
+      // acceptable) so first paint waits only on providers/agents/config.
       const providersPromise = sdk.client.config.providers({ workspace }, { throwOnError: true })
       const providerListPromise = sdk.client.provider.list({ workspace }, { throwOnError: true })
       const capabilitiesPromise = sdk.client.experimental.capabilities
@@ -554,7 +556,6 @@ export const {
       await Promise.all([
         providersPromise,
         providerListPromise,
-        capabilitiesPromise,
         agentsPromise,
         configPromise,
         projectPromise,
@@ -563,8 +564,6 @@ export const {
         .then(async () => {
           const providersResponse = providersPromise.then((x) => x.data!)
           const providerListResponse = providerListPromise.then((x) => x.data!)
-          const capabilitiesResponse = capabilitiesPromise
-          const consoleStateResponse = consoleStatePromise
           const agentsResponse = agentsPromise.then((x) => x.data ?? [])
           const configResponse = configPromise.then((x) => x.data!)
           const sessionListResponse = args.continue ? sessionListPromise : undefined
@@ -572,26 +571,20 @@ export const {
           return Promise.all([
             providersResponse,
             providerListResponse,
-            capabilitiesResponse,
-            consoleStateResponse,
             agentsResponse,
             configResponse,
             ...(sessionListResponse ? [sessionListResponse] : []),
           ]).then((responses) => {
             const providers = responses[0]
             const providerList = responses[1]
-            const capabilities = responses[2]
-            const consoleState = responses[3]
-            const agents = responses[4]
-            const config = responses[5]
-            const sessions = responses[6]
+            const agents = responses[2]
+            const config = responses[3]
+            const sessions = responses[4]
 
             batch(() => {
               setStore("provider", reconcile(providers.providers))
               setStore("provider_default", reconcile(providers.default))
               setStore("provider_next", reconcile(providerList))
-              setStore("capabilities", "experimentalBackgroundSubagents", capabilities?.backgroundSubagents === true)
-              setStore("console_state", reconcile(consoleState))
               setStore("agent", reconcile(agents))
               setStore("config", reconcile(config))
               if (sessions !== undefined) setStore("session", reconcile(sessions))
@@ -603,6 +596,9 @@ export const {
           // non-blocking
           void Promise.all([
             ...(args.continue ? [] : [sessionListPromise.then((sessions) => setStore("session", reconcile(sessions)))]),
+            capabilitiesPromise.then((capabilities) =>
+              setStore("capabilities", "experimentalBackgroundSubagents", capabilities?.backgroundSubagents === true),
+            ),
             consoleStatePromise.then((consoleState) => setStore("console_state", reconcile(consoleState))),
             sdk.client.command.list({ workspace }).then((x) => setStore("command", reconcile(x.data ?? []))),
             sdk.client.lsp.status({ workspace }).then((x) => setStore("lsp", reconcile(x.data ?? []))),
