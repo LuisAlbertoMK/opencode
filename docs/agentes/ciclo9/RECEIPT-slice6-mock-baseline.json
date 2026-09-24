@@ -1,0 +1,142 @@
+{
+  "slice": "slice6.2-mock-baseline",
+  "tier": 1,
+  "goal": "harness que mida CPU/RSS LOCAL del path de sesión con stream SSE sintético fijo (sin API), + baseline con ≥3 trials",
+  "timestamp": "2026-09-24T16:12:00Z",
+  "branch": "fix-shell-drive-relative @ 48c6a91437952a8a2191bca62282aa0132b65c0f",
+  "constraint": "PROHIBIDO editar src/test, commitear/pushear, borrar ramas/PRs, cambiar config real, red LLM (gateway CAÍDO — harness offline 100%)",
+  "study": {
+    "file": "test/provider/transform.test.ts",
+    "time_min": 10,
+    "mechanism_found": "createAnthropic({ apiKey: 'test-key', fetch: capture }) / createAmazonBedrock({ fetch: capture }) / createVertexAnthropic({ fetch: capture }) — fetch inyectado captura Request y responde Response.json; usado en 30+ tests para mockear SSE sin red",
+    "reuse": "Mismo mecanismo: mock fetch inyectado + transform aislado; aquí se aísla el hot loop TextDecoder.decode + regex /\"role\"\\s*:\\s*\"\"/g + TextEncoder.encode por chunk (provider.ts:976-994 snowflake-cortex wrapper) sin SDK ni red. Offline garantizado vía monkey-patch globalThis.fetch que throw",
+    "note": "No se inventó otro mecanismo; se preserva secuencia exacta de provider.ts:988"
+  },
+  "harness": {
+    "script": "packages/opencode/script/bench-session-mock.ts",
+    "convention": "sigue bench-db-mmap.ts / bench-boot.ps1: BENCH_WARMUPS/BENCH_RUNS env, mediana, spread, METRIC lines, worktree-safe (sin hardcode D:\\opencode), offline check",
+    "stream_fixed": {
+      "N": 5000,
+      "repeat": 20,
+      "total_ops": 100000,
+      "seed": 305419896,
+      "seed_hex": "0x12345678",
+      "total_input_bytes": 1088809,
+      "avg_chunk_bytes": 217.8,
+      "templates": 10,
+      "description": "SSE sintético fijo con 10 templates representativos (role:\"\", content, coalesced) + pad variable 0-256B, determinista mulberry32 seed fijo"
+    },
+    "hot_path": "provider.ts:988 text.replace(/\"role\"\\s*:\\s*\"\"/g, '\"role\":\"assistant\"') dentro de loop ReadableStream pull (líneas 976-994) — decode/re-encode por chunk O(n)",
+    "measures_per_run": ["wall_ms (performance.now)", "cpu_ms (process.cpuUsage user+system /1000)", "rss_mb (process.memoryUsage().rss /1MB)", "outBytes (anti-DCE)"],
+    "offline_isolation": {
+      "enforced": true,
+      "method": "globalThis.fetch = async () => { throw } antes de workload; flag fetchAttempted",
+      "verified": true,
+      "fetchAttempted": false,
+      "result": "OFFLINE OK"
+    }
+  },
+  "baseline": {
+    "env": "BENCH_WARMUPS=1 BENCH_RUNS=5 BENCH_N=5000 BENCH_REPEAT=20",
+    "runs": 5,
+    "warmups": 1,
+    "raw_trials": {
+      "hot": [
+        { "wall_ms": 205.42, "cpu_ms": 172, "rss_mb": 145.5 },
+        { "wall_ms": 189.36, "cpu_ms": 188, "rss_mb": 143.6 },
+        { "wall_ms": 225.68, "cpu_ms": 172, "rss_mb": 142.8 },
+        { "wall_ms": 172.55, "cpu_ms": 250, "rss_mb": 143.3 },
+        { "wall_ms": 154.69, "cpu_ms": 157, "rss_mb": 143.2 }
+      ],
+      "no_regex": [
+        { "wall_ms": 149.49, "cpu_ms": 156, "rss_mb": 152 },
+        { "wall_ms": 221.28, "cpu_ms": 187, "rss_mb": 151 },
+        { "wall_ms": 175.1, "cpu_ms": 125, "rss_mb": 150.1 },
+        { "wall_ms": 139.44, "cpu_ms": 125, "rss_mb": 150.6 },
+        { "wall_ms": 134.64, "cpu_ms": 125, "rss_mb": 149.3 }
+      ],
+      "stream": [
+        { "wall_ms": 672.23, "cpu_ms": 625, "rss_mb": 142.8 },
+        { "wall_ms": 538, "cpu_ms": 484, "rss_mb": 147.7 },
+        { "wall_ms": 492.87, "cpu_ms": 484, "rss_mb": 149.4 },
+        { "wall_ms": 511.5, "cpu_ms": 469, "rss_mb": 147.5 },
+        { "wall_ms": 466.4, "cpu_ms": 499, "rss_mb": 144.2 }
+      ]
+    },
+    "medians": {
+      "hot_cpu_ms": 172,
+      "hot_wall_ms": 189.36,
+      "hot_rss_mb": 143.3,
+      "no_regex_cpu_ms": 125,
+      "stream_cpu_ms": 484,
+      "stream_wall_ms": 511.5
+    },
+    "spread": {
+      "hot_cpu": { "min": 157, "max": 250, "range": 93, "median": 172 },
+      "hot_wall": { "min": 154.69, "max": 225.68, "range": 70.98, "median": 189.36 },
+      "hot_rss": { "min": 142.8, "max": 145.5, "range": 2.7, "median": 143.3 },
+      "no_regex_cpu": { "min": 125, "max": 187, "range": 62, "median": 125 },
+      "stream_cpu": { "min": 469, "max": 625, "range": 156, "median": 484 }
+    },
+    "secondary_baseline_N1000": {
+      "env": "BENCH_N=1000 BENCH_REPEAT=20 BENCH_RUNS=3",
+      "N": 1000,
+      "repeat": 20,
+      "total_ops": 20000,
+      "medians": { "hot_cpu_ms": 47, "hot_wall_ms": 44.1, "hot_rss_mb": 108.7, "no_regex_cpu_ms": 16, "stream_cpu_ms": 171 },
+      "hotspot_pct": 65.96,
+      "note": "Cross-check con N=1000 confirma mismo orden magnitud; per-1000-chunks cost ~2.35ms CPU (47/20) extrapolable"
+    }
+  },
+  "scaling_check": {
+    "method": "Duplicar N debe escalar CPU ~lineal (criterio 1.6-2.6 = LINEAR_OK)",
+    "primary": { "N": 5000, "2N": 10000, "med_cpu_N": 172, "med_cpu_2N": 281, "ratio_cpu": 1.63, "ratio_wall": 1.89, "linear_ok": true, "runs_2N": 3 },
+    "secondary": { "N": 1000, "2N": 2000, "med_cpu_N": 47, "med_cpu_2N": 78, "ratio_cpu": 1.66, "ratio_wall": 2.22, "linear_ok": true },
+    "verdict": "OK — harness estresa hotspot linealmente (duplicar N ≈ 1.6x CPU, dentro de 1.6-2.6 con jitter GC/JIT)"
+  },
+  "hotspot_988": {
+    "file": "packages/opencode/src/provider/provider.ts:976-994 (línea 988)",
+    "what": "decoder.decode(value,{stream:true}) + text.replace(/\"role\"\\s*:\\s*\"\"/g,'\"role\":\"assistant\"') + encoder.encode por chunk",
+    "overhead_regex_cpu_ms": 47,
+    "hotspot_pct_of_hot": 27.33,
+    "interpretation": "Regex agrega 27.33% del CPU del hot path (125ms decode/encode puro vs 172ms con regex) — parcial, no domina hot loop",
+    "stream_overhead_pct": 64.46,
+    "stream_note": "ReadableStream pull wrapper agrega 64.46% overhead sobre loop directo (484ms vs 172ms)",
+    "extrapolated_session_cost": {
+      "per_1000_chunks_cpu_ms": 8.6,
+      "per_2000_chunks_cpu_ms": 17.2,
+      "per_5000_chunks_cpu_ms": 43,
+      "session_baseline_cpu_ms": 25080,
+      "pct_of_session_per_2000_chunks": 0.07,
+      "note": "Aun con 5000 chunks (~43ms) es <0.2% de 25.08s sesión; hotspot NO domina sesión"
+    },
+    "verdict": "NO — hotspot 988 NO domina sesión (27.3% del hot loop, <0.2% del CPU total 25.08s). Veredicto parcial dentro del microbench, no-dominante a escala sesión.",
+    "pct": 27.33
+  },
+  "session_context": {
+    "boot_wall_median_ms": 636.3,
+    "session_cpu_median_ms": 25080,
+    "session_source": "receipt slice5-session-io (custom dist-1.18.32, 4 trials 24.86-28.20s)",
+    "hotspot_vs_session": "<0.2% con N=5000 realista; boot 2-4% de sesión. -30% (-7.5s) no alcanzable via fix 988 solo"
+  },
+  "measurement_method": {
+    "instrumentation": "process.cpuUsage (user+system μs) + performance.now wall + process.memoryUsage rss, por corrida con REPEAT=20 para granularidad 15ms Windows",
+    "offline_verified": "fetchAttempted=false en ambas baselines (5000 y 1000)",
+    "real_numbers": true,
+    "estimated": false,
+    "artifacts": "packages/opencode/script/bench-session-mock.ts (harness), D:\\TEMP\\opencode\\bench-mock-raw.log, D:\\TEMP\\opencode\\bench-mock-1k.log (logs fuera de repo)"
+  },
+  "files_changed": [
+    "packages/opencode/script/bench-session-mock.ts (nuevo, NO commiteado)",
+    "docs/agentes/ciclo9/RECEIPT-slice6-mock-baseline.json (único nuevo en repo, NO commiteado)"
+  ],
+  "compliance": {
+    "prohibido_editar_src_test": true,
+    "prohibido_commitear_pushear": true,
+    "no_borrar_ramas_ni_PRs": true,
+    "sin_cambios_config_real": true,
+    "offline_100pct": true,
+    "sin_llamadas_red_LLM": true,
+    "numeros_reales": true
+  }
+}

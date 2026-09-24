@@ -1,0 +1,248 @@
+{
+  "slice": "slice6.3-decompose",
+  "timestamp": "2026-09-24T16:23:39.561Z",
+  "branch": "fix-shell-drive-relative @ 48c6a91437",
+  "constraint": "PROHIBIDO editar src/test, commitear/pushear, borrar ramas/PRs, cambiar config real, red LLM (gateway CAÍDO — 100% offline, números REALES)",
+  "env": {
+    "BENCH_WARMUPS": 1,
+    "BENCH_RUNS": 3,
+    "BENCH_TIMEOUT_MS": 30000,
+    "REPEAT_A": 1,
+    "REPEAT_B": 200,
+    "REPEAT_C": 20,
+    "REPEAT_D": 500
+  },
+  "session_ref": {
+    "cpu_ms": 25080,
+    "wall_ms": 32332,
+    "source": "RECEIPT-slice5-session-io custom median 25.08s cpu / 32.33s wall",
+    "boot_wall_ms": 636.3,
+    "provider_988_pct": "<0.2%"
+  },
+  "parts": [
+    {
+      "part": "a:startup→ready",
+      "status": "OK",
+      "median_wall_ms": 6638.02,
+      "median_cpu_ms": 31,
+      "per_call_wall_ms": 6638.02,
+      "per_call_cpu_ms": 31,
+      "pct_session_wall": 26.47,
+      "pct_session_cpu": 0.12,
+      "per_call_pct_wall": 26.47,
+      "per_call_pct_cpu": 0.12,
+      "method": "spawn opencode.exe debug config / --version (wall, sin LLM)",
+      "repeat": 1,
+      "timeout_ms": 30000
+    },
+    {
+      "part": "b:provider init",
+      "status": "OK",
+      "median_wall_ms": 1.58,
+      "median_cpu_ms": 0,
+      "per_call_wall_ms": 0.01,
+      "per_call_cpu_ms": 0,
+      "pct_session_wall": 0.01,
+      "pct_session_cpu": 0,
+      "per_call_pct_wall": 0,
+      "per_call_pct_cpu": 0,
+      "method": "createAnthropic({apiKey,test,fetch:offline}) x200 + languageModel()",
+      "repeat": 200,
+      "timeout_ms": 30000
+    },
+    {
+      "part": "c:tool directa",
+      "status": "OK",
+      "median_wall_ms": 2894.29,
+      "median_cpu_ms": 78,
+      "per_call_wall_ms": 144.71,
+      "per_call_cpu_ms": 3.9,
+      "pct_session_wall": 11.54,
+      "pct_session_cpu": 0.31,
+      "per_call_pct_wall": 0.58,
+      "per_call_pct_cpu": 0.02,
+      "method": "Bun.file read x20 + shell spawn x2 (bypass LLM)",
+      "repeat": 20,
+      "timeout_ms": 30000
+    },
+    {
+      "part": "d:config+prompts",
+      "status": "OK",
+      "median_wall_ms": 9457.2,
+      "median_cpu_ms": 8938,
+      "per_call_wall_ms": 18.91,
+      "per_call_cpu_ms": 17.88,
+      "pct_session_wall": 37.71,
+      "pct_session_cpu": 35.64,
+      "per_call_pct_wall": 0.08,
+      "per_call_pct_cpu": 0.07,
+      "method": "jsonc-parser parse opencode.json x500 (266787B opencode.json, 8909B AGENTS.md, 15137B system-context)",
+      "repeat": 500,
+      "timeout_ms": 30000,
+      "sizes": {
+        "opencode_json_bytes": 266787,
+        "agents_md_bytes": 8909,
+        "system_context_bytes": 15137,
+        "total_bytes": 290833
+      }
+    }
+  ],
+  "sum": {
+    "wall_ms": 18991.09,
+    "cpu_ms": 9047,
+    "pct_session_wall": 75.72,
+    "pct_session_cpu": 36.07,
+    "per_session_wall_ms": 6801.66,
+    "per_session_cpu_ms": 52.78,
+    "per_session_pct_wall": 27.12,
+    "per_session_pct_cpu": 0.21,
+    "remaining_unexplained_wall_ms": 18278.34,
+    "remaining_unexplained_cpu_ms": 25027.22,
+    "note": "per_session = suma de per_call (1x cada parte); raw es suma amplificada (informativa, NO acota sesión)"
+  },
+  "mayor_responsable": {
+    "part": "a:startup→ready",
+    "file_line": "packages/opencode/src/index.ts:1 + packages/opencode/src/config/config.ts:328 (loadInstanceState) — boot+init",
+    "per_call_cpu_ms": 31,
+    "pct_session": 0.12,
+    "note": "mayor por per_call_cpu (costo real por sesión, no raw amplificado)"
+  },
+  "veredicto": {
+    "sumidero_hallado": "NO hallado",
+    "donde": "a:startup→ready",
+    "file_line": "packages/opencode/src/index.ts:1 + packages/opencode/src/config/config.ts:328 (loadInstanceState) — boot+init",
+    "alcanza_para_m30pct": "no",
+    "explica": "Suma per-session 52.78ms cpu (0.21% de 25.08s) <<7500ms (-30%); a/b/c/d offline NO suman 24s — quedan 25027.22ms sin explicar (99.79%). Sumidero debe estar en fase LLM (stream provider + EventV2/storage/IO) fuera de alcance offline; meta -30% NO alcanzable con fixes en estos 4 paths",
+    "note": "Boot 636ms 2-4% + provider 988 <0.2% ya probado irrelevante; esta descomposición confirma que init/config/tool directo tampoco suman >10% de 25s en costo per-session"
+  },
+  "offline": {
+    "fetchAttempted": false,
+    "ok": true,
+    "enforced": true
+  },
+  "raw": {
+    "a": {
+      "trials": [
+        {
+          "wall_ms": 7062.5010999999995,
+          "cpu_ms": 16,
+          "rss_mb": 54.8,
+          "ok": true
+        },
+        {
+          "wall_ms": 6431.6624999999985,
+          "cpu_ms": 62,
+          "rss_mb": 55.1,
+          "ok": true
+        },
+        {
+          "wall_ms": 6638.020799999998,
+          "cpu_ms": 31,
+          "rss_mb": 55.5,
+          "ok": true
+        }
+      ],
+      "median_wall": 6638.020799999998,
+      "median_cpu": 31,
+      "status": "OK"
+    },
+    "b": {
+      "trials": [
+        {
+          "wall_ms": 1.583599999998114,
+          "cpu_ms": 0,
+          "rss_mb": 80.9,
+          "ok": true
+        },
+        {
+          "wall_ms": 8.409800000001269,
+          "cpu_ms": 0,
+          "rss_mb": 81.7,
+          "ok": true
+        },
+        {
+          "wall_ms": 0.9544000000023516,
+          "cpu_ms": 0,
+          "rss_mb": 81.7,
+          "ok": true
+        }
+      ],
+      "median_wall": 1.583599999998114,
+      "median_cpu": 0,
+      "status": "OK"
+    },
+    "c": {
+      "trials": [
+        {
+          "wall_ms": 3364.087000000003,
+          "cpu_ms": 94,
+          "rss_mb": 87.1,
+          "ok": true
+        },
+        {
+          "wall_ms": 2691.4829000000027,
+          "cpu_ms": 47,
+          "rss_mb": 85.6,
+          "ok": true
+        },
+        {
+          "wall_ms": 2894.2897999999986,
+          "cpu_ms": 78,
+          "rss_mb": 84.7,
+          "ok": true
+        }
+      ],
+      "median_wall": 2894.2897999999986,
+      "median_cpu": 78,
+      "status": "OK"
+    },
+    "d": {
+      "trials": [
+        {
+          "wall_ms": 10154.0297,
+          "cpu_ms": 9734,
+          "rss_mb": 176.4,
+          "ok": true
+        },
+        {
+          "wall_ms": 8545.86849999999,
+          "cpu_ms": 8453,
+          "rss_mb": 177.1,
+          "ok": true
+        },
+        {
+          "wall_ms": 9457.195900000006,
+          "cpu_ms": 8938,
+          "rss_mb": 176.4,
+          "ok": true
+        }
+      ],
+      "median_wall": 9457.195900000006,
+      "median_cpu": 8938,
+      "status": "OK"
+    },
+    "total_bench_wall_ms": 76978.14
+  },
+  "measurement_method": {
+    "wall": "performance.now por trial",
+    "cpu": "process.cpuUsage user+system /1000",
+    "rss": "process.memoryUsage rss",
+    "median": "mediana de RUNS",
+    "timeout": "30000ms por trial",
+    "offline_verified": true,
+    "real_numbers": true
+  },
+  "files_changed": [
+    "packages/opencode/script/bench-slice6-decompose.ts (nuevo, NO commitear)",
+    "docs/agentes/ciclo9/RECEIPT-slice6-decompose.json (único nuevo en repo, NO commitear)"
+  ],
+  "compliance": {
+    "prohibido_editar_src_test": true,
+    "prohibido_commitear_pushear": true,
+    "no_borrar_ramas_ni_PRs": true,
+    "sin_cambios_config_real": true,
+    "offline_100pct": true,
+    "sin_llamadas_red_LLM": true,
+    "numeros_reales": true
+  }
+}
