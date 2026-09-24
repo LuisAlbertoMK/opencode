@@ -26,10 +26,10 @@ if (!Number.isInteger(RUNS) || RUNS < 1) { console.error("BENCH_RUNS must be >=1
 
 let fetchAttempted = false
 const origFetch = globalThis.fetch
-globalThis.fetch = async (..._args: any[]) => {
+globalThis.fetch = (async (..._args: Parameters<typeof fetch>): Promise<Response> => {
   fetchAttempted = true
   throw new Error("OFFLINE VIOLATION: fetch attempted")
-}
+}) as unknown as typeof fetch
 
 type Trial = { wall_ms: number; cpu_ms: number; rss_mb: number; ok: boolean; error?: string }
 
@@ -46,7 +46,7 @@ async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise
   try { return await Promise.race([p, timeout]) } finally { clearTimeout(id) }
 }
 
-async function measure(label: string, fn: () => Promise<void> | void): Promise<Trial> {
+async function measure<T>(label: string, fn: () => Promise<T> | T): Promise<Trial> {
   const rssBefore = process.memoryUsage().rss
   const cpuBefore = process.cpuUsage()
   const t0 = performance.now()
