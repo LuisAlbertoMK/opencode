@@ -593,26 +593,64 @@ export const {
         })
         .then(() => {
           if (store.status !== "complete") setStore("status", "partial")
+          const logSyncError = (name: string) => (e: unknown) => {
+            console.error("tui background sync failed", {
+              task: name,
+              error: e instanceof Error ? e.message : String(e),
+            })
+          }
           // non-blocking
           void Promise.all([
-            ...(args.continue ? [] : [sessionListPromise.then((sessions) => setStore("session", reconcile(sessions)))]),
-            capabilitiesPromise.then((capabilities) =>
-              setStore("capabilities", "experimentalBackgroundSubagents", capabilities?.backgroundSubagents === true),
-            ),
-            consoleStatePromise.then((consoleState) => setStore("console_state", reconcile(consoleState))),
-            sdk.client.command.list({ workspace }).then((x) => setStore("command", reconcile(x.data ?? []))),
-            sdk.client.lsp.status({ workspace }).then((x) => setStore("lsp", reconcile(x.data ?? []))),
-            sdk.client.mcp.status({ workspace }).then((x) => setStore("mcp", reconcile(x.data ?? {}))),
+            ...(args.continue
+              ? []
+              : [
+                  sessionListPromise
+                    .then((sessions) => setStore("session", reconcile(sessions)))
+                    .catch(logSyncError("session.list")),
+                ]),
+            capabilitiesPromise
+              .then((capabilities) =>
+                setStore("capabilities", "experimentalBackgroundSubagents", capabilities?.backgroundSubagents === true),
+              )
+              .catch(logSyncError("capabilities")),
+            consoleStatePromise
+              .then((consoleState) => setStore("console_state", reconcile(consoleState)))
+              .catch(logSyncError("console.state")),
+            sdk.client.command
+              .list({ workspace })
+              .then((x) => setStore("command", reconcile(x.data ?? [])))
+              .catch(logSyncError("command.list")),
+            sdk.client.lsp
+              .status({ workspace })
+              .then((x) => setStore("lsp", reconcile(x.data ?? [])))
+              .catch(logSyncError("lsp.status")),
+            sdk.client.mcp
+              .status({ workspace })
+              .then((x) => setStore("mcp", reconcile(x.data ?? {})))
+              .catch(logSyncError("mcp.status")),
             sdk.client.experimental.resource
               .list({ workspace })
-              .then((x) => setStore("mcp_resource", reconcile(x.data ?? {}))),
-            sdk.client.formatter.status({ workspace }).then((x) => setStore("formatter", reconcile(x.data ?? []))),
-            sdk.client.session.status({ workspace }).then((x) => {
-              setStore("session_status", reconcile(x.data ?? {}))
-            }),
-            sdk.client.provider.auth({ workspace }).then((x) => setStore("provider_auth", reconcile(x.data ?? {}))),
-            sdk.client.vcs.get({ workspace }).then((x) => setStore("vcs", reconcile(x.data))),
-            project.workspace.sync(),
+              .then((x) => setStore("mcp_resource", reconcile(x.data ?? {})))
+              .catch(logSyncError("mcp.resource.list")),
+            sdk.client.formatter
+              .status({ workspace })
+              .then((x) => setStore("formatter", reconcile(x.data ?? [])))
+              .catch(logSyncError("formatter.status")),
+            sdk.client.session
+              .status({ workspace })
+              .then((x) => {
+                setStore("session_status", reconcile(x.data ?? {}))
+              })
+              .catch(logSyncError("session.status")),
+            sdk.client.provider
+              .auth({ workspace })
+              .then((x) => setStore("provider_auth", reconcile(x.data ?? {})))
+              .catch(logSyncError("provider.auth")),
+            sdk.client.vcs
+              .get({ workspace })
+              .then((x) => setStore("vcs", reconcile(x.data)))
+              .catch(logSyncError("vcs.get")),
+            project.workspace.sync().catch(logSyncError("project.workspace.sync")),
           ]).then(() => {
             setStore("status", "complete")
           })
