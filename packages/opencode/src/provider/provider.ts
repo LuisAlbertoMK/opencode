@@ -1670,10 +1670,16 @@ const layer = Layer.effect(
           if (!stored) continue
           if (!plugin.auth.loader) continue
 
+          const catalogEntry = database[plugin.auth!.provider]
+          if (!catalogEntry) {
+            yield* Effect.logWarning("skipping auth plugin for unknown provider", { providerID })
+            continue
+          }
+
           const options = yield* Effect.promise(() =>
             plugin.auth!.loader!(
               () => bridge.promise(auth.get(providerID).pipe(Effect.orDie)) as any,
-              toPublicInfo(database[plugin.auth!.provider]),
+              toPublicInfo(catalogEntry),
             ),
           )
           const opts = options ?? {}

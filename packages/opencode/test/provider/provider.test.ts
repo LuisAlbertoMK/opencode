@@ -2064,6 +2064,48 @@ it.instance(
   }),
 )
 
+it.instance(
+  "skips auth plugin loader for provider missing from catalog",
+  Effect.gen(function* () {
+    const instance = yield* TestInstance
+    const configDir = path.join(instance.directory, ".opencode")
+    const root = path.join(configDir, "plugin")
+    yield* Effect.promise(() => mkdir(root, { recursive: true }))
+    yield* Effect.promise(() => markPluginDependenciesReady(configDir))
+    yield* Effect.promise(() =>
+      Bun.write(
+        path.join(root, "ghost-auth.ts"),
+        [
+          "export default {",
+          '  id: "demo.ghost-auth",',
+          "  server: async () => ({",
+          "    auth: {",
+          '      provider: "ghost-provider-no-catalog",',
+          "      methods: [],",
+          "      async loader() {",
+          '        throw new Error("ghost auth loader must not run for unknown provider")',
+          "      },",
+          "    },",
+          "  }),",
+          "}",
+          "",
+        ].join("\n"),
+      ),
+    )
+
+    yield* setProcessEnv(
+      "OPENCODE_AUTH_CONTENT",
+      JSON.stringify({
+        "ghost-provider-no-catalog": { type: "oauth", access: "dummy", refresh: "dummy", expires: 9999999999999 },
+      }),
+    )
+
+    const providers = yield* list
+    expect(providers[ProviderV2.ID.make("ghost-provider-no-catalog")]).toBeUndefined()
+  }),
+  30000,
+)
+
 it.effect("opencode loader keeps paid models when config apiKey is present", () =>
   Effect.gen(function* () {
     const noneDir = yield* tmpdirScoped()
