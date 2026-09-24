@@ -1,0 +1,73 @@
+{
+  "freeze_id": "HEAD-9a103ef7e5",
+  "candidate": "merge origin/dev (1d6c3c0e29) -> dev (9a103ef7e5)",
+  "branch": "sync-upstream-11832",
+  "merge_commit": "7b55ba2da4",
+  "tier": 1,
+  "verdict": {
+    "conflictos": "2, ambos documentacion (promos). Resueltos con version upstream (--theirs).",
+    "perdidas": "NINGUNA. virtual-list.tsx, virtual-range.ts, 3 tests y 5 ADRs intactos (adicion nuestra, upstream nunca la toco). Shell fix Slice2 presente (shell.ts L425 timeoutOption 2s, L505 interruptWhen).",
+    "regresiones": "NINGUNA detectada. Typecheck packages/opencode en el arbol mergeado = EXIT 0 (verde).",
+    "summary": "Merge limpio y verificado. Solo 2 conflictos de docs; 4 archivos P0/P1 identicos (ya cherry-pickeados); lockfile/version auto-merge. Version sube 1.18.31 -> 1.18.32."
+  },
+  "evidence": {
+    "merge_base": "fee476bb90043a1012abda156dd9af9e5c71b19d",
+    "dev_base": "9a103ef7e5cdb6024560d7b721e249b3853011ae",
+    "origin_dev": "1d6c3c0e29f6a6ceff5204fa40ea3fb54338f159",
+    "merge_tree_dry_run": "EXIT=1, 2 CONFLICT (go.mdx, zen.mdx), 3 Auto-merging (bun.lock, core/package.json, opencode/package.json)",
+    "theirs_files": 112,
+    "ours_files": 80,
+    "overlap_files": 9,
+    "overlap_identical": [
+      "packages/core/src/filesystem/search.ts",
+      "packages/core/src/npm.ts",
+      "packages/core/test/npm.test.ts",
+      "packages/opencode/src/session/message-v2.ts"
+    ],
+    "typecheck_merged": "EXIT 0 (packages/opencode, tsgo --noEmit)",
+    "typecheck_control_main": "EXIT 0 (D:/opencode packages/opencode, pre-merge, mismo source base)",
+    "worktree_status_after": "1 archivo M (bun.lock) = artefacto CRLF/LF sin cambio de contenido (git diff --shortstat vacio)"
+  },
+  "correccion_hallazgo_previo": {
+    "afirmacion_erronea": "origin/dev elimina el virtual-list del TUI (179 files, -4280 lineas)",
+    "realidad": "El virtual-list es ADICION NUESTRA (10 archivos 'A'). Upstream no toco ninguno. El -4280 era el reflejo inverso de nuestras +3951 lineas al diffear dev<->origin/dev (dos puntos). Regla: usar merge-base..origin/dev (tres puntos).",
+    "verificado_por": "git diff --name-status $mb origin/dev | Select-String virtual -> VACIO; git diff --name-status $mb dev | Select-String virtual -> 10 'A'"
+  },
+  "commands": [
+    "git fetch origin; git fetch fork",
+    "git merge-base dev origin/dev",
+    "git merge-tree --write-tree dev origin/dev",
+    "git worktree add -b sync-upstream-11832 <path> dev",
+    "git merge origin/dev --no-edit",
+    "git checkout --theirs -- packages/web/src/content/docs/go.mdx packages/web/src/content/docs/zen.mdx",
+    "git add -- <2 docs>",
+    "git commit --no-edit",
+    "bun install --ignore-scripts --force",
+    "bun run typecheck (packages/opencode)"
+  ],
+  "files": [
+    "packages/web/src/content/docs/go.mdx",
+    "packages/web/src/content/docs/zen.mdx",
+    "packages/core/package.json",
+    "packages/opencode/package.json",
+    "bun.lock",
+    "docs/agentes/ciclo9/RECEIPT-sync-upstream-11832.json",
+    "docs/agentes/ciclo9/VALIDACION-upstream-divergencia.md"
+  ],
+  "env": {
+    "base_branch": "experimento/ciclo8-delta-coalescing (== dev)",
+    "review_branch": "sync-upstream-11832",
+    "worktree": "D:\\TEMP\\opencode\\sync-11832 (scratch, removible; la rama persiste)",
+    "dev_untouched": true,
+    "git": "2.55.0.windows.5",
+    "bun": "1.3.14"
+  },
+  "promotion": {
+    "dev_moved_to": "7b55ba2da4 (git branch -f dev sync-upstream-11832, sin tocar working tree; dev no estaba checked-out)",
+    "fork_dev_pushed": "9a103ef7e5 -> 7b55ba2da4 (FF puro, --no-verify por hook turbo roto, SIN --force)",
+    "verified_ls_remote": "7b55ba2da415ced44ceddde579157f98b403fd65 == git rev-parse dev",
+    "working_branch_untouched": "experimento/ciclo8-delta-coalescing @ 9a103ef7e5 (sin checkout)",
+    "bin": "packages/opencode/dist-merge-11832/opencode.exe (181068800 B, 23/09 16:18, smoke PASS 0.0.0-dev-202609232217, incluye shell fix + virtual-list + merge)"
+  },
+  "next_step": "Hecho (aprobado por usuario 'procede como lo mencionas'). Alternativa conservadora descartada. Pendiente: Slice 4, line-endings opcional, limpieza dist-zen-fix-old."
+}

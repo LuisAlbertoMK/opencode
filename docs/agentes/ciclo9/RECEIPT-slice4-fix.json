@@ -96,5 +96,12 @@
     "slice2_preservado": "Verificado: Effect.timeoutOption('2 seconds') L429 y Stream.interruptWhen(interrupt) L509 intactos. No regresión.",
     "worktree_constraint": "Corridas en workspace principal D:\\opencode, no worktree, evita fails-artefacto junctions. git add solo con paths explícitos (no usado, no commit).",
     "repro": "cd packages/opencode && npm run test -- test/tool/shell.test.ts -t \"drive-relative\"  # 2 pass 11s; npm run test -- test/tool/shell.test.ts # 91 pass 231s; npm run test -- test/util/wildcard.test.ts test/util/timeout.test.ts test/tool/read.test.ts test/tool/registry.test.ts # 73 pass"
+  },
+  "promotion": {
+    "branch_review": "fix-shell-drive-relative (dad584b480 + c0a7a1f778), push fork OK (rama nueva)",
+    "merge_to_dev": "71f6f3fb80 'Merge branch fix-shell-drive-relative into dev' (0 conflictos, shell.ts idéntico salvo fix; drive-relative 2 pass en worktree)",
+    "dev_moved": "7b55ba2da4 -> 71f6f3fb80 (update-ref, sin tocar working tree)",
+    "fork_dev_pushed": "7b55ba2da4..71f6f3fb80 FF, hook turbo OK sin --no-verify, SIN --force",
+    "verified": "ls-remote fork/dev == dev local == 71f6f3fb80; fix presente en dev:packages/opencode/src/tool/shell.ts L367"
   }
 }
