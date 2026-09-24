@@ -111,17 +111,18 @@ function getLegacyPlugins(mod: Record<string, unknown>) {
   return result
 }
 
-async function applyPlugin(load: PluginLoader.Loaded, input: PluginInput, hooks: Hooks[]) {
+async function initPlugin(load: PluginLoader.Loaded, input: PluginInput): Promise<Hooks[]> {
   const plugin = readV1Plugin(load.mod, load.spec, "server", "detect")
   if (plugin) {
     await resolvePluginId(load.source, load.spec, load.target, readPluginId(plugin.id, load.spec), load.pkg)
-    hooks.push(await (plugin as PluginModule).server(input, load.options))
-    return
+    return [await (plugin as PluginModule).server(input, load.options)]
   }
 
+  const hooks: Hooks[] = []
   for (const server of getLegacyPlugins(load.mod)) {
     hooks.push(await server(input, load.options))
   }
+  return hooks
 }
 
 const layer = Layer.effect(
@@ -221,29 +222,34 @@ const layer = Layer.effect(
             },
           }),
         )
-        for (const load of loaded) {
-          if (!load) continue
-
-          // Keep plugin execution sequential so hook registration and execution
-          // order remains deterministic across plugin runs.
-          yield* Effect.tryPromise({
-            try: () => applyPlugin(load, input, hooks),
-            catch: (err) => {
-              const message = errorMessage(err)
-              return message
-            },
-          }).pipe(
-            Effect.tapError((error) => Effect.logError("failed to load plugin", { path: load.spec, error })),
-            Effect.catch(() => {
-              // TODO: make proper events for this
-              // events.publish(Session.Event.Error, {
-              //   error: new NamedError.Unknown({
-              //     message: `Failed to load plugin ${load.spec}: ${message}`,
-              //   }).toObject(),
-              // })
-              return Effect.void
-            }),
-          )
+        // Cold-boot deferral: plugin init IO runs concurrently, but hook
+        // REGISTRATION stays sequential so hook order remains deterministic
+        // across plugin runs (Effect.forEach preserves input order).
+        const inits = yield* Effect.forEach(
+          loaded.filter((load) => !!load),
+          (load) =>
+            Effect.tryPromise({
+              try: () => initPlugin(load, input),
+              catch: (err) => {
+                const message = errorMessage(err)
+                return message
+              },
+            }).pipe(
+              Effect.tapError((error) => Effect.logError("failed to load plugin", { path: load.spec, error })),
+              Effect.catch(() => {
+                // TODO: make proper events for this
+                // events.publish(Session.Event.Error, {
+                //   error: new NamedError.Unknown({
+                //     message: `Failed to load plugin ${load.spec}: ${message}`,
+                //   }).toObject(),
+                // })
+                return Effect.succeed([] as Hooks[])
+              }),
+            ),
+          { concurrency: "unbounded" },
+        )
+        for (const init of inits) {
+          for (const hook of init) hooks.push(hook)
         }
 
         // Notify plugins of current config (parallel — independent per-plugin)
