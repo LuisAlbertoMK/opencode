@@ -29,10 +29,13 @@ if (!Number.isInteger(runs) || runs < 1) {
 // --- offline isolation: fail fast if any fetch is attempted ---
 let fetchAttempted = false
 const origFetch = globalThis.fetch
-globalThis.fetch = async (..._args: any[]) => {
-  fetchAttempted = true
-  throw new Error("OFFLINE VIOLATION: fetch attempted in mock harness — debe ser 100% offline")
-}
+globalThis.fetch = Object.assign(
+  async (..._args: Parameters<typeof fetch>): Promise<Awaited<ReturnType<typeof fetch>>> => {
+    fetchAttempted = true
+    throw new Error("OFFLINE VIOLATION: fetch attempted in mock harness — debe ser 100% offline")
+  },
+  { preconnect: (() => {}) as unknown as (typeof fetch extends { preconnect: infer P } ? P : never) },
+) as unknown as typeof fetch
 
 // deterministic PRNG (mulberry32) — seed fijo
 function mulberry32(seed: number) {
